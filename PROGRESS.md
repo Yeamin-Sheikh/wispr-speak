@@ -13,6 +13,28 @@
 
 ## Progress log
 
+### 2026-09-27: 21st.dev UI redesign, micro Dynamic Island pill, and SmartScreen unblock
+
+**Status:** Done
+
+#### What changed
+- Eliminated Microsoft Defender SmartScreen warning by removing NTFS `Zone.Identifier` alternate data stream with `Unblock-File`.
+- Replaced oversized listening pill with a 21st.dev inspired micro Dynamic Island capsule (height reduced to 32px, window 320x44) with delicate audio waveform.
+- Redesigned the main dashboard with 21st.dev components: spotlight cards with mouse-tracking radial borders, 3D mechanical sculpted keycaps, ambient aurora rays, bento grid stats, and tactile spring switches.
+- Fixed the "Launch on Windows startup" switch: made full row clickable and wired direct registry persistence.
+- Added global shortcut registrations for hands-free mode and selection polishing with a 130ms debounce window.
+- Scrubbed test artifacts and filtered out single-punctuation entries from dictation feeds.
+- Bumped version to 0.5.5.
+
+#### Files touched
+- `src/renderer/pill.html`: Replaced bulky bar with a 32px micro Dynamic Island pill.
+- `src/renderer/settings.html`: Redesigned with 21st.dev spotlight cards, keycaps, and responsive feed.
+- `src/main.js`: Added single-instance lock, globalShortcut bindings, pill window resize to 320x44, and noise filtering.
+- `scripts/install.ps1`: Added automatic `Unblock-File` step to eliminate SmartScreen prompts.
+- `package.json`: Bumped version to 0.5.5.
+
+---
+
 ### 2026-09-27: Fixed hands-free shortcut collision and native selection polishing
 
 **Status:** Done

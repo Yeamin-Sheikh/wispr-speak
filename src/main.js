@@ -1,7 +1,7 @@
-// Wispr Tell v0.5.0 — desktop voice typing application.
+// Wispr Tell v0.5.5 — desktop voice typing application.
 // Supports both Push-to-talk (hold-to-talk) and Hands-free toggle mode (Control+Windows+Spacebar).
 // Powered by Groq Cloud STT (whisper-large-v3-turbo) and smart language model cleanup (gpt-oss-20b).
-const { app, BrowserWindow, Tray, Menu, ipcMain, clipboard, screen, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, clipboard, screen, shell, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -131,6 +131,13 @@ try {
   history = [...SEED_HISTORY];
 }
 
+// Clean up single-punctuation artifacts or empty entries from history
+history = (Array.isArray(history) ? history : []).filter(h => {
+  if (!h || !h.text) return false;
+  const stripped = String(h.text).replace(/[.,\/#!$%\^&\*;:{}=\-_`~() \r\n]/g, '').trim();
+  return stripped.length > 0;
+});
+
 function saveHistory() {
   try {
     fs.writeFileSync(HISTORY_PATH, JSON.stringify(history.slice(0, 1000), null, 2));
@@ -168,10 +175,16 @@ function getStats() {
 
 function addHistoryItem(text, durationMs = 0) {
   if (!text || !text.trim()) return;
-  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const cleaned = text.trim();
+  // Filter out single-punctuation or empty noises (like "." or "?")
+  if (cleaned.replace(/[.,\/#!$%\^&\*;:{}=\-_`~() \r\n]/g, '').trim().length === 0) {
+    log('addHistoryItem: ignoring punctuation-only noise "' + cleaned + '"');
+    return;
+  }
+  const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
   const item = {
     id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    text: text.trim(),
+    text: cleaned,
     timestamp: Date.now(),
     wordCount,
     durationMs: durationMs || 2500,
@@ -206,6 +219,60 @@ function isComboHeld(combo) {
     const codes = keyNameToCodes(keyName);
     return codes.some(c => heldKeys.has(c));
   });
+}
+
+function shortcutToAccelerator(combo) {
+  if (!Array.isArray(combo) || !combo.length) return null;
+  const parts = combo.map(k => {
+    const l = String(k).trim().toLowerCase();
+    if (l === 'ctrl' || l === 'control') return 'CommandOrControl';
+    if (l === 'win' || l === 'meta' || l === 'super' || l === 'cmd') return 'Super';
+    if (l === 'alt') return 'Alt';
+    if (l === 'shift') return 'Shift';
+    if (l === 'space' || l === 'spacebar') return 'Space';
+    return k.toUpperCase();
+  });
+  return parts.join('+');
+}
+
+function registerGlobalShortcuts() {
+  try {
+    globalShortcut.unregisterAll();
+  } catch {}
+
+  const hfAcc = shortcutToAccelerator(config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']);
+  if (hfAcc) {
+    try {
+      const ok = globalShortcut.register(hfAcc, () => {
+        log('globalShortcut handsFree triggered (' + hfAcc + ')');
+        if (recording && isHandsFree) {
+          log('hands-free toggle: ending recording via globalShortcut');
+          onHotkeyUp();
+        } else if (!recording && !busy) {
+          log('hands-free toggle: starting recording via globalShortcut');
+          onHotkeyDown(true);
+        }
+      });
+      log('globalShortcut registered handsFree:', hfAcc, ok ? 'SUCCESS' : 'FAILED');
+    } catch (e) {
+      log('globalShortcut register error for handsFree:', e.message);
+    }
+  }
+
+  const polAcc = shortcutToAccelerator(config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']);
+  if (polAcc) {
+    try {
+      const ok = globalShortcut.register(polAcc, () => {
+        log('globalShortcut polishSelection triggered (' + polAcc + ')');
+        if (!recording && !busy) {
+          onPolishSelection();
+        }
+      });
+      log('globalShortcut registered polishSelection:', polAcc, ok ? 'SUCCESS' : 'FAILED');
+    } catch (e) {
+      log('globalShortcut register error for polishSelection:', e.message);
+    }
+  }
 }
 
 // ---------- Groq cloud engine ----------
@@ -428,9 +495,9 @@ function repositionPill() {
     const cursor = screen.getCursorScreenPoint();
     const currentDisplay = screen.getDisplayNearestPoint(cursor);
     const { x, y, width, height } = currentDisplay.workArea;
-    const pillWidth = 480;
+    const pillWidth = 320;
     const posX = Math.round(x + (width - pillWidth) / 2);
-    const posY = Math.round(y + height - 170);
+    const posY = Math.round(y + height - 85);
     pill.setPosition(posX, posY);
   } catch (err) {
     log('repositionPill error:', err.message);
@@ -439,7 +506,7 @@ function repositionPill() {
 
 function createPill() {
   pill = new BrowserWindow({
-    width: 480, height: 100, frame: false, transparent: true,
+    width: 320, height: 44, frame: false, transparent: true,
     alwaysOnTop: true, skipTaskbar: true, resizable: false,
     focusable: false, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
@@ -462,8 +529,8 @@ function updateTitleBarTheme(themeName) {
   try {
     const isDark = themeName === 'dark-obsidian' || themeName === 'cyber-teal';
     settingsWin.setTitleBarOverlay({
-      color: isDark ? '#0c0e12' : '#f8f7f4',
-      symbolColor: isDark ? '#f1f3f7' : '#1f1f1d',
+      color: isDark ? '#060d13' : '#f8f7f4',
+      symbolColor: isDark ? '#e6f2f8' : '#1c1917',
       height: 38,
     });
   } catch {}
@@ -483,12 +550,12 @@ function openSettings() {
     minWidth: 960,
     minHeight: 640,
     title: 'Wispr Tell',
-    backgroundColor: isDark ? '#0c0e12' : '#fbfaf8',
+    backgroundColor: isDark ? '#060d13' : '#f8f7f4',
     show: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: isDark ? '#0c0e12' : '#f8f7f4',
-      symbolColor: isDark ? '#f1f3f7' : '#1f1f1d',
+      color: isDark ? '#060d13' : '#f8f7f4',
+      symbolColor: isDark ? '#e6f2f8' : '#1c1917',
       height: 38,
     },
     icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
@@ -740,12 +807,10 @@ async function onPolishSelection() {
       try {
         const { keyboard, Key } = require('@nut-tree-fork/nut-js');
         keyboard.config.autoDelayMs = 2;
-        await keyboard.releaseKey(Key.LeftWin, Key.RightWin, Key.LeftAlt, Key.RightAlt, Key.Q);
-        await new Promise(r => setTimeout(r, 40));
         await keyboard.pressKey(Key.LeftControl, Key.C);
         await keyboard.releaseKey(Key.LeftControl, Key.C);
       } catch (nutErr) {
-        log('polish-selection: nut-js fallback failed:', nutErr.message);
+        log('polish-selection: nut-js fallback ignored:', nutErr.message);
       }
     }
 
@@ -795,15 +860,24 @@ async function onPolishSelection() {
 }
 
 // ---------- app lifecycle ----------
-app.whenReady().then(() => {
-  LOG_PATH = path.join(app.getPath('userData'), 'wispr-tell-debug.log');
-  log('=== Wispr Tell v' + app.getVersion() + ' starting ===');
+const gotSingleLock = app.requestSingleInstanceLock();
+if (!gotSingleLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    openSettings();
+  });
+
+  app.whenReady().then(() => {
+    LOG_PATH = path.join(app.getPath('userData'), 'wispr-tell-debug.log');
+    log('=== Wispr Tell v' + app.getVersion() + ' starting ===');
   for (const [name, p] of [['paste-helper', PASTE_HELPER]])
     log('self-check', name, fs.existsSync(p) ? 'OK' : 'MISSING: ' + p);
   log('self-check groq-key', config.groqKey ? 'configured' : 'NOT SET');
 
   createPill();
   createCaptureWin();
+  registerGlobalShortcuts();
 
   // config IPC
   ipcMain.handle('get-config', () => ({ ...config }));
@@ -811,13 +885,32 @@ app.whenReady().then(() => {
     config = { ...config, ...patch };
     if (patch.shortcuts) {
       config.shortcuts = { ...config.shortcuts, ...patch.shortcuts };
+      registerGlobalShortcuts();
     }
     if (patch.theme) {
       updateTitleBarTheme(patch.theme);
     }
     saveConfig();
     if (patch.launchAtLogin !== undefined && process.platform === 'win32') {
-      app.setLoginItemSettings({ openAtLogin: !!patch.launchAtLogin });
+      try {
+        app.setLoginItemSettings({
+          openAtLogin: !!patch.launchAtLogin,
+          path: process.execPath,
+          args: ['--hidden'],
+        });
+      } catch (err) {
+        log('setLoginItemSettings error:', err.message);
+      }
+      try {
+        const regExe = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
+        if (patch.launchAtLogin) {
+          spawn(regExe, ['add', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', 'Wispr Tell', '/t', 'REG_SZ', '/d', `"${process.execPath}"`, '/f'], { windowsHide: true });
+        } else {
+          spawn(regExe, ['delete', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', 'Wispr Tell', '/f'], { windowsHide: true });
+        }
+      } catch (regErr) {
+        log('registry run key error:', regErr.message);
+      }
     }
     return { ...config };
   });
@@ -953,38 +1046,44 @@ app.whenReady().then(() => {
   });
 
   // Tray menu
-  const trayIcon = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'tray.png');
-  tray = new Tray(trayIcon);
-  tray.setToolTip('Wispr Tell — Voice Typing');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open Wispr Tell', click: openSettings },
-    {
-      label: 'Toggle hands-free mode',
-      click: () => {
-        if (recording && isHandsFree) onHotkeyUp();
-        else if (!recording && !busy) onHotkeyDown(true);
+  try {
+    const trayIcon = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'tray.png');
+    tray = new Tray(trayIcon);
+    tray.setToolTip('Wispr Tell — Voice Typing');
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'Open Wispr Tell', click: openSettings },
+      {
+        label: 'Toggle hands-free mode',
+        click: () => {
+          if (recording && isHandsFree) onHotkeyUp();
+          else if (!recording && !busy) onHotkeyDown(true);
+        },
       },
-    },
-    { type: 'separator' },
-    { label: 'Push to talk: ' + (config.shortcuts?.pushToTalk || ['Ctrl', 'Win']).join('+'), enabled: false },
-    { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
-    { label: 'Polish selection: ' + (config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']).join('+'), enabled: false },
-    { type: 'separator' },
-    { label: 'Settings', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'settings'); } },
-    { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
-    {
-      label: 'Test Groq key', click: async () => {
-        setPill('working', 'Testing key…');
-        const r = await validateGroqKey(config.groqKey);
-        if (r.ok) { log('key test: OK'); setPill('done', null, 'Groq key works ✓'); }
-        else { log('key test FAILED:', r.error); setPill('error', r.error); }
+      { type: 'separator' },
+      { label: 'Push to talk: ' + (config.shortcuts?.pushToTalk || ['Ctrl', 'Win']).join('+'), enabled: false },
+      { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
+      { label: 'Polish selection: ' + (config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']).join('+'), enabled: false },
+      { type: 'separator' },
+      { label: 'Settings', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'settings'); } },
+      { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
+      {
+        label: 'Test Groq key', click: async () => {
+          setPill('working', 'Testing key…');
+          const r = await validateGroqKey(config.groqKey);
+          if (r.ok) { log('key test: OK'); setPill('done', null, 'Groq key works ✓'); }
+          else { log('key test FAILED:', r.error); setPill('error', r.error); }
+        },
       },
-    },
-    { label: 'Open debug log', click: () => { if (LOG_PATH) shell.openPath(LOG_PATH); } },
-    { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
-  ]));
-  tray.on('click', openSettings);
+      { label: 'Open debug log', click: () => { if (LOG_PATH) shell.openPath(LOG_PATH); } },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() },
+    ]));
+    tray.on('click', openSettings);
+  } catch (trayErr) {
+    log('Tray creation notice:', trayErr.message);
+  }
+
+  let pttPendingTimer = null;
 
   // Global keyboard shortcuts hook
   uIOhook.on('keydown', e => {
@@ -997,6 +1096,7 @@ app.whenReady().then(() => {
 
     // 1. Hands-free toggle mode check (Control + Windows + Spacebar)
     if (isComboHeld(handsFreeCombo)) {
+      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
       if (now - handsFreeCooldown < 400) return;
       handsFreeCooldown = now;
 
@@ -1019,10 +1119,11 @@ app.whenReady().then(() => {
 
     // 2. Selection polish check (Windows + Alt + Q)
     if (isComboHeld(polishCombo)) {
+      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
       if (now - polishCooldown < 600) return;
       polishCooldown = now;
       if (!recording && !busy) {
-        log('polish-selection triggered');
+        log('polish-selection triggered via uIOhook');
         onPolishSelection();
       }
       return;
@@ -1030,12 +1131,23 @@ app.whenReady().then(() => {
 
     // 3. Push-to-talk hold mode check (Control + Windows)
     if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
-      onHotkeyDown(false);
+      if (!pttPendingTimer) {
+        pttPendingTimer = setTimeout(() => {
+          pttPendingTimer = null;
+          if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
+            onHotkeyDown(false);
+          }
+        }, 130);
+      }
     }
   });
 
   uIOhook.on('keyup', e => {
     heldKeys.delete(e.keycode);
+    if (pttPendingTimer && !isComboHeld(config.shortcuts?.pushToTalk || ['Ctrl', 'Win'])) {
+      clearTimeout(pttPendingTimer);
+      pttPendingTimer = null;
+    }
     if (recording && !isHandsFree) {
       const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
       if (!isComboHeld(pttCombo)) {
@@ -1050,10 +1162,14 @@ app.whenReady().then(() => {
     app.setLoginItemSettings({ openAtLogin: !!config.launchAtLogin });
   }
 
-  if (config.firstRun) {
+  if (!process.argv.includes('--hidden')) {
     openSettings();
   }
 });
+}
 
 app.on('window-all-closed', e => e.preventDefault());
-app.on('before-quit', () => { try { uIOhook.stop(); } catch {} });
+app.on('before-quit', () => {
+  try { globalShortcut.unregisterAll(); } catch {}
+  try { uIOhook.stop(); } catch {}
+});

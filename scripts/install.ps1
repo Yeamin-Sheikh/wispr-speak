@@ -27,7 +27,7 @@ $AppDir = "$TargetDir\resources\app"
 $PkgJsonPath = "$SourceDir\resources\app\package.json"
 
 # Read version and author from package.json if present
-$Version = "0.5.3"
+$Version = "0.5.5"
 $Publisher = "Sheikh Technologies Inc."
 if (Test-Path $PkgJsonPath) {
   try {
@@ -52,6 +52,10 @@ try {
   Write-Host "Notice: Base binaries locked, synchronizing resources/app..." -ForegroundColor Yellow
   Copy-Item -Path "$SourceDir\resources\app\*" -Destination "$TargetDir\resources\app" -Recurse -Force
 }
+
+# 4.1 Unblock files to eliminate Microsoft Defender SmartScreen prompts
+Write-Host "Unblocking application binaries to eliminate SmartScreen warnings..." -ForegroundColor Yellow
+Get-ChildItem -Path $TargetDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 
 # 5. Create uninstaller script in target directory
 $UninstallScript = @"

@@ -8,98 +8,136 @@
   }
   body { display:flex; align-items:center; justify-content:center; }
 
+  /* 21st.dev Style Micro Dynamic Island Pill */
   #pill {
-    display:flex; align-items:center; gap:14px;
-    min-width:300px; max-width:480px; padding:13px 22px 13px 18px;
-    background:rgba(18, 21, 28, 0.90);
-    -webkit-backdrop-filter:blur(32px) saturate(190%);
-    backdrop-filter:blur(32px) saturate(190%);
-    border:1px solid rgba(255,255,255,0.12);
-    border-top:1px solid rgba(255,255,255,0.24);
-    border-radius:24px;
-    cursor:pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    min-width: 130px;
+    max-width: 300px;
+    padding: 0 12px 0 10px;
+    background: rgba(9, 13, 20, 0.88);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    cursor: pointer;
     box-shadow:
-      0 20px 50px rgba(0,0,0,0.55),
-      0 0 1px rgba(255,255,255,0.25) inset,
-      0 0 32px rgba(13,148,136,0.14);
-    color:#fff;
-    opacity:0;
-    transform:translateY(22px) scale(0.92);
-    filter:blur(4px);
+      0 8px 24px rgba(0, 0, 0, 0.45),
+      0 0 16px rgba(20, 184, 166, 0.15);
+    color: #fff;
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+    filter: blur(3px);
     transition:
-      opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-      filter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Pop up entrance */
   #pill.show {
-    opacity:1;
-    transform:translateY(0) scale(1);
-    filter:blur(0px);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
   }
 
   /* Smooth exit */
   #pill.hiding {
-    opacity:0;
-    transform:translateY(16px) scale(0.95);
-    filter:blur(3px);
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    filter: blur(2px);
     transition:
-      opacity 0.22s cubic-bezier(0.23, 1, 0.32, 1),
-      transform 0.22s cubic-bezier(0.23, 1, 0.32, 1),
-      filter 0.22s ease;
+      opacity 0.18s cubic-bezier(0.23, 1, 0.32, 1),
+      transform 0.18s cubic-bezier(0.23, 1, 0.32, 1),
+      filter 0.18s ease;
   }
 
-  #wave { width:68px; height:36px; flex:none; }
+  #wave { width: 32px; height: 14px; flex: none; }
   #labelBox {
-    display:flex; align-items:center; gap:8px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   #label {
-    font-size:14.5px; font-weight:500; letter-spacing:0.1px; color:#eef1f6;
-    overflow:hidden; text-overflow:ellipsis;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: -0.1px;
+    color: #f1f5f9;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  #label .dim { color:#94a3b8; font-weight:400; font-size:13.5px; }
+  #label .dim {
+    color: #94a3b8;
+    font-weight: 400;
+    font-size: 10.5px;
+  }
 
   .mode-tag {
-    background:rgba(20, 184, 166, 0.2);
-    border:1px solid rgba(20, 184, 166, 0.45);
-    color:#5eead4;
-    font-size:11px;
-    font-weight:600;
-    padding:2px 7px;
-    border-radius:10px;
-    letter-spacing:0.3px;
-    text-transform:uppercase;
+    background: rgba(20, 184, 166, 0.2);
+    border: 1px solid rgba(20, 184, 166, 0.45);
+    color: #5eead4;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 999px;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
   }
 
   .check {
-    width:26px; height:26px; flex:none; border-radius:50%;
-    background:#14b8a6; display:flex; align-items:center; justify-content:center;
-    font-size:15px; color:#062a27; font-weight:700;
-    box-shadow:0 0 16px rgba(20,184,166,0.4);
-    animation:checkPop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 15px;
+    height: 15px;
+    flex: none;
+    border-radius: 50%;
+    background: #14b8a6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #062a27;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+    animation: checkPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes checkPop {
-    from { transform:scale(0.6); opacity:0; }
-    to { transform:scale(1); opacity:1; }
+    from { transform: scale(0.6); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 
   .spin {
-    width:22px; height:22px; flex:none; border-radius:50%;
-    border:2.5px solid rgba(255,255,255,0.18); border-top-color:#5eead4;
-    animation:rot 0.65s linear infinite;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #5eead4;
+    animation: rot 0.65s linear infinite;
   }
-  @keyframes rot { to { transform:rotate(360deg); } }
+  @keyframes rot { to { transform: rotate(360deg); } }
 
   .errdot {
-    width:22px; height:22px; flex:none; border-radius:50%; background:#f59e0b;
-    display:flex; align-items:center; justify-content:center; font-size:14px; color:#3a2200; font-weight:700;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
+    background: #f59e0b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #3a2200;
+    font-weight: 700;
   }
 </style></head>
 <body>
 <div id="pill">
-  <canvas id="wave" width="136" height="72"></canvas>
+  <canvas id="wave" width="64" height="28"></canvas>
   <div id="icon"></div>
   <div id="labelBox">
     <span id="label">Wispr Tell</span>
@@ -114,19 +152,19 @@
   const canvas = document.getElementById('wave');
   const g = canvas.getContext('2d');
 
-  let level = 0, target = 0, bars = new Array(16).fill(0), raf = null, hideTimer = null;
+  let level = 0, target = 0, bars = new Array(10).fill(0), raf = null, hideTimer = null;
 
   function draw() {
     target = Math.max(0, target * 0.86);
     level += (target - level) * 0.35;
-    g.clearRect(0, 0, 136, 72);
-    const n = bars.length, bw = 136 / n;
+    g.clearRect(0, 0, 64, 28);
+    const n = bars.length, bw = 64 / n;
     for (let i = 0; i < n; i++) {
-      const wave = Math.sin(Date.now() / 240 + i * 0.82) * 0.5 + 0.5;
-      const want = 6 + wave * 28 * (0.22 + level * 2.5);
-      bars[i] += (want - bars[i]) * 0.42;
-      const h = Math.max(3.5, Math.min(66, bars[i]));
-      const x = i * bw + bw * 0.2, w = bw * 0.6, y = (72 - h) / 2;
+      const wave = Math.sin(Date.now() / 200 + i * 0.85) * 0.5 + 0.5;
+      const want = 3 + wave * 16 * (0.2 + level * 2.2);
+      bars[i] += (want - bars[i]) * 0.45;
+      const h = Math.max(2.5, Math.min(25, bars[i]));
+      const x = i * bw + bw * 0.25, w = bw * 0.5, y = (28 - h) / 2;
       const grad = g.createLinearGradient(0, y, 0, y + h);
       grad.addColorStop(0, '#5eead4');
       grad.addColorStop(1, '#0d9488');
@@ -156,7 +194,7 @@
         if (!pill.classList.contains('show')) {
           pill.classList.remove('hiding');
         }
-      }, 240);
+      }, 200);
     }, ms);
   }
 
@@ -177,12 +215,12 @@
       label.textContent = text || 'Typing…';
     } else if (state === 'done') {
       stopWave(); iconBox.innerHTML = '<div class="check">✓</div>';
-      label.textContent = (transcript || '').slice(0, 60) || 'Done';
+      label.textContent = (transcript || '').slice(0, 40) || 'Done';
       hidePill(1400);
     } else if (state === 'error') {
       stopWave(); iconBox.innerHTML = '<div class="errdot">!</div>';
-      label.textContent = text || 'Something went wrong';
-      hidePill(2600);
+      label.textContent = text || 'Error';
+      hidePill(2400);
     }
   });
 

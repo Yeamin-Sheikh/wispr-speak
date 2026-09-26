@@ -1,111 +1,132 @@
 <!doctype html>
-<html lang="en" data-theme="warm-light">
+<html lang="en" data-theme="cyber-teal">
 <head>
   <meta charset="utf-8">
   <title>Wispr Tell</title>
   <style>
-    /* Theme Definitions */
-    :root, [data-theme="warm-light"] {
-      --bg: #f8f7f4;
-      --sidebar: #f2efe9;
-      --card-bg: #ffffff;
-      --card-border: #e7e3db;
-      --text: #1f1f1d;
-      --text-muted: #706e68;
-      --text-dim: #99958d;
-      --nav-active: #eae6de;
-      --accent: #0f766e;
-      --accent-hover: #115e59;
-      --accent-light: #f0fdfa;
-      --accent-warm: #d97706;
-      --border-subtle: #ede9e1;
-      --kbd-bg: #f4f2ee;
-      --kbd-border: #ddd9d0;
-      --input-bg: #f8f7f4;
-      --banner-bg: linear-gradient(135deg, #1b3842 0%, #2f2520 100%);
-      --banner-text: #ffffff;
-      --banner-desc: #cbd5e1;
-      --danger: #dc2626;
-      --tag-bg: rgba(15, 118, 110, 0.1);
-      --tag-border: rgba(15, 118, 110, 0.25);
+    /* 21st.dev Inspired Design Tokens & Themes */
+    :root, [data-theme="cyber-teal"] {
+      --bg: #060d13;
+      --sidebar: #0a141d;
+      --card-bg: #0f1d29;
+      --card-border: #162c3d;
+      --card-hover-border: #234763;
+      --text: #e6f2f8;
+      --text-muted: #82a3b8;
+      --text-dim: #4d7185;
+      --nav-active: #132737;
+      --accent: #14b8a6;
+      --accent-hover: #0d9488;
+      --accent-light: rgba(20, 184, 166, 0.12);
+      --accent-spotlight: rgba(20, 184, 166, 0.22);
+      --accent-warm: #f59e0b;
+      --border-subtle: #142738;
+      --kbd-bg: #142534;
+      --kbd-border: #203c53;
+      --kbd-shadow: #0a131b;
+      --input-bg: #09131c;
+      --banner-bg: linear-gradient(135deg, rgba(20, 184, 166, 0.12) 0%, rgba(15, 29, 41, 0.95) 100%);
+      --banner-border: rgba(20, 184, 166, 0.3);
+      --danger: #f43f5e;
+      --ambient-glow: rgba(20, 184, 166, 0.15);
     }
 
     [data-theme="dark-obsidian"] {
-      --bg: #0c0e12;
-      --sidebar: #13171f;
-      --card-bg: #1a1e27;
-      --card-border: #282e3b;
-      --text: #f1f3f7;
+      --bg: #080a0f;
+      --sidebar: #0e121a;
+      --card-bg: #131824;
+      --card-border: #1e2638;
+      --card-hover-border: #2c3852;
+      --text: #f1f5f9;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
-      --nav-active: #232936;
-      --accent: #2dd4bf;
-      --accent-hover: #14b8a6;
-      --accent-light: #0d2826;
+      --nav-active: #1a2232;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --accent-light: rgba(56, 189, 248, 0.12);
+      --accent-spotlight: rgba(56, 189, 248, 0.22);
       --accent-warm: #f59e0b;
-      --border-subtle: #242936;
-      --kbd-bg: #222733;
-      --kbd-border: #333a4a;
-      --input-bg: #13161e;
-      --banner-bg: linear-gradient(135deg, #13242c 0%, #1e1917 100%);
-      --banner-text: #ffffff;
-      --banner-desc: #94a3b8;
+      --border-subtle: #1a2234;
+      --kbd-bg: #182030;
+      --kbd-border: #283550;
+      --kbd-shadow: #0b0e16;
+      --input-bg: #0c1017;
+      --banner-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(19, 24, 36, 0.95) 100%);
+      --banner-border: rgba(56, 189, 248, 0.28);
       --danger: #ef4444;
-      --tag-bg: rgba(45, 212, 191, 0.12);
-      --tag-border: rgba(45, 212, 191, 0.3);
+      --ambient-glow: rgba(56, 189, 248, 0.12);
+    }
+
+    [data-theme="warm-light"] {
+      --bg: #f8f7f4;
+      --sidebar: #f1eee7;
+      --card-bg: #ffffff;
+      --card-border: #e6e2d8;
+      --card-hover-border: #cbd5e1;
+      --text: #1c1917;
+      --text-muted: #78716c;
+      --text-dim: #a8a29e;
+      --nav-active: #e6e1d6;
+      --accent: #0f766e;
+      --accent-hover: #115e59;
+      --accent-light: rgba(15, 118, 110, 0.1);
+      --accent-spotlight: rgba(15, 118, 110, 0.18);
+      --accent-warm: #d97706;
+      --border-subtle: #eae6dd;
+      --kbd-bg: #f4f2ee;
+      --kbd-border: #ddd8ce;
+      --kbd-shadow: #c7c1b5;
+      --input-bg: #fcfbf9;
+      --banner-bg: linear-gradient(135deg, rgba(15, 118, 110, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%);
+      --banner-border: rgba(15, 118, 110, 0.25);
+      --danger: #dc2626;
+      --ambient-glow: rgba(15, 118, 110, 0.08);
     }
 
     [data-theme="slate-clean"] {
-      --bg: #f1f5f9;
-      --sidebar: #e2e8f0;
+      --bg: #f8fafc;
+      --sidebar: #f1f5f9;
       --card-bg: #ffffff;
-      --card-border: #cbd5e1;
+      --card-border: #e2e8f0;
+      --card-hover-border: #cbd5e1;
       --text: #0f172a;
       --text-muted: #64748b;
       --text-dim: #94a3b8;
-      --nav-active: #cbd5e1;
-      --accent: #0284c7;
-      --accent-hover: #0369a1;
-      --accent-light: #f0f9ff;
+      --nav-active: #e2e8f0;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: rgba(37, 99, 235, 0.1);
+      --accent-spotlight: rgba(37, 99, 235, 0.18);
       --accent-warm: #d97706;
       --border-subtle: #e2e8f0;
       --kbd-bg: #f1f5f9;
       --kbd-border: #cbd5e1;
+      --kbd-shadow: #94a3b8;
       --input-bg: #f8fafc;
-      --banner-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      --banner-text: #ffffff;
-      --banner-desc: #94a3b8;
+      --banner-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%);
+      --banner-border: rgba(37, 99, 235, 0.25);
       --danger: #e11d48;
-      --tag-bg: rgba(2, 132, 199, 0.1);
-      --tag-border: rgba(2, 132, 199, 0.25);
-    }
-
-    [data-theme="cyber-teal"] {
-      --bg: #08131a;
-      --sidebar: #0d1e29;
-      --card-bg: #122838;
-      --card-border: #1c3d54;
-      --text: #e2f1f8;
-      --text-muted: #80a4b8;
-      --text-dim: #50768c;
-      --nav-active: #18374d;
-      --accent: #14b8a6;
-      --accent-hover: #0d9488;
-      --accent-light: #0d282c;
-      --accent-warm: #f59e0b;
-      --border-subtle: #19384e;
-      --kbd-bg: #163246;
-      --kbd-border: #234b66;
-      --input-bg: #0b1a24;
-      --banner-bg: linear-gradient(135deg, #0d2736 0%, #17374a 100%);
-      --banner-text: #ffffff;
-      --banner-desc: #80a4b8;
-      --danger: #f43f5e;
-      --tag-bg: rgba(20, 184, 166, 0.15);
-      --tag-border: rgba(20, 184, 166, 0.35);
+      --ambient-glow: rgba(37, 99, 235, 0.08);
     }
 
     * { margin:0; padding:0; box-sizing:border-box; }
+
+    /* Universal custom scrollbars: no white scrollbars in any theme */
+    *::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 999px;
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
     html, body {
       width: 100%; height: 100%;
       background: var(--bg);
@@ -122,10 +143,26 @@
       flex-direction: column;
       height: 100vh;
       width: 100vw;
+      position: relative;
+      overflow: hidden;
     }
 
+    /* Ambient Aurora Ray Glow (21st.dev aesthetic) */
+    .ambient-glow {
+      position: absolute;
+      top: -150px;
+      right: -100px;
+      width: 650px;
+      height: 650px;
+      background: radial-gradient(circle, var(--ambient-glow) 0%, transparent 68%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Minimal Draggable Titlebar */
     .titlebar {
-      height: 40px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -133,117 +170,116 @@
       -webkit-app-region: drag;
       background: var(--bg);
       flex: none;
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 10;
     }
 
-    .titlebar-left {
+    .titlebar-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .titlebar-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       -webkit-app-region: no-drag;
     }
 
-    .icon-btn {
-      width: 28px;
-      height: 28px;
+    .titlebar-btn {
+      width: 26px;
+      height: 26px;
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      background: transparent;
+      border: none;
       color: var(--text-muted);
-      transition: background 0.15s, color 0.15s;
-    }
-    .icon-btn:hover { background: var(--nav-active); color: var(--text); }
-
-    .avatar-sm {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
       cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .titlebar-btn:hover {
+      background: var(--nav-active);
+      color: var(--text);
     }
 
     .main-layout {
       display: flex;
       flex: 1;
       overflow: hidden;
-      padding: 0 12px 12px 12px;
+      padding: 10px 12px 12px 12px;
       gap: 12px;
+      z-index: 1;
     }
 
     /* Left Sidebar */
     .sidebar {
-      width: 200px;
+      width: 220px;
       flex: none;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 6px 4px 6px 6px;
+      padding: 4px;
     }
 
-    .brand {
+    .brand-card {
       display: flex;
       align-items: center;
-      gap: 9px;
-      padding: 8px 10px 18px 10px;
+      gap: 10px;
+      padding: 10px 12px 16px 10px;
       cursor: default;
     }
 
-    .brand-logo {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     .brand-icon {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       flex: none;
-      color: var(--text);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--accent);
+      filter: drop-shadow(0 2px 8px var(--accent-light));
     }
-    .brand-icon:hover { transform: scale(1.06); }
-    .brand-icon.icon-sm { width: 18px; height: 18px; }
-    .brand-icon.icon-md { width: 24px; height: 24px; }
-    .brand-icon.icon-lg { width: 32px; height: 32px; }
-    .brand-icon.icon-xl { width: 48px; height: 48px; }
 
-    .brand-name {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      color: var(--text);
+    .brand-info {
       display: flex;
-      align-items: baseline;
-      gap: 3px;
+      flex-direction: column;
     }
-    .brand-name span {
-      font-weight: 400;
-      color: var(--text-muted);
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+      letter-spacing: 0.2px;
     }
 
     .nav-group {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 10px;
       padding: 8px 12px;
       border-radius: 8px;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-muted);
       cursor: pointer;
-      transition: background 0.12s, color 0.12s;
+      transition: background 0.12s, color 0.12s, transform 0.12s;
+      position: relative;
     }
     .nav-item:hover {
       background: var(--nav-active);
@@ -254,19 +290,68 @@
       color: var(--text);
       font-weight: 600;
     }
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
     .nav-item svg {
       width: 17px;
       height: 17px;
-      stroke-width: 2;
+      stroke-width: 1.9;
       flex: none;
     }
 
-    .sidebar-bottom {
+    /* Sidebar User Profile Badge */
+    .sidebar-user {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .sidebar-user:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .user-avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex: none;
+    }
+    .user-meta {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      border-top: 1px solid var(--border-subtle);
-      padding-top: 8px;
+      overflow: hidden;
+    }
+    .user-meta-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-meta-role {
+      font-size: 11px;
+      color: var(--text-dim);
     }
 
     /* Content Area */
@@ -274,124 +359,134 @@
       flex: 1;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
+      border-radius: 16px;
       display: flex;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      position: relative;
     }
 
     .center-col {
       flex: 1;
       overflow-y: auto;
-      padding: 32px 36px;
+      padding: 24px 28px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 18px;
     }
 
+    /* Greeting Header */
+    .greeting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
     .greeting-title {
-      font-size: 26px;
-      font-weight: 600;
+      font-size: 22px;
+      font-weight: 700;
       letter-spacing: -0.3px;
       color: var(--text);
     }
 
-    /* Hero Banner */
-    .hero-banner {
-      position: relative;
+    /* Compact Tip Bar (21st.dev style) */
+    .tip-bar {
       background: var(--banner-bg);
-      border-radius: 16px;
-      padding: 24px 28px;
-      color: var(--banner-text);
+      border: 1px solid var(--banner-border);
+      border-radius: 10px;
+      padding: 9px 14px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      overflow: hidden;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text);
     }
-
-    .banner-content {
-      max-width: 420px;
-      z-index: 1;
-    }
-
-    .banner-heading {
-      font-family: "Georgia", serif;
-      font-size: 21px;
-      font-weight: 400;
-      line-height: 1.3;
-      margin-bottom: 6px;
-    }
-
-    .banner-desc {
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--banner-desc);
-      margin-bottom: 16px;
-    }
-
-    .banner-btn {
-      background: #ffffff;
-      color: #1a1a18;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.15s;
-    }
-    .banner-btn:hover { background: #f1f5f9; transform: translateY(-1px); }
-
-    .banner-close {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.15);
-      border: none;
-      color: #fff;
+    .tip-bar-left {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .tip-bar-left svg {
+      width: 15px;
+      height: 15px;
+      color: var(--accent);
+      flex: none;
+    }
+    .tip-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.12s;
+    }
+    .tip-btn:hover {
+      border-color: var(--accent);
+    }
+    .tip-close {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
       cursor: pointer;
       font-size: 13px;
-      z-index: 2;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
-    .banner-close:hover { background: rgba(255,255,255,0.3); }
+    .tip-close:hover {
+      color: var(--text);
+    }
 
-    /* Feed Header */
+    /* Feed Filter Header */
     .feed-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 12px;
-      margin-top: 4px;
+      padding-bottom: 10px;
+      margin-top: 2px;
+    }
+
+    .feed-label-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .feed-label {
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
-      letter-spacing: 1.2px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
       color: var(--text-muted);
+    }
+
+    .feed-count-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 2px 8px;
+      border-radius: 10px;
     }
 
     .search-box {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       background: var(--input-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 20px;
-      padding: 4px 12px;
-      width: 170px;
+      padding: 5px 12px;
+      width: 200px;
       transition: width 0.2s, border-color 0.2s;
     }
     .search-box:focus-within {
-      width: 220px;
+      width: 250px;
       border-color: var(--accent);
       background: var(--card-bg);
     }
@@ -403,118 +498,121 @@
       color: var(--text);
       width: 100%;
     }
+    .search-box svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-dim);
+      flex: none;
+    }
 
-    /* Timeline */
+    /* 21st.dev Spotlight Cards */
+    .spotlight-card {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .spotlight-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: radial-gradient(350px circle at var(--mouse-x, -200px) var(--mouse-y, -200px), var(--accent-spotlight), transparent 65%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .spotlight-card:hover::before {
+      opacity: 1;
+    }
+    .spotlight-card:hover {
+      border-color: var(--card-hover-border);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Timeline Cards Feed */
     .timeline {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 10px;
     }
 
-    .timeline-item {
+    .dictation-card {
+      padding: 14px 16px;
       display: flex;
-      gap: 20px;
-      position: relative;
-    }
-
-    .timeline-time {
-      width: 60px;
-      flex: none;
-      font-size: 12.5px;
-      font-weight: 500;
-      color: var(--text-dim);
-      padding-top: 2px;
-      text-align: right;
-    }
-
-    .timeline-body {
-      flex: 1;
-      padding-left: 20px;
-      border-left: 1.5px solid var(--border-subtle);
-      position: relative;
-    }
-
-    .timeline-body::before {
-      content: "";
-      position: absolute;
-      left: -4.5px;
-      top: 6px;
-      width: 7.5px;
-      height: 7.5px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      border: 1.5px solid var(--card-bg);
-    }
-
-    .timeline-text {
-      font-size: 14.5px;
-      line-height: 1.62;
-      color: var(--text);
-      margin-bottom: 8px;
-      user-select: text;
-    }
-
-    .timeline-edit-box {
-      display: none;
       flex-direction: column;
       gap: 8px;
-      margin-bottom: 10px;
-    }
-    .timeline-textarea {
-      width: 100%;
-      min-height: 70px;
-      padding: 10px 12px;
-      border: 1px solid var(--accent);
-      border-radius: 8px;
-      background: var(--input-bg);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 14px;
-      line-height: 1.5;
-      outline: none;
-      user-select: text;
     }
 
-    .correction-learn-banner {
-      display: none;
-      background: var(--tag-bg);
-      border: 1px solid var(--tag-border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 8px;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 12.5px;
-      color: var(--text);
-    }
-
-    .timeline-actions {
+    .card-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      opacity: 0.35;
-      transition: opacity 0.15s;
+      justify-content: space-between;
     }
-    .timeline-item:hover .timeline-actions { opacity: 1; }
+
+    .card-time {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-dim);
+    }
+
+    .card-meta-pill {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .card-text {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text);
+      user-select: text;
+      word-break: break-word;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0.45;
+      transition: opacity 0.15s;
+      margin-top: 2px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .dictation-card:hover .card-actions {
+      opacity: 1;
+    }
 
     .act-btn {
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       color: var(--text-muted);
       cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      display: flex;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      transition: color 0.15s, background 0.15s;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 500;
+      transition: color 0.12s, background 0.12s, border-color 0.12s;
     }
     .act-btn:hover {
       color: var(--text);
-      background: var(--border-subtle);
+      background: var(--nav-active);
+      border-color: var(--border-subtle);
     }
-    .act-btn svg { width: 15px; height: 15px; stroke-width: 1.8; }
+    .act-btn svg { width: 13.5px; height: 13.5px; stroke-width: 1.9; }
 
     .copied-badge {
       font-size: 11.5px;
@@ -523,93 +621,104 @@
       display: none;
     }
 
-    /* Right Column */
+    /* Inline Edit Box */
+    .edit-box {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .edit-textarea {
+      width: 100%;
+      min-height: 68px;
+      padding: 8px 10px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13.5px;
+      line-height: 1.5;
+      outline: none;
+      user-select: text;
+    }
+
+    .learn-banner {
+      display: none;
+      background: var(--accent-light);
+      border: 1px solid var(--banner-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    /* Right Column (Bento Architecture) */
     .right-col {
       width: 250px;
       flex: none;
       border-left: 1px solid var(--border-subtle);
-      padding: 32px 24px;
+      padding: 24px 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      background: var(--bg);
+      gap: 14px;
+      background: var(--sidebar);
     }
 
+    /* Bento Stat Card */
     .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 20px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
-
-    .stat-row { display: flex; align-items: baseline; gap: 8px; }
-    .stat-val { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
-    .stat-unit { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .stat-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--text); }
+    .stat-unit { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 
     .engine-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px 18px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
-
-    .engine-badge {
+    .engine-status-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
-      color: var(--accent);
+      color: #10b981;
     }
-    .engine-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
-    .engine-title { font-size: 13.5px; font-weight: 600; color: var(--text); }
-    .engine-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-
-    .profile-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .profile-avatar {
-      width: 36px;
-      height: 36px;
+    .pulsing-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      background: var(--accent-light);
-      border: 1px solid var(--tag-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex: none;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
     }
-    .profile-name { font-size: 13px; font-weight: 600; color: var(--text); }
-    .profile-role { font-size: 11.5px; color: var(--text-muted); }
+    .engine-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .engine-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
 
-    /* View panels */
-    .view-panel { display: none; flex-direction: column; gap: 20px; width: 100%; }
+    /* View Panels */
+    .view-panel { display: none; flex-direction: column; gap: 18px; width: 100%; }
     .view-panel.active { display: flex; }
 
-    /* Form & Settings Cards */
-    .settings-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    /* Settings Components */
+    .settings-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
     .section-title {
-      font-size: 11.5px; font-weight: 700; letter-spacing: 1px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
       text-transform: uppercase; color: var(--text-muted);
     }
 
     .setting-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
       overflow: hidden;
     }
 
@@ -617,96 +726,138 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px 20px;
+      padding: 13px 18px;
       gap: 16px;
+      transition: background 0.12s;
+    }
+    .setting-row:hover {
+      background: var(--nav-active);
     }
     .setting-row + .setting-row { border-top: 1px solid var(--border-subtle); }
 
-    .setting-text .title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .setting-text .subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+    .setting-text .title { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .setting-text .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-    .kbd-badge { display: inline-flex; gap: 5px; align-items: center; }
+    /* 21st.dev Sculpted 3D Mechanical Keycaps */
+    .kbd-badge { display: inline-flex; gap: 6px; align-items: center; }
     .kbd-badge kbd {
-      background: var(--kbd-bg);
-      border: 1px solid var(--kbd-border);
-      border-bottom-width: 2.5px;
-      border-radius: 6px;
-      padding: 4px 9px;
-      font-size: 12px;
-      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 8px;
+      font-family: ui-monospace, SFMono-Regular, "Cascadia Code", monospace;
+      font-size: 11px;
       font-weight: 600;
       color: var(--text);
+      background: linear-gradient(180deg, var(--kbd-bg) 0%, rgba(0, 0, 0, 0.15) 100%);
+      border: 1px solid var(--kbd-border);
+      border-bottom: 2px solid var(--kbd-shadow);
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      letter-spacing: 0.2px;
     }
 
     .btn-outline {
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 12.5px;
+      padding: 6px 13px;
+      border-radius: 7px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text);
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.12s, border-color 0.12s;
     }
-    .btn-outline:hover { background: var(--bg); border-color: var(--text-dim); }
+    .btn-outline:hover { background: var(--nav-active); border-color: var(--text-dim); }
 
     .btn-primary {
       background: var(--accent);
       color: #fff;
       border: none;
-      padding: 8px 18px;
-      border-radius: 8px;
-      font-size: 13px;
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.12s, transform 0.12s;
+      box-shadow: 0 2px 8px var(--accent-light);
     }
-    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
     .input-text {
       background: var(--input-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 13px;
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: 12.5px;
       color: var(--text);
       outline: none;
+      transition: border-color 0.15s;
     }
     .input-text:focus { border-color: var(--accent); }
 
-    /* Switch */
-    .switch { position: relative; width: 44px; height: 24px; flex: none; cursor: pointer; }
-    .switch input { opacity: 0; width: 0; height: 0; }
+    /* 21st.dev Dynamic Tactile Switch */
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex: none;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .switch input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      z-index: 3;
+      cursor: pointer;
+      margin: 0;
+    }
     .switch-track {
-      position: absolute; inset: 0;
+      position: absolute;
+      inset: 0;
       background: var(--border-subtle);
       border-radius: 999px;
-      transition: 0.2s;
+      transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .switch-track:before {
       content: "";
       position: absolute;
-      width: 18px; height: 18px; left: 3px; top: 3px;
+      width: 18px;
+      height: 18px;
+      left: 2px;
+      top: 2px;
       background: #ffffff;
       border-radius: 50%;
-      transition: 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     }
-    .switch input:checked + .switch-track { background: var(--accent); }
-    .switch input:checked + .switch-track:before { transform: translateX(20px); }
+    .switch input:checked + .switch-track {
+      background: var(--accent);
+      border-color: transparent;
+      box-shadow: 0 0 10px var(--accent-light);
+    }
+    .switch input:checked + .switch-track:before {
+      transform: translateX(20px);
+    }
 
     /* Theme Picker Grid */
     .theme-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      padding: 16px 20px;
+      gap: 10px;
+      padding: 14px 18px;
     }
     .theme-card {
       border: 2px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -714,28 +865,28 @@
       transition: border-color 0.15s, transform 0.15s;
     }
     .theme-card:hover { transform: translateY(-1px); border-color: var(--accent); }
-    .theme-card.active { border-color: var(--accent); background: var(--tag-bg); }
+    .theme-card.active { border-color: var(--accent); background: var(--accent-light); }
     .theme-preview {
-      height: 36px;
+      height: 32px;
       border-radius: 6px;
       display: flex;
       overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.15);
     }
-    .theme-name { font-size: 12.5px; font-weight: 600; text-align: center; }
+    .theme-name { font-size: 12px; font-weight: 600; text-align: center; }
 
     /* Right Click Menu */
     #contextMenu {
       position: fixed; display: none;
       background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
       padding: 4px; z-index: 10000; width: 160px;
     }
     .menu-item {
-      padding: 7px 12px; font-size: 13px; color: var(--text);
-      border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between;
+      padding: 6px 12px; font-size: 12.5px; color: var(--text);
+      border-radius: 5px; cursor: pointer; display: flex; justify-content: space-between;
     }
     .menu-item:hover { background: var(--nav-active); }
     .menu-separator { height: 1px; background: var(--border-subtle); margin: 4px 0; }
@@ -743,118 +894,139 @@
 </head>
 <body>
 <div class="app-window">
-  <!-- Titlebar -->
+  <!-- 21st.dev Ambient Aurora Glow Effect -->
+  <div class="ambient-glow"></div>
+
+  <!-- Minimal Draggable Titlebar -->
   <div class="titlebar">
-    <div class="titlebar-left">
-      <div class="icon-btn" id="btnToggleSidebar" title="Toggle Sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="3" x2="9" y2="21"></line>
-        </svg>
-      </div>
-      <div class="avatar-sm" id="userAvatar" title="Yeamin Sheikh">Y</div>
+    <div class="titlebar-brand">
+      <svg class="brand-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="8" y1="22" x2="16" y2="22"/>
+      </svg>
+      <span>Wispr Tell</span>
     </div>
-    <div style="font-size: 12px; font-weight: 600; color: var(--text-dim); -webkit-app-region: drag;">Wispr Tell</div>
-    <div style="width: 50px;"></div>
+
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" id="btnToggleThemeQuick" title="Toggle Dark/Light Theme">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="main-layout">
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
+    <!-- Left Navigation Sidebar -->
+    <div class="sidebar">
       <div>
-        <div class="brand">
-          <div class="brand-logo" title="Wispr Tell">
-            <svg viewBox="0 0 28 28" fill="none" class="brand-icon icon-md">
-              <rect width="28" height="28" rx="7" fill="currentColor" fill-opacity="0.12"/>
-              <rect x="5.5" y="10.5" width="2" height="7" rx="1" fill="currentColor" opacity="0.75"/>
-              <rect x="9.5" y="6.5" width="2" height="15" rx="1" fill="currentColor"/>
-              <rect x="13.5" y="9.5" width="2" height="9" rx="1" fill="currentColor" opacity="0.9"/>
-              <rect x="17.5" y="6.5" width="2" height="15" rx="1" fill="currentColor"/>
-              <rect x="21.5" y="10.5" width="2" height="7" rx="1" fill="currentColor" opacity="0.75"/>
-            </svg>
+        <div class="brand-card">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+          <div class="brand-info">
+            <span class="brand-title">Wispr Tell</span>
+            <span class="brand-subtitle">Sheikh Technologies Inc.</span>
           </div>
-          <div class="brand-name">Wispr<span>Tell</span></div>
         </div>
 
         <div class="nav-group">
-          <div class="nav-item active" data-tab="dictation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
-            Dictation
+          <div class="nav-item active" data-tab="timeline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Dictations</span>
+          </div>
+          <div class="nav-item" data-tab="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
           </div>
           <div class="nav-item" data-tab="dictionary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-            Dictionary
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Dictionary</span>
           </div>
           <div class="nav-item" data-tab="profile">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            Voice profile
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Voice Profile</span>
+          </div>
+          <div class="nav-item" data-tab="help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Commands & Help</span>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-bottom">
-        <div class="nav-item" data-tab="settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-          Settings
-        </div>
-        <div class="nav-item" data-tab="help">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          Help
+      <!-- User Profile Badge at bottom of sidebar -->
+      <div class="sidebar-user" id="btnSidebarUser" title="View voice profile and statistics">
+        <div class="user-avatar-circle" id="sidebarAvatar">Y</div>
+        <div class="user-meta">
+          <span class="user-meta-name" id="sidebarUserName">Yeamin Sheikh</span>
+          <span class="user-meta-role">Pro Voice · Cloud STT</span>
         </div>
       </div>
     </div>
 
-    <!-- Content Container -->
+    <!-- Main Content Container -->
     <div class="content-container">
       <div class="center-col">
-        <!-- 1. Dictation Feed View -->
-        <div class="view-panel active" id="view-dictation">
-          <div class="greeting-title">Welcome back, Yeamin</div>
+        <!-- 1. Dictations Feed View -->
+        <div class="view-panel active" id="view-timeline">
+          <div class="greeting-header">
+            <div class="greeting-title">Dictations</div>
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="Search dictations…">
+            </div>
+          </div>
 
-          <div class="hero-banner" id="heroBanner">
-            <button class="banner-close" id="btnDismissBanner">✕</button>
-            <div class="banner-content">
-              <div class="banner-heading">Hands-free voice typing anytime</div>
-              <div class="banner-desc">Hold your shortcut to dictate, or use the hands-free shortcut to speak without holding any keys.</div>
-              <button class="banner-btn" id="btnBannerShortcuts">Customize shortcuts</button>
+          <!-- Compact Tip Bar -->
+          <div class="tip-bar" id="heroBanner">
+            <div class="tip-bar-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Hold <b>Ctrl+Win</b> for Push-to-Talk, or tap <b>Ctrl+Win+Space</b> for Hands-Free mode.</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button class="tip-btn" id="btnBannerShortcuts">Customize</button>
+              <button class="tip-close" id="btnDismissBanner" title="Dismiss">✕</button>
             </div>
           </div>
 
           <div class="feed-header">
-            <div class="feed-label">Recent Dictations</div>
-            <div class="search-box">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="searchInput" placeholder="Search dictations...">
+            <div class="feed-label-box">
+              <span class="feed-label">Spoken History</span>
+              <span class="feed-count-badge" id="feedCountBadge">0 dictations</span>
             </div>
           </div>
 
+          <!-- Dictation Cards Feed -->
           <div class="timeline" id="historyTimeline"></div>
         </div>
 
         <!-- 2. Settings View -->
         <div class="view-panel" id="view-settings">
-          <div class="greeting-title">Settings</div>
+          <div class="greeting-title">Preferences and Settings</div>
 
           <!-- Color Themes -->
           <div class="settings-section">
-            <div class="section-title">Color theme</div>
-            <div class="setting-card">
+            <div class="section-title">Color Theme</div>
+            <div class="spotlight-card setting-card">
               <div class="theme-grid">
-                <div class="theme-card active" data-theme-id="warm-light">
-                  <div class="theme-preview" style="background:#f8f7f4;"><div style="width:30%;background:#f2efe9;"></div><div style="flex:1;background:#fff;"></div></div>
-                  <div class="theme-name">Warm Light</div>
+                <div class="theme-card active" data-theme-id="cyber-teal">
+                  <div class="theme-preview" style="background:#060d13;"><div style="width:32%;background:#0a141d;"></div><div style="flex:1;background:#0f1d29;"></div></div>
+                  <div class="theme-name">Cyber Teal</div>
                 </div>
                 <div class="theme-card" data-theme-id="dark-obsidian">
-                  <div class="theme-preview" style="background:#0c0e12;"><div style="width:30%;background:#13171f;"></div><div style="flex:1;background:#1a1e27;"></div></div>
+                  <div class="theme-preview" style="background:#080a0f;"><div style="width:32%;background:#0e121a;"></div><div style="flex:1;background:#131824;"></div></div>
                   <div class="theme-name">Dark Obsidian</div>
                 </div>
-                <div class="theme-card" data-theme-id="slate-clean">
-                  <div class="theme-preview" style="background:#f1f5f9;"><div style="width:30%;background:#e2e8f0;"></div><div style="flex:1;background:#fff;"></div></div>
-                  <div class="theme-name">Slate Clean</div>
+                <div class="theme-card" data-theme-id="warm-light">
+                  <div class="theme-preview" style="background:#f8f7f4;"><div style="width:32%;background:#f1eee7;"></div><div style="flex:1;background:#ffffff;"></div></div>
+                  <div class="theme-name">Warm Light</div>
                 </div>
-                <div class="theme-card" data-theme-id="cyber-teal">
-                  <div class="theme-preview" style="background:#08131a;"><div style="width:30%;background:#0d1e29;"></div><div style="flex:1;background:#122838;"></div></div>
-                  <div class="theme-name">Cyber Teal</div>
+                <div class="theme-card" data-theme-id="slate-clean">
+                  <div class="theme-preview" style="background:#f8fafc;"><div style="width:32%;background:#f1f5f9;"></div><div style="flex:1;background:#ffffff;"></div></div>
+                  <div class="theme-name">Slate Clean</div>
                 </div>
               </div>
             </div>
@@ -862,11 +1034,11 @@
 
           <!-- Shortcut Customization -->
           <div class="settings-section">
-            <div class="section-title">Keyboard shortcuts</div>
-            <div class="setting-card">
+            <div class="section-title">Keyboard Shortcuts</div>
+            <div class="spotlight-card setting-card">
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Push to talk</div>
+                  <div class="title">Push to talk (Hold)</div>
                   <div class="subtitle">Hold shortcut, speak, release to type at cursor</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
@@ -877,8 +1049,8 @@
 
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Hands-free</div>
-                  <div class="subtitle">Press once to start dictating, press again to inject</div>
+                  <div class="title">Hands-free (Toggle)</div>
+                  <div class="subtitle">Tap once to start dictating, tap again to finish and inject</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div class="kbd-badge" id="hfBadge"><kbd>Ctrl</kbd><kbd>Win</kbd><kbd>Space</kbd></div>
@@ -889,7 +1061,7 @@
               <div class="setting-row">
                 <div class="setting-text">
                   <div class="title">Polish selection</div>
-                  <div class="subtitle">Highlight text in any application and press to polish grammar, spelling, and sentence flow</div>
+                  <div class="subtitle">Highlight text in any application and press to polish grammar and punctuation</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div class="kbd-badge" id="polishBadge"><kbd>Win</kbd><kbd>Alt</kbd><kbd>Q</kbd></div>
@@ -899,30 +1071,30 @@
             </div>
           </div>
 
-          <!-- Cloud Engine Settings -->
+          <!-- Cloud STT Engine -->
           <div class="settings-section">
-            <div class="section-title">Cloud engine</div>
-            <div class="setting-card">
+            <div class="section-title">Cloud Speech Engine</div>
+            <div class="spotlight-card setting-card">
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Groq API key</div>
-                  <div class="subtitle">Free tier at console.groq.com. Powers high-speed whisper-large-v3-turbo</div>
+                  <div class="title">Groq API Key</div>
+                  <div class="subtitle">Powers high-speed whisper-large-v3-turbo and GPT-OSS 20B</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
-                  <input type="password" class="input-text" id="groqKeyInput" placeholder="gsk_..." style="width:200px;">
+                  <input type="password" class="input-text" id="groqKeyInput" placeholder="gsk_..." style="width:210px;">
                   <button class="btn-primary" id="btnTestKey">Test key</button>
                 </div>
               </div>
-              <div class="setting-row" style="padding-top:10px;padding-bottom:10px;">
-                <div style="font-size:12.5px;color:var(--text-muted);" id="keyStatusText">Enter your key above to enable speech-to-text.</div>
+              <div class="setting-row" style="padding-top:8px;padding-bottom:8px;">
+                <div style="font-size:12px;color:var(--text-muted);" id="keyStatusText">Enter your free key from console.groq.com.</div>
               </div>
             </div>
           </div>
 
-          <!-- Audio Input -->
+          <!-- Audio & Startup Behaviors -->
           <div class="settings-section">
-            <div class="section-title">Audio and corrections</div>
-            <div class="setting-card">
+            <div class="section-title">Audio and System Startup</div>
+            <div class="spotlight-card setting-card">
               <div class="setting-row">
                 <div class="setting-text">
                   <div class="title">Microphone</div>
@@ -931,10 +1103,10 @@
                 <select class="input-text" id="micSelect" style="max-width:240px;"><option value="default">Default Device</option></select>
               </div>
 
-              <div class="setting-row">
+              <div class="setting-row" id="rowSmartFix">
                 <div class="setting-text">
                   <div class="title">Smart corrections (AI Polish)</div>
-                  <div class="subtitle">Automatically clean grammar, capitalization, and punctuation</div>
+                  <div class="subtitle">Automatically clean grammar, capitalization, and spoken punctuation</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="smartFixToggle" checked>
@@ -942,10 +1114,10 @@
                 </label>
               </div>
 
-              <div class="setting-row">
+              <div class="setting-row" id="rowStartup">
                 <div class="setting-text">
                   <div class="title">Launch on Windows startup</div>
-                  <div class="subtitle">Start Wispr Tell minimized in tray upon login</div>
+                  <div class="subtitle">Start Wispr Tell automatically in tray upon Windows login</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="startupToggle">
@@ -958,13 +1130,13 @@
 
         <!-- 3. Dictionary View -->
         <div class="view-panel" id="view-dictionary">
-          <div class="greeting-title">Personal dictionary</div>
-          <p style="font-size:13.5px;color:var(--text-muted);margin-top:-10px;">Train Wispr Tell to write technical terms, names, or brand spellings exactly as intended.</p>
+          <div class="greeting-title">Personal Dictionary</div>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Train Wispr Tell to write technical terms, names, or brand spellings exactly as intended.</p>
 
-          <div class="setting-card" style="padding:20px;">
-            <div style="display:flex;gap:10px;margin-bottom:16px;">
-              <input type="text" class="input-text" id="dictFromInput" placeholder="It hears... (e.g. whisper tell)" style="flex:1;">
-              <input type="text" class="input-text" id="dictToInput" placeholder="Write... (e.g. Wispr Tell)" style="flex:1;">
+          <div class="spotlight-card setting-card" style="padding:18px;">
+            <div style="display:flex;gap:10px;margin-bottom:14px;">
+              <input type="text" class="input-text" id="dictFromInput" placeholder="It hears... (e.g. whisper flow)" style="flex:1;">
+              <input type="text" class="input-text" id="dictToInput" placeholder="Write... (e.g. Wispr Flow)" style="flex:1;">
               <button class="btn-primary" id="btnAddDict">Add word</button>
             </div>
             <div id="dictListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -973,16 +1145,16 @@
 
         <!-- 4. Profile & Habits View -->
         <div class="view-panel" id="view-profile">
-          <div class="greeting-title">Voice profile and habits</div>
-          <p style="font-size:13.5px;color:var(--text-muted);margin-top:-10px;">Export and backup your speech habits, personalized dictionary, and setup.</p>
+          <div class="greeting-title">Voice Profile and Habits</div>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Export, backup, or import your personal speech habits, dictionary, and preferences.</p>
 
-          <div class="setting-card" style="padding:24px;display:flex;flex-direction:column;gap:20px;">
+          <div class="spotlight-card setting-card" style="padding:20px;display:flex;flex-direction:column;gap:18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:16px;">
-                <div style="width:54px;height:54px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;">Y</div>
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:50px;height:50px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">Y</div>
                 <div>
-                  <div style="font-size:17px;font-weight:700;color:var(--text);" id="profName">Yeamin Sheikh</div>
-                  <div style="font-size:13px;color:var(--text-muted);">Inquiry Catalyst · Natural Voice Mode</div>
+                  <div style="font-size:16px;font-weight:700;color:var(--text);" id="profName">Yeamin Sheikh</div>
+                  <div style="font-size:12.5px;color:var(--text-muted);">Sheikh Technologies Inc. · Pro Voice Profile</div>
                 </div>
               </div>
               <div style="display:flex;gap:10px;">
@@ -992,48 +1164,47 @@
               </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;border-top:1px solid var(--border-subtle);padding-top:20px;">
-              <div style="background:var(--bg);padding:14px;border-radius:10px;">
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">LIFETIME WORDS</div>
-                <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:4px;" id="profTotalWords">12.9K</div>
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;border-top:1px solid var(--border-subtle);padding-top:16px;">
+              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">LIFETIME WORDS</div>
+                <div style="font-size:19px;font-weight:700;color:var(--text);margin-top:2px;" id="profTotalWords">12.9K</div>
               </div>
-              <div style="background:var(--bg);padding:14px;border-radius:10px;">
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">ACTIVE HABITS</div>
-                <div style="font-size:14px;font-weight:600;color:var(--accent);margin-top:4px;">Punctuation-Aware</div>
+              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">VOICE MODE</div>
+                <div style="font-size:13.5px;font-weight:600;color:var(--accent);margin-top:2px;">Punctuation-Aware</div>
               </div>
-              <div style="background:var(--bg);padding:14px;border-radius:10px;">
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">LEARNED WORDS</div>
-                <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:4px;" id="profLearnedWords">2</div>
+              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
+                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">LEARNED WORDS</div>
+                <div style="font-size:19px;font-weight:700;color:var(--text);margin-top:2px;" id="profLearnedWords">2</div>
               </div>
             </div>
-            <div id="importExportStatus" style="font-size:12.5px;color:var(--accent);display:none;"></div>
+            <div id="importExportStatus" style="font-size:12px;color:var(--accent);display:none;"></div>
           </div>
         </div>
 
-
-        <!-- 6. Help View -->
+        <!-- 5. Voice Commands & Help View -->
         <div class="view-panel" id="view-help">
-          <div class="greeting-title">Voice commands and help</div>
-          <div class="setting-card" style="padding:20px;">
-            <div style="font-size:14px;line-height:1.7;">
-              <p><b>Voice Commands:</b> Say these words during or at the end of speech:</p>
-              <ul style="margin-left:20px;margin-top:8px;">
+          <div class="greeting-title">Voice Commands and Shortcuts</div>
+          <div class="spotlight-card setting-card" style="padding:20px;">
+            <div style="font-size:13.5px;line-height:1.7;">
+              <p><b>Voice Commands:</b> Say these commands during or at the end of speech:</p>
+              <ul style="margin-left:20px;margin-top:6px;">
                 <li><b>"new line"</b> inserts a single line break.</li>
                 <li><b>"new paragraph"</b> inserts a double line break.</li>
-                <li><b>"scratch that"</b> reverts the last injection using Ctrl+Z.</li>
-                <li><b>"undo that"</b> sends Ctrl+Z to the target application.</li>
-                <li><b>"delete word"</b> deletes the word behind the cursor.</li>
-                <li><b>Punctuation:</b> say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon".</li>
+                <li><b>"scratch that"</b> or <b>"undo that"</b> sends Ctrl+Z to revert the last text injection.</li>
+                <li><b>"delete word"</b> deletes the word immediately behind the cursor.</li>
+                <li><b>Spoken punctuation:</b> say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon".</li>
               </ul>
-              <p style="margin-top:16px;"><b>Selection polishing:</b> Highlight text in any application (browser, editor, or chat) and press <b>Win + Alt + Q</b> to correct grammar, flow, spelling, and punctuation.</p>
+              <p style="margin-top:14px;"><b>Selection Polishing:</b> Highlight text in any application (browser, IDE, document, or chat) and press <b>Win + Alt + Q</b> to instantly fix grammar, flow, spelling, and punctuation.</p>
+              <p style="margin-top:8px;"><b>Hands-Free Mode:</b> Tap <b>Ctrl + Win + Space</b> once to begin dictating without holding any keys. When done, tap <b>Ctrl + Win + Space</b> again to transcribe and inject directly at your cursor.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column -->
+      <!-- Right Column (Bento Architecture) -->
       <div class="right-col">
-        <div class="stat-card">
+        <div class="spotlight-card stat-card">
           <div class="stat-row">
             <span class="stat-val" id="totalWordsVal">12.9K</span>
             <span class="stat-unit">total words</span>
@@ -1048,22 +1219,22 @@
           </div>
         </div>
 
-        <div class="engine-card">
-          <div class="engine-badge">
-            <span class="engine-dot"></span>
-            Cloud Engine · Free
+        <div class="spotlight-card engine-card">
+          <div class="engine-status-pill">
+            <span class="pulsing-dot"></span>
+            Cloud Engine · Connected
           </div>
           <div class="engine-title">Groq Cloud STT</div>
-          <div class="engine-desc">whisper-large-v3-turbo with GPT-OSS 20B intelligent cleanup.</div>
-          <button class="btn-outline" id="btnOpenEngineSettings" style="margin-top:6px;width:100%;">Configure API Key</button>
+          <div class="engine-desc">whisper-large-v3-turbo with GPT-OSS 20B intelligent formatting.</div>
+          <button class="btn-outline" id="btnOpenEngineSettings" style="margin-top:4px;width:100%;">Configure API Key</button>
         </div>
 
-        <div class="profile-card" id="btnGoProfile" style="cursor:pointer;">
-          <div class="profile-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div>
-          <div class="profile-info">
-            <div class="profile-name">Voice Profile</div>
-            <div class="profile-role">Natural · Punctuation-Aware</div>
+        <div class="spotlight-card engine-card" id="btnGoProfile" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            <span class="engine-title">Voice Profile</span>
           </div>
+          <div class="engine-desc">Natural · Punctuation-Aware</div>
         </div>
       </div>
     </div>
@@ -1087,37 +1258,49 @@
   let historyData = [];
   let recordingShortcutType = null;
 
-  // DOM
+  // DOM Elements
   const navItems = document.querySelectorAll('.nav-item');
   const viewPanels = document.querySelectorAll('.view-panel');
   const historyTimeline = document.getElementById('historyTimeline');
   const searchInput = document.getElementById('searchInput');
+  const feedCountBadge = document.getElementById('feedCountBadge');
 
   const totalWordsVal = document.getElementById('totalWordsVal');
   const wpmVal = document.getElementById('wpmVal');
   const streakVal = document.getElementById('streakVal');
 
-  // Switch Tabs
+  // Spotlight Card Cursor Tracking (21st.dev)
+  function initSpotlightCards() {
+    document.querySelectorAll('.spotlight-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  }
+
+  // Tab Navigation
   function showTab(tabName) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.tab === tabName));
     viewPanels.forEach(p => p.classList.toggle('active', p.id === 'view-' + tabName));
   }
 
   navItems.forEach(item => {
-    item.onclick = () => {
-      showTab(item.dataset.tab);
-    };
+    item.onclick = () => showTab(item.dataset.tab);
   });
 
   document.getElementById('btnBannerShortcuts').onclick = () => showTab('settings');
   document.getElementById('btnOpenEngineSettings').onclick = () => showTab('settings');
   document.getElementById('btnGoProfile').onclick = () => showTab('profile');
-  document.getElementById('userAvatar').onclick = () => showTab('profile');
+  document.getElementById('btnSidebarUser').onclick = () => showTab('profile');
   document.getElementById('btnDismissBanner').onclick = () => {
     document.getElementById('heroBanner').style.display = 'none';
   };
 
-  // Theme Switcher
+  // Theme Management
   function applyTheme(themeId) {
     document.documentElement.setAttribute('data-theme', themeId);
     document.querySelectorAll('.theme-card').forEach(c => {
@@ -1131,7 +1314,13 @@
     card.onclick = () => applyTheme(card.dataset.themeId);
   });
 
-  // Render Stats
+  document.getElementById('btnToggleThemeQuick').onclick = () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'cyber-teal';
+    const next = current.includes('light') ? 'cyber-teal' : 'warm-light';
+    applyTheme(next);
+  };
+
+  // Stats Renderer
   function renderStats(stats) {
     if (!stats) return;
     totalWordsVal.textContent = stats.totalWordsFormatted || '12.9K';
@@ -1182,60 +1371,80 @@
     return null;
   }
 
-  // Render History Timeline with Inline Edit & Auto-Learner
+  // Render Dictation Cards Feed (cleans out single punctuation test artifacts)
   function renderHistory(items) {
+    const cleanItems = (Array.isArray(items) ? items : []).filter(h => {
+      if (!h || !h.text) return false;
+      const stripped = String(h.text).replace(/[.,\/#!$%\^&\*;:{}=\-_`~() \r\n]/g, '').trim();
+      return stripped.length > 0;
+    });
+
     const q = (searchInput.value || '').toLowerCase().trim();
-    const filtered = q ? items.filter(h => (h.text || '').toLowerCase().includes(q)) : items;
+    const filtered = q ? cleanItems.filter(h => (h.text || '').toLowerCase().includes(q)) : cleanItems;
+
+    feedCountBadge.textContent = `${filtered.length} dictation${filtered.length === 1 ? '' : 's'}`;
 
     if (!filtered || filtered.length === 0) {
-      historyTimeline.innerHTML = '<div style="padding:24px 0;color:var(--text-muted);font-size:13.5px;">No dictations found. Hold Ctrl+Win or press Ctrl+Win+Space to speak!</div>';
+      historyTimeline.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--text-muted);font-size:13.5px;background:var(--card-bg);border:1px dashed var(--border-subtle);border-radius:12px;">No dictations found. Hold <b>Ctrl+Win</b> or tap <b>Ctrl+Win+Space</b> to dictate!</div>';
       return;
     }
 
-    historyTimeline.innerHTML = filtered.map(item => `
-      <div class="timeline-item" data-id="${item.id}">
-        <div class="timeline-time">${formatTime(item.timestamp)}</div>
-        <div class="timeline-body">
-          <div class="timeline-text" id="text_${item.id}">${escapeHtml(item.text)}</div>
+    historyTimeline.innerHTML = filtered.map(item => {
+      const words = item.wordCount || item.text.split(/\s+/).filter(Boolean).length;
+      const durationSec = ((item.durationMs || 2500) / 1000).toFixed(1);
+      return `
+        <div class="spotlight-card dictation-card" data-id="${item.id}">
+          <div class="card-header">
+            <span class="card-time">${formatTime(item.timestamp)}</span>
+            <span class="card-meta-pill">${words} words · ${durationSec}s</span>
+          </div>
 
-          <!-- Edit box -->
-          <div class="timeline-edit-box" id="editBox_${item.id}">
-            <textarea class="timeline-textarea" id="textarea_${item.id}">${escapeHtml(item.text)}</textarea>
+          <div class="card-text" id="text_${item.id}">${escapeHtml(item.text)}</div>
+
+          <!-- Inline Edit Box -->
+          <div class="edit-box" id="editBox_${item.id}">
+            <textarea class="edit-textarea" id="textarea_${item.id}">${escapeHtml(item.text)}</textarea>
             <div style="display:flex;gap:8px;">
-              <button class="btn-primary btn-save-edit" data-id="${item.id}" style="padding:5px 12px;font-size:12px;">Save Correction</button>
-              <button class="btn-outline btn-cancel-edit" data-id="${item.id}" style="padding:5px 12px;font-size:12px;">Cancel</button>
+              <button class="btn-primary btn-save-edit" data-id="${item.id}" style="padding:4px 12px;font-size:12px;">Save Correction</button>
+              <button class="btn-outline btn-cancel-edit" data-id="${item.id}" style="padding:4px 12px;font-size:12px;">Cancel</button>
             </div>
           </div>
 
-          <!-- Auto-learn detection card -->
-          <div class="correction-learn-banner" id="learnBanner_${item.id}">
+          <!-- Learned word banner -->
+          <div class="learn-banner" id="learnBanner_${item.id}">
             <span id="learnMsg_${item.id}"></span>
             <div style="display:flex;gap:6px;">
-              <button class="btn-primary btn-add-learned" id="btnAddLearned_${item.id}" style="padding:4px 10px;font-size:11.5px;">Add to Dictionary</button>
-              <button class="btn-outline btn-dismiss-learned" id="btnDismissLearned_${item.id}" style="padding:4px 8px;font-size:11.5px;">✕</button>
+              <button class="btn-primary btn-add-learned" id="btnAddLearned_${item.id}" style="padding:3px 9px;font-size:11px;">Add to Dictionary</button>
+              <button class="btn-outline btn-dismiss-learned" id="btnDismissLearned_${item.id}" style="padding:3px 7px;font-size:11px;">✕</button>
             </div>
           </div>
 
-          <div class="timeline-actions" id="actions_${item.id}">
+          <div class="card-actions" id="actions_${item.id}">
             <button class="act-btn btn-speak" title="Read Aloud" data-text="${escapeAttr(item.text)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+              <span>Listen</span>
             </button>
             <button class="act-btn btn-copy" title="Copy to clipboard" data-text="${escapeAttr(item.text)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy</span>
             </button>
             <button class="act-btn btn-edit" title="Correct misheard word" data-id="${item.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              <span>Edit</span>
             </button>
             <button class="act-btn btn-delete" title="Delete" data-id="${item.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Delete</span>
             </button>
             <span class="copied-badge">Copied ✓</span>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
-    // Attach Action Listeners
+    initSpotlightCards();
+
+    // Attach Event Listeners to feed buttons
     historyTimeline.querySelectorAll('.btn-copy').forEach(btn => {
       btn.onclick = async () => {
         await api.copyText(btn.dataset.text);
@@ -1266,7 +1475,6 @@
       };
     });
 
-    // Inline Edit & Auto-Learner
     historyTimeline.querySelectorAll('.btn-edit').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.id;
@@ -1294,7 +1502,6 @@
         const newText = textarea.value.trim();
 
         if (newText && newText !== originalText) {
-          // Detect diff
           const diff = detectDiffWords(originalText, newText);
           const res = await api.updateHistoryItem({ id, text: newText });
           historyData = res.history;
@@ -1336,7 +1543,7 @@
 
   searchInput.oninput = () => renderHistory(historyData);
 
-  // Shortcuts
+  // Shortcut Customizer
   function renderShortcuts() {
     const ptt = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const hf = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
@@ -1393,18 +1600,18 @@
   setupShortcutEditor('btnEditHf', 'handsFree');
   setupShortcutEditor('btnEditPolish', 'polishSelection');
 
-  // Dictionary
+  // Personal Dictionary
   function renderDictionary() {
     const dict = config.dictionary || [];
     const container = document.getElementById('dictListContainer');
     document.getElementById('profLearnedWords').textContent = dict.length;
     if (!dict.length) {
-      container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No words mapped yet.</div>';
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:8px 0;">No words mapped yet. Add commonly misheard names or jargon above.</div>';
       return;
     }
     container.innerHTML = dict.map((e, idx) => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--input-bg);border-radius:8px;">
-        <span style="font-size:13.5px;">
+        <span style="font-size:13px;">
           <span style="color:var(--text-muted);">${escapeHtml(e.from)}</span>
           <span style="color:var(--text-dim);margin:0 6px;">→</span>
           <b style="color:var(--text);">${escapeHtml(e.to)}</b>
@@ -1434,7 +1641,6 @@
     fromEl.value = ''; toEl.value = '';
     renderDictionary();
   };
-
 
   // Profile Export & Import
   document.getElementById('btnExportProfile').onclick = async () => {
@@ -1500,11 +1706,11 @@
   document.getElementById('ctxPaste').onclick = () => document.execCommand('paste');
   document.getElementById('ctxSelectAll').onclick = () => document.execCommand('selectAll');
 
-  // Helpers
+  // HTML escaping helpers
   function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
 
-  // Initial Load
+  // Initial Load and Setup
   (async () => {
     config = await api.getConfig();
     if (config.theme) applyTheme(config.theme);
@@ -1516,7 +1722,7 @@
     document.getElementById('startupToggle').checked = !!config.launchAtLogin;
 
     if (config.groqKey) {
-      document.getElementById('keyStatusText').textContent = 'Key configured. Click "Test key" to verify live status.';
+      document.getElementById('keyStatusText').textContent = 'Groq STT key configured and ready.';
       document.getElementById('keyStatusText').style.color = 'var(--accent)';
     }
 
@@ -1524,8 +1730,32 @@
       await api.setConfig({ groqKey: e.target.value.trim() });
     };
 
-    document.getElementById('smartFixToggle').onchange = e => api.setConfig({ smartFix: e.target.checked });
-    document.getElementById('startupToggle').onchange = e => api.setConfig({ launchAtLogin: e.target.checked });
+    // Make full setting row clickable for switches without double-toggling
+    document.querySelectorAll('.setting-row').forEach(row => {
+      const sw = row.querySelector('.switch input');
+      if (sw) {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', (e) => {
+          if (!e.target.closest('.switch') && !e.target.closest('label') && !e.target.closest('button') && !e.target.closest('input') && !e.target.closest('select')) {
+            sw.checked = !sw.checked;
+            sw.dispatchEvent(new Event('change'));
+          }
+        });
+      }
+    });
+
+    document.getElementById('smartFixToggle').onchange = async e => {
+      config.smartFix = e.target.checked;
+      await api.setConfig({ smartFix: e.target.checked });
+    };
+
+    // Startup switch with direct sync & verification
+    document.getElementById('startupToggle').onchange = async e => {
+      const val = e.target.checked;
+      config.launchAtLogin = val;
+      const updated = await api.setConfig({ launchAtLogin: val });
+      document.getElementById('startupToggle').checked = !!updated.launchAtLogin;
+    };
 
     // Test Key
     document.getElementById('btnTestKey').onclick = async () => {
@@ -1558,6 +1788,7 @@
     const stats = await api.getStats();
     renderHistory(historyData);
     renderStats(stats);
+    initSpotlightCards();
 
     api.onHistoryUpdated(data => {
       historyData.unshift(data.item);
