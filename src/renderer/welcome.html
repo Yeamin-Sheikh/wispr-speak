@@ -2,31 +2,59 @@
 <html><head><meta charset="utf-8"><title>Welcome to Wispr Tell</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:"Segoe UI", system-ui, sans-serif; background:#14161c; color:#eef1f6;
+  body { font-family:"Segoe UI Variable", "Segoe UI", system-ui, sans-serif; background:#0c0e14; color:#eef1f6;
     display:flex; align-items:center; justify-content:center; height:100vh; -webkit-user-select:none; }
-  .card { text-align:center; max-width:420px; padding:40px; }
-  .mic { width:84px; height:84px; margin:0 auto 24px; border-radius:26px; background:#0d9488;
-    display:flex; align-items:center; justify-content:center; font-size:42px;
-    box-shadow:0 12px 40px rgba(13,148,136,.4); animation:float 3s ease-in-out infinite; }
-  @keyframes float { 50% { transform:translateY(-8px); } }
-  h1 { font-size:26px; font-weight:700; margin-bottom:10px; }
-  p { color:#9aa3b2; font-size:14.5px; line-height:1.6; margin-bottom:26px; }
-  .kbd { display:inline-flex; gap:8px; margin-bottom:30px; }
-  .kbd span { background:#2a2e3a; border:1px solid rgba(255,255,255,.14); border-bottom-width:3px;
-    border-radius:9px; padding:9px 18px; font-size:16px; font-weight:600; }
-  button { background:#0d9488; color:#fff; border:none; border-radius:12px; padding:14px 44px;
-    font-size:15px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; }
+  .card { text-align:center; max-width:440px; padding:36px; }
+  .logo-box { width:88px; height:88px; margin:0 auto 20px; border-radius:24px; background:#161a23;
+    border:1px solid rgba(255,255,255,0.18);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 16px 48px rgba(0,0,0,0.6), 0 0 32px rgba(13,148,136,0.15); animation:float 3.5s ease-in-out infinite; }
+  @keyframes float { 50% { transform:translateY(-6px); } }
+  .logo-icon { width:52px; height:52px; color:#ffffff; }
+  h1 { font-size:26px; font-weight:700; margin-bottom:8px; letter-spacing:-0.4px; }
+  h1 span { font-weight:300; color:#94a3b8; }
+  p { color:#94a3b8; font-size:14px; line-height:1.55; margin-bottom:24px; }
+  .shortcuts-list { display:flex; flex-direction:column; gap:8px; margin-bottom:28px; text-align:left; background:#12151d; padding:14px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
+  .shortcut-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#cbd5e1; }
+  .kbd-group { display:inline-flex; gap:4px; }
+  .kbd-group span { background:#1e2430; border:1px solid rgba(255,255,255,0.14); border-bottom-width:2px;
+    border-radius:6px; padding:3px 8px; font-size:12px; font-weight:600; color:#fff; }
+  button { background:#0f766e; color:#fff; border:none; border-radius:10px; padding:12px 36px;
+    font-size:14.5px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; }
   button:hover { background:#14b8a6; transform:translateY(-1px); }
-  .tiny { margin-top:18px; font-size:12px; color:#5d6577; }
+  .tiny { margin-top:16px; font-size:12px; color:#64748b; }
 </style></head>
 <body>
 <div class="card">
-  <div class="mic">🎙</div>
-  <h1>Wispr Tell</h1>
-  <p>Your voice, typed anywhere.<br>Hold the shortcut, speak naturally, release —<br>your words appear at the cursor.</p>
-  <div class="kbd"><span>Ctrl</span><span>+</span><span>Win</span></div><br>
-  <button id="go">Start dictating</button>
-  <div class="tiny">Free Groq cloud engine · paste your key in Settings to start</div>
+  <div class="logo-box">
+    <svg viewBox="0 0 40 40" fill="none" class="logo-icon">
+      <rect x="7" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
+      <rect x="13" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
+      <rect x="19" y="13" width="3" height="14" rx="1.5" fill="currentColor" opacity="0.9"/>
+      <rect x="25" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
+      <rect x="31" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
+    </svg>
+  </div>
+  <h1>Wispr <span>Tell</span></h1>
+  <p>Intelligent voice typing and sentence polishing for Windows. Dictate anywhere, or polish selected text instantly.</p>
+  
+  <div class="shortcuts-list">
+    <div class="shortcut-row">
+      <span>Push to talk</span>
+      <div class="kbd-group"><span>Ctrl</span><span>Win</span></div>
+    </div>
+    <div class="shortcut-row">
+      <span>Hands-free toggle</span>
+      <div class="kbd-group"><span>Ctrl</span><span>Win</span><span>Space</span></div>
+    </div>
+    <div class="shortcut-row">
+      <span>Polish selection</span>
+      <div class="kbd-group"><span>Win</span><span>Alt</span><span>Q</span></div>
+    </div>
+  </div>
+
+  <button id="go">Get started</button>
+  <div class="tiny">Free Groq cloud engine · configure your API key in Settings</div>
 </div>
 <script>
   document.getElementById('go').onclick = () => window.wisprtell.welcomeDone();

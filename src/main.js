@@ -27,6 +27,7 @@ let recording = false;
 let busy = false;         // transcribing / injecting
 let isHandsFree = false;  // active hands-free toggle recording
 let handsFreeCooldown = 0;
+let polishCooldown = 0;
 let targetHwnd = null;    // foreground window handle before hotkey down
 const heldKeys = new Set();
 
@@ -42,6 +43,7 @@ const DEFAULTS = {
   shortcuts: {
     pushToTalk: ['Ctrl', 'Win'],
     handsFree: ['Ctrl', 'Win', 'Space'],
+    polishSelection: ['Win', 'Alt', 'Q'],
   },
   dictionary: [
     { from: 'whisper flow', to: 'Wispr Flow' },
@@ -209,7 +211,20 @@ function isComboHeld(combo) {
 // ---------- Groq cloud engine ----------
 const GROQ_STT_MODEL = 'whisper-large-v3-turbo';
 const GROQ_POLISH_MODEL = 'openai/gpt-oss-20b';
-const POLISH_SYSTEM = 'You are a dictation cleanup assistant. Fix spelling, grammar, and punctuation of the dictated text. Return ONLY the corrected text — no quotes, no explanations, no extra words. Keep the same language and meaning. If it is already fine, return it unchanged.';
+
+const POLISH_SYSTEM = 'You are an intelligent voice dictation assistant. Your job is to transform raw spoken audio into what the speaker meant to write: ' +
+  'Convert spoken punctuation and symbols (such as "exclamation mark" to "!", "question mark" to "?", "comma" to ",", "colon" to ":") into actual punctuation. ' +
+  'Capture speaker intent and inflection, such as open questions ending in "or?", rhetorical questions, or trailing thoughts. ' +
+  'Clean up vocal false starts, stumbles, repeated words, and speech fillers. ' +
+  'Fix grammar, spelling, contractions, and capitalization. ' +
+  'Preserve the speaker\'s original tone, vocabulary, and meaning. ' +
+  'Return ONLY the final written text with no quotes, no explanations, and no introductory remarks.';
+
+const SELECTION_POLISH_SYSTEM = 'You are an expert editor and writing assistant. Polish the selected text for grammatical correctness, spelling, punctuation, sentence flow, and clarity: ' +
+  'Fix grammar mistakes, typos, awkward phrasing, and run-on sentences. ' +
+  'Ensure the sentence makes complete, clear sense while preserving the author\'s original meaning and voice. ' +
+  'Add or correct punctuation and capitalization. ' +
+  'Return ONLY the polished text with no quotation marks, no preamble, and no explanation.';
 
 function polishSystemPrompt() {
   const words = (config.dictionary || []).filter(e => e && e.to).map(e => String(e.to).trim()).filter(Boolean);
@@ -299,6 +314,29 @@ async function polishGroq(text) {
     r = await groqPost('/openai/v1/chat/completions', { body, contentType: 'application/json', timeoutMs: 30000 });
   } catch (e) { throw new Error(groqError('Cleanup', 0, e.message)); }
   if (r.status !== 200) throw new Error(groqError('Cleanup', r.status));
+  let out = (JSON.parse(r.body).choices?.[0]?.message?.content || '').trim();
+  if (/^["'][\s\S]*["']$/.test(out) && out.length >= 2) {
+    out = out.slice(1, -1).trim();
+  }
+  return out || text;
+}
+
+async function polishSelectedText(text) {
+  if (!config.groqKey) throw new Error(NEEDS_KEY);
+  const body = JSON.stringify({
+    model: GROQ_POLISH_MODEL,
+    messages: [
+      { role: 'system', content: SELECTION_POLISH_SYSTEM },
+      { role: 'user', content: text },
+    ],
+    temperature: 0.1,
+    max_tokens: 2048,
+  });
+  let r;
+  try {
+    r = await groqPost('/openai/v1/chat/completions', { body, contentType: 'application/json', timeoutMs: 30000 });
+  } catch (e) { throw new Error(groqError('Polishing', 0, e.message)); }
+  if (r.status !== 200) throw new Error(groqError('Polishing', r.status));
   let out = (JSON.parse(r.body).choices?.[0]?.message?.content || '').trim();
   if (/^["'][\s\S]*["']$/.test(out) && out.length >= 2) {
     out = out.slice(1, -1).trim();
@@ -624,13 +662,14 @@ async function onHotkeyUp() {
     const durationMs = Date.now() - t0;
     log('transcribe took', durationMs, 'ms');
 
-    const cmd = applyVoiceCommands(formatText(raw));
+    const cmd = applyVoiceCommands(raw);
     if (cmd.scratch) { await scratchLast(); return; }
     if (cmd.action === 'undo') { await undoLast(); return; }
     if (cmd.action === 'delete-word') { await deleteWord(); return; }
 
+    const formattedRaw = cmd.command ? cmd.text : formatText(cmd.text);
     setPill('working', 'Polishing…');
-    let clean = cmd.command ? cmd.text : await smartPolish(cmd.text);
+    let clean = cmd.command ? cmd.text : await smartPolish(formattedRaw);
     clean = applyDictionary(clean, config.dictionary);
     log('final: "' + clean.slice(0, 80) + '"');
 
@@ -649,6 +688,75 @@ async function onHotkeyUp() {
       openSettings();
     } else {
       setPill('error', 'Oops — ' + String(e.message).slice(0, 60));
+    }
+  } finally {
+    busy = false;
+  }
+}
+
+// ---------- selection polishing flow (Win + Alt + Q) ----------
+async function onPolishSelection() {
+  if (busy || recording) return;
+  busy = true;
+
+  try {
+    targetHwnd = await detectTargetWindow();
+    log('polish-selection: targetHwnd=' + targetHwnd);
+
+    const prevText = clipboard.readText();
+
+    // Release modifiers so Ctrl+C is not modified by Win, Alt, or Q
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 2;
+    await keyboard.releaseKey(Key.LeftWin, Key.RightWin, Key.LeftAlt, Key.RightAlt, Key.Q);
+    await new Promise(r => setTimeout(r, 60));
+
+    // Clear clipboard temporarily to detect if new text was selected
+    clipboard.clear();
+
+    // Send Ctrl + C to copy selection
+    await keyboard.pressKey(Key.LeftControl, Key.C);
+    await keyboard.releaseKey(Key.LeftControl, Key.C);
+
+    // Wait for clipboard to populate
+    let selectedText = '';
+    for (let i = 0; i < 8; i++) {
+      await new Promise(r => setTimeout(r, 40));
+      selectedText = clipboard.readText().trim();
+      if (selectedText) break;
+    }
+
+    if (!selectedText || selectedText.length < 2) {
+      log('polish-selection: no text selected');
+      if (prevText) clipboard.writeText(prevText);
+      setPill('error', 'Select text first to polish');
+      busy = false;
+      return;
+    }
+
+    log('polish-selection: got', selectedText.length, 'chars');
+    setPill('working', 'Polishing sentence…');
+
+    const t0 = Date.now();
+    const polished = await polishSelectedText(selectedText);
+    const durationMs = Date.now() - t0;
+    log('polish-selection: polished in', durationMs, 'ms');
+
+    if (polished && polished !== selectedText) {
+      await injectText(polished);
+      lastInject = { text: polished, time: Date.now() };
+      addHistoryItem(polished, durationMs);
+      setPill('done', null, 'Sentence polished ✓');
+    } else {
+      setPill('done', null, 'Already polished ✓');
+    }
+  } catch (err) {
+    log('polish-selection error:', err.message);
+    if (err.message === NEEDS_KEY) {
+      setPill('error', 'Add your Groq key in Settings');
+      openSettings();
+    } else {
+      setPill('error', 'Polish failed: ' + String(err.message).slice(0, 50));
     }
   } finally {
     busy = false;
@@ -812,6 +920,7 @@ app.whenReady().then(() => {
     { type: 'separator' },
     { label: 'Push to talk: ' + (config.shortcuts?.pushToTalk || ['Ctrl', 'Win']).join('+'), enabled: false },
     { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
+    { label: 'Polish selection: ' + (config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']).join('+'), enabled: false },
     { type: 'separator' },
     { label: 'Settings', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'settings'); } },
     { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
@@ -836,6 +945,7 @@ app.whenReady().then(() => {
 
     const handsFreeCombo = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
     const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
+    const polishCombo = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
 
     // 1. Hands-free toggle mode check (Control + Windows + Spacebar)
     if (isComboHeld(handsFreeCombo)) {
@@ -852,7 +962,18 @@ app.whenReady().then(() => {
       return;
     }
 
-    // 2. Push-to-talk hold mode check (Control + Windows)
+    // 2. Selection polish check (Windows + Alt + Q)
+    if (isComboHeld(polishCombo)) {
+      if (now - polishCooldown < 600) return;
+      polishCooldown = now;
+      if (!recording && !busy) {
+        log('polish-selection triggered');
+        onPolishSelection();
+      }
+      return;
+    }
+
+    // 3. Push-to-talk hold mode check (Control + Windows)
     if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
       onHotkeyDown(false);
     }

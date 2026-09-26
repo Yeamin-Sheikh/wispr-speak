@@ -197,25 +197,34 @@
 
     .brand-logo {
       display: flex;
-      align-items: flex-end;
-      gap: 2.5px;
-      height: 18px;
+      align-items: center;
+      justify-content: center;
     }
-    .brand-logo span {
-      width: 3.5px;
-      background: var(--text);
-      border-radius: 3px;
+    .brand-icon {
+      width: 24px;
+      height: 24px;
+      flex: none;
+      color: var(--text);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .brand-logo span:nth-child(1) { height: 11px; }
-    .brand-logo span:nth-child(2) { height: 18px; }
-    .brand-logo span:nth-child(3) { height: 14px; }
-    .brand-logo span:nth-child(4) { height: 9px; }
+    .brand-icon:hover { transform: scale(1.06); }
+    .brand-icon.icon-sm { width: 18px; height: 18px; }
+    .brand-icon.icon-md { width: 24px; height: 24px; }
+    .brand-icon.icon-lg { width: 32px; height: 32px; }
+    .brand-icon.icon-xl { width: 48px; height: 48px; }
 
     .brand-name {
-      font-size: 16.5px;
+      font-size: 16px;
       font-weight: 700;
-      letter-spacing: -0.2px;
+      letter-spacing: -0.3px;
       color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .brand-name span {
+      font-weight: 400;
+      color: var(--text-muted);
     }
 
     .nav-group {
@@ -766,10 +775,17 @@
     <div class="sidebar" id="sidebar">
       <div>
         <div class="brand">
-          <div class="brand-logo">
-            <span></span><span></span><span></span><span></span>
+          <div class="brand-logo" title="Wispr Tell">
+            <svg viewBox="0 0 28 28" fill="none" class="brand-icon icon-md">
+              <rect width="28" height="28" rx="7" fill="currentColor" fill-opacity="0.12"/>
+              <rect x="5.5" y="10.5" width="2" height="7" rx="1" fill="currentColor" opacity="0.75"/>
+              <rect x="9.5" y="6.5" width="2" height="15" rx="1" fill="currentColor"/>
+              <rect x="13.5" y="9.5" width="2" height="9" rx="1" fill="currentColor" opacity="0.9"/>
+              <rect x="17.5" y="6.5" width="2" height="15" rx="1" fill="currentColor"/>
+              <rect x="21.5" y="10.5" width="2" height="7" rx="1" fill="currentColor" opacity="0.75"/>
+            </svg>
           </div>
-          <div class="brand-name">Flow</div>
+          <div class="brand-name">Wispr<span>Tell</span></div>
         </div>
 
         <div class="nav-group">
@@ -895,6 +911,17 @@
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div class="kbd-badge" id="hfBadge"><kbd>Ctrl</kbd><kbd>Win</kbd><kbd>Space</kbd></div>
                   <button class="btn-outline" id="btnEditHf">Change</button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Polish selection</div>
+                  <div class="subtitle">Highlight text in any application and press to polish grammar, spelling, and sentence flow</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="kbd-badge" id="polishBadge"><kbd>Win</kbd><kbd>Alt</kbd><kbd>Q</kbd></div>
+                  <button class="btn-outline" id="btnEditPolish">Change</button>
                 </div>
               </div>
             </div>
@@ -1039,6 +1066,7 @@
                 <li><b>"delete word"</b> deletes the word behind the cursor.</li>
                 <li><b>Punctuation:</b> say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon".</li>
               </ul>
+              <p style="margin-top:16px;"><b>Selection polishing:</b> Highlight text in any application (browser, editor, or chat) and press <b>Win + Alt + Q</b> to correct grammar, flow, spelling, and punctuation.</p>
             </div>
           </div>
         </div>
@@ -1356,12 +1384,15 @@
   function renderShortcuts() {
     const ptt = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const hf = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
+    const pol = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
     document.getElementById('pttBadge').innerHTML = ptt.map(k => `<kbd>${k}</kbd>`).join('');
     document.getElementById('hfBadge').innerHTML = hf.map(k => `<kbd>${k}</kbd>`).join('');
+    document.getElementById('polishBadge').innerHTML = pol.map(k => `<kbd>${k}</kbd>`).join('');
   }
 
   function setupShortcutEditor(btnId, type) {
     const btn = document.getElementById(btnId);
+    if (!btn) return;
     btn.onclick = () => {
       if (recordingShortcutType) return;
       recordingShortcutType = type;
@@ -1380,7 +1411,7 @@
         else if (e.key.length === 1) pressed.add(e.key.toUpperCase());
         else pressed.add(e.key);
 
-        if (pressed.size >= (type === 'handsFree' ? 3 : 2)) finishShortcut();
+        if (pressed.size >= (type === 'handsFree' || type === 'polishSelection' ? 3 : 2)) finishShortcut();
       }
 
       function finishShortcut() {
@@ -1404,6 +1435,7 @@
 
   setupShortcutEditor('btnEditPtt', 'pushToTalk');
   setupShortcutEditor('btnEditHf', 'handsFree');
+  setupShortcutEditor('btnEditPolish', 'polishSelection');
 
   // Dictionary
   function renderDictionary() {

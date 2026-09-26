@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" fill="none">
+  <!-- Wispr Tell — Professional Minimal Icon & Wordmark Logo -->
+  <defs>
+    <!-- Dark graphite squircle background -->
+    <linearGradient id="badgeGrad" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#161a23"/>
+      <stop offset="100%" stop-color="#0c0e14"/>
+    </linearGradient>
+
+    <!-- Subtle inner border highlight -->
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
+    </linearGradient>
+
+    <!-- Sound wave pill gradient (color neutral silver-white) -->
+    <linearGradient id="waveBarGrad" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d4d8e2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ICON BADGE (200x200) -->
+  <g transform="translate(20, 20)">
+    <!-- Squircle Container -->
+    <rect x="0" y="0" width="200" height="200" rx="46" fill="url(#badgeGrad)"/>
+    <rect x="0.75" y="0.75" width="198.5" height="198.5" rx="45.25" stroke="url(#borderGrad)" stroke-width="1.5"/>
+
+    <!-- Acoustic Wave W-Monogram: 5 Harmonic Sound Bars -->
+    <!-- Bar 1: Outer Left -->
+    <rect x="42" y="74" width="14" height="52" rx="7" fill="url(#waveBarGrad)" opacity="0.75"/>
+
+    <!-- Bar 2: Peak Left -->
+    <rect x="68" y="44" width="14" height="112" rx="7" fill="url(#waveBarGrad)"/>
+
+    <!-- Bar 3: Center Core -->
+    <rect x="94" y="66" width="14" height="68" rx="7" fill="url(#waveBarGrad)" opacity="0.95"/>
+
+    <!-- Bar 4: Peak Right -->
+    <rect x="120" y="44" width="14" height="112" rx="7" fill="url(#waveBarGrad)"/>
+
+    <!-- Bar 5: Outer Right -->
+    <rect x="146" y="74" width="14" height="52" rx="7" fill="url(#waveBarGrad)" opacity="0.75"/>
+  </g>
+
+  <!-- WORDMARK: "Wispr Tell" -->
+  <g transform="translate(260, 140)">
+    <!-- "Wispr" in bold precision typography -->
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', Inter, sans-serif" font-size="82" font-weight="700" letter-spacing="-2.5" fill="#ffffff">Wispr</text>
+    <!-- "Tell" in light elegant typography -->
+    <text x="216" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', Inter, sans-serif" font-size="82" font-weight="300" letter-spacing="-1.5" fill="#94a3b8">Tell</text>
+    <!-- Subtitle / Tagline -->
+    <text x="4" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', Inter, sans-serif" font-size="19" font-weight="500" letter-spacing="4" fill="#64748b" text-transform="uppercase">VOICE INTELLIGENCE</text>
+  </g>
+</svg>

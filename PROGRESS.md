@@ -13,6 +13,34 @@
 
 ## Progress log
 
+### 2026-09-27: Redesigned minimal logo, intent-aware speech recognition, and Win+Alt+Q sentence polishing
+
+**Status:** Done
+
+#### What changed
+- Replaced old padlock icon with a professional minimal acoustic wave W-monogram logo.
+- Created vector `assets/logo.svg` and compiled a 7-resolution Windows `icon.ico` (16, 24, 32, 48, 64, 128, 256).
+- Added multi-size responsive SVG brand mark to application sidebar and welcome interface.
+- Implemented speech intent processing in `text-utils.js` and `main.js`: translates spoken punctuation into symbols and formats trailing questioning thoughts like "or?".
+- Added `Win + Alt + Q` instant selection polishing shortcut with nut-js clipboard simulation and dedicated Groq editing prompt.
+- Added selection polishing shortcut customization in settings UI and tray menu.
+- Bumped version to 0.5.2 and created release archive.
+
+#### Files touched
+- `assets/logo.svg`: Created master vector logo and wordmark.
+- `scripts/generate-icons.ps1`: Added multi-resolution icon builder for PNGs and true multi-frame ICO.
+- `assets/icon.ico`: Replaced with 7-resolution icon bundle.
+- `assets/icon.png`: Updated with 256x256 high-resolution minimal badge.
+- `assets/tray.png`: Updated with 32x32 crisp monochrome wave icon.
+- `src/text-utils.js`: Added comprehensive spoken punctuation conversion and question phrasing detection.
+- `src/main.js`: Added `SELECTION_POLISH_SYSTEM`, `polishSelectedText`, `onPolishSelection`, and updated `POLISH_SYSTEM` prompt.
+- `src/renderer/settings.html`: Updated brand logo to minimal SVG and added Polish selection shortcut control.
+- `src/renderer/welcome.html`: Replaced emoji with brand SVG mark and documented shortcuts.
+- `README.md`: Documented new features, logo redesign, intent engine, and polishing shortcut.
+- `package.json`: Bumped version to 0.5.2.
+
+---
+
 ### 2026-09-27: Theme selector, animated pill, auto-learning, and profile portability
 
 **Status:** Done

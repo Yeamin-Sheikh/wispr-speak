@@ -17,7 +17,10 @@ Wispr Tell is completely free and open source. It requires no subscription, paid
 
 ### Key features
 
-- Push-to-talk and hands-free modes: Hold to talk or press once to start and press again to inject. Both shortcuts are customizable in settings.
+- Selection polishing shortcut: Highlight any text in any application (browser, chat, text editor, code) and press `Win + Alt + Q` to polish grammar, spelling, flow, and punctuation.
+- Writes what you mean: Intelligent intent engine transforms spoken punctuation (say "comma", "exclamation mark", "question mark", "colon") and trailing question inflections (such as ending thoughts with "or?") into natural written punctuation.
+- Minimal color-neutral brand design: Clean acoustic wave monogram in vector SVG format, accompanied by high-resolution Windows icon assets (16, 24, 32, 48, 64, 128, and 256 sizes).
+- Push-to-talk and hands-free modes: Hold to talk or press once to start and press again to inject. All shortcuts are customizable in settings.
 - Four interface themes: Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal, with Windows 11 caption button color synchronization.
 - Animated status pill: Features a spring entrance curve, frosted glass background, dynamic 16-bar glowing audio waveform, and smooth exit fade.
 - Inline correction learning: Edit any past dictation directly in your history timeline. Wispr Tell isolates the corrected phrase differences and lets you add the mapping to your personal dictionary with one click.
@@ -53,7 +56,7 @@ Pre-built portable packages do not require Node.js or development dependencies. 
 Open the tray icon menu and select Settings to adjust configuration:
 
 - Color theme: Switch between Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal.
-- Keyboard shortcuts: Remap push-to-talk or hands-free toggle key combinations.
+- Keyboard shortcuts: Remap push-to-talk, hands-free toggle, or selection polishing key combinations.
 - Groq API key: Required for speech-to-text and language model correction.
 - Microphone input: Select a specific microphone hardware device or use the system default.
 - Smart corrections: Toggle automatic grammar and punctuation cleanup.
