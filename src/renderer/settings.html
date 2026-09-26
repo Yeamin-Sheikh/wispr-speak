@@ -1,176 +1,1324 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Wispr Tell Settings</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:"Segoe UI", system-ui, sans-serif; background:#14161c; color:#eef1f6;
-    padding:28px 32px; -webkit-user-select:none; }
-  h1 { font-size:20px; font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
-  h1 .logo { width:28px; height:28px; border-radius:8px; background:#0d9488;
-    display:flex; align-items:center; justify-content:center; font-size:15px; }
-  .sub { color:#9aa3b2; font-size:13px; margin-bottom:24px; }
-  .section { margin-bottom:26px; }
-  .section > h2 { font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase;
-    color:#7c8598; margin-bottom:10px; }
-  .card { background:#1d2029; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden; }
-  .row { display:flex; align-items:center; justify-content:space-between; gap:16px;
-    padding:14px 18px; }
-  .row + .row { border-top:1px solid rgba(255,255,255,.05); }
-  .row .t { font-size:14px; font-weight:500; }
-  .row .d { font-size:12.5px; color:#9aa3b2; margin-top:3px; }
-  select { background:#14161c; color:#eef1f6; border:1px solid rgba(255,255,255,.14);
-    border-radius:9px; padding:8px 12px; font-size:13.5px; max-width:230px; outline:none; }
-  select:focus { border-color:#0d9488; }
-  .kbd { display:inline-flex; gap:6px; }
-  .kbd span { background:#2a2e3a; border:1px solid rgba(255,255,255,.14); border-bottom-width:3px;
-    border-radius:7px; padding:5px 11px; font-size:13px; font-weight:600; }
-  .switch { position:relative; width:46px; height:26px; flex:none; cursor:pointer; }
-  .switch input { opacity:0; width:0; height:0; }
-  .track { position:absolute; inset:0; background:#333948; border-radius:999px; transition:.2s; }
-  .track:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px;
-    background:#fff; border-radius:50%; transition:.2s; }
-  .switch input:checked + .track { background:#0d9488; }
-  .switch input:checked + .track:before { transform:translateX(20px); }
-  .foot { margin-top:8px; color:#5d6577; font-size:12px; text-align:center; }
-  .pill-note { margin-top:14px; background:rgba(13,148,136,.1); border:1px solid rgba(13,148,136,.35);
-    border-radius:12px; padding:12px 16px; font-size:13px; color:#a7e8df; }
-</style></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Wispr Tell</title>
+  <style>
+    :root {
+      --bg: #f8f7f4;
+      --sidebar: #f2efe9;
+      --card-bg: #ffffff;
+      --card-border: #e7e3db;
+      --text: #1f1f1d;
+      --text-muted: #706e68;
+      --text-dim: #99958d;
+      --nav-active: #eae6de;
+      --accent: #0f766e;
+      --accent-light: #f0fdfa;
+      --accent-warm: #d97706;
+      --border-subtle: #ede9e1;
+      --danger: #dc2626;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Window Header / Drag Area */
+    .app-window {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .titlebar {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      -webkit-app-region: drag;
+      background: var(--bg);
+      flex: none;
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { background: #eae6de; color: var(--text); }
+
+    .avatar-sm {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e2ddd4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Main App Layout */
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      padding: 0 12px 12px 12px;
+      gap: 12px;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 200px;
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px 4px 6px 6px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px 18px 10px;
+      cursor: default;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: flex-end;
+      gap: 2.5px;
+      height: 18px;
+    }
+    .brand-logo span {
+      width: 3.5px;
+      background: var(--text);
+      border-radius: 3px;
+    }
+    .brand-logo span:nth-child(1) { height: 11px; }
+    .brand-logo span:nth-child(2) { height: 18px; }
+    .brand-logo span:nth-child(3) { height: 14px; }
+    .brand-logo span:nth-child(4) { height: 9px; }
+
+    .brand-name {
+      font-size: 16.5px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+
+    .nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover {
+      background: #eeebe3;
+      color: var(--text);
+    }
+    .nav-item.active {
+      background: var(--nav-active);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .nav-item svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2;
+      flex: none;
+    }
+
+    .sidebar-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 8px;
+    }
+
+    /* Content Area (Rounded white container) */
+    .content-container {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+
+    /* Middle Main Column */
+    .center-col {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .greeting-title {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      position: relative;
+      background: linear-gradient(135deg, #1b3842 0%, #2f2520 100%);
+      border-radius: 16px;
+      padding: 24px 28px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .banner-content {
+      max-width: 380px;
+      z-index: 1;
+    }
+
+    .banner-heading {
+      font-family: "Georgia", serif;
+      font-size: 21px;
+      font-weight: 400;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .banner-desc {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .banner-btn {
+      background: #ffffff;
+      color: #1a1a18;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .banner-btn:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .banner-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+      z-index: 2;
+    }
+    .banner-close:hover { background: rgba(255,255,255,0.3); }
+
+    /* Feed Header & Search */
+    .feed-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+      margin-top: 4px;
+    }
+
+    .feed-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 4px 12px;
+      width: 170px;
+      transition: width 0.2s, border-color 0.2s;
+    }
+    .search-box:focus-within {
+      width: 220px;
+      border-color: var(--accent);
+      background: #fff;
+    }
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 12.5px;
+      color: var(--text);
+      width: 100%;
+    }
+
+    /* Timeline & History List */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 24px;
+      position: relative;
+    }
+
+    .timeline-time {
+      width: 60px;
+      flex: none;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-dim);
+      padding-top: 2px;
+      text-align: right;
+    }
+
+    .timeline-body {
+      flex: 1;
+      padding-left: 20px;
+      border-left: 1.5px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .timeline-body::before {
+      content: "";
+      position: absolute;
+      left: -4.5px;
+      top: 6px;
+      width: 7.5px;
+      height: 7.5px;
+      border-radius: 50%;
+      background: #d4cec4;
+      border: 1.5px solid #ffffff;
+    }
+
+    .timeline-text {
+      font-size: 14.5px;
+      line-height: 1.62;
+      color: var(--text);
+      margin-bottom: 8px;
+      user-select: text;
+    }
+
+    .timeline-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0.35;
+      transition: opacity 0.15s;
+    }
+    .timeline-item:hover .timeline-actions {
+      opacity: 1;
+    }
+
+    .act-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+    .act-btn:hover {
+      color: var(--text);
+      background: var(--bg);
+    }
+    .act-btn svg { width: 15px; height: 15px; stroke-width: 1.8; }
+
+    .copied-badge {
+      font-size: 11.5px;
+      color: var(--accent);
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Right Panel (Stats & Engine) */
+    .right-col {
+      width: 250px;
+      flex: none;
+      border-left: 1px solid var(--border-subtle);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #fdfcfb;
+    }
+
+    .stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .stat-val {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .stat-unit {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .engine-card {
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .engine-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .engine-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .engine-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .engine-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .profile-card {
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .profile-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fde68a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex: none;
+    }
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .profile-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .profile-role {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* Views container (switching between Dictation, Settings, Dictionary, Notetaker) */
+    .view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+    .view-panel.active {
+      display: flex;
+    }
+
+    /* Form & Settings Cards */
+    .settings-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .setting-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 20px;
+      gap: 16px;
+    }
+    .setting-row + .setting-row {
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .setting-text .title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .setting-text .subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+    .kbd-badge {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .kbd-badge kbd {
+      background: #f4f2ee;
+      border: 1px solid #ddd9d0;
+      border-bottom-width: 2.5px;
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .btn-outline {
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-outline:hover {
+      background: var(--bg);
+      border-color: #d4cec4;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #115e59; }
+
+    .input-text {
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+    }
+    .input-text:focus { border-color: var(--accent); }
+
+    /* Switch toggle */
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex: none;
+      cursor: pointer;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      background: #d4cec4;
+      border-radius: 999px;
+      transition: 0.2s;
+    }
+    .switch-track:before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .switch input:checked + .switch-track { background: var(--accent); }
+    .switch input:checked + .switch-track:before { transform: translateX(20px); }
+
+    /* Notetaker view */
+    .notetaker-box {
+      width: 100%;
+      height: 380px;
+      background: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      font-family: inherit;
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--text);
+      outline: none;
+      resize: none;
+      user-select: text;
+    }
+    .notetaker-box:focus { border-color: var(--accent); }
+
+    /* Custom Right Click Menu */
+    #contextMenu {
+      position: fixed;
+      display: none;
+      background: #ffffff;
+      border: 1px solid #e2ddd4;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      padding: 4px;
+      z-index: 10000;
+      width: 160px;
+    }
+    .menu-item {
+      padding: 7px 12px;
+      font-size: 13px;
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+    .menu-item:hover { background: #f2efe9; }
+    .menu-separator { height: 1px; background: #ede9e1; margin: 4px 0; }
+  </style>
+</head>
 <body>
-  <h1><span class="logo">🎙</span> Wispr Tell</h1>
-  <div class="sub">Hold the shortcut, speak, release — text appears at your cursor.</div>
-
-  <div class="section"><h2>Shortcut</h2>
-    <div class="card"><div class="row">
-      <div><div class="t">Push to talk</div><div class="d">Hold both keys, release either to finish</div></div>
-      <div class="kbd"><span>Ctrl</span><span>Win</span></div>
-    </div></div>
+<div class="app-window">
+  <!-- Top App Header / Drag Region -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="icon-btn" id="btnToggleSidebar" title="Toggle Sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+        </svg>
+      </div>
+      <div class="avatar-sm" id="userAvatar" title="Yeamin Sheikh">Y</div>
+    </div>
+    <div style="font-size: 12px; font-weight: 600; color: var(--text-dim); -webkit-app-region: drag;">Wispr Tell</div>
+    <div style="width: 50px;"></div>
   </div>
 
-  <div class="section"><h2>Cloud engine</h2>
-    <div class="card">
-      <div class="row">
-        <div><div class="t">Groq API key</div><div class="d">Free at <a href="#" id="groqLink" style="color:#0d9488">console.groq.com</a> — no card needed. Powers the fast cloud engine.</div></div>
-        <input type="password" id="groqKey" placeholder="gsk_…" style="background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;width:210px;outline:none">
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Left Navigation Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-logo">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="brand-name">Flow</div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-item active" data-tab="dictation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+            Dictation
+          </div>
+          <div class="nav-item" data-tab="notetaker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+            Notetaker
+          </div>
+          <div class="nav-item" data-tab="insights">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Insights
+          </div>
+          <div class="nav-item" data-tab="dictionary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Dictionary
+          </div>
+          <div class="nav-item" data-tab="snippets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+            Snippets
+          </div>
+          <div class="nav-item" data-tab="style">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+            Style
+          </div>
+          <div class="nav-item" data-tab="transforms">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+            Transforms
+          </div>
+          <div class="nav-item" data-tab="scratchpad">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Scratchpad
+          </div>
+        </div>
       </div>
-      <div class="row">
-        <div><div class="t">Key status</div><div class="d" id="keyStatus">Not tested yet</div></div>
-        <button id="testKey" style="background:#0d9488;color:#fff;border:none;border-radius:9px;padding:9px 22px;font-size:13.5px;font-weight:600;cursor:pointer">Test key</button>
+
+      <div class="sidebar-bottom">
+        <div class="nav-item" data-tab="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Settings
+        </div>
+        <div class="nav-item" data-tab="help">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Help
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="content-container">
+      <!-- Center Main Column -->
+      <div class="center-col">
+        <!-- 1. Dictation Feed View -->
+        <div class="view-panel active" id="view-dictation">
+          <div class="greeting-title">Welcome back, Yeamin</div>
+
+          <!-- Hero Tip Banner -->
+          <div class="hero-banner" id="heroBanner">
+            <button class="banner-close" id="btnDismissBanner">✕</button>
+            <div class="banner-content">
+              <div class="banner-heading">Hands-free voice typing anytime</div>
+              <div class="banner-desc">Hold your shortcut to dictate, or use the hands-free shortcut to speak without holding any keys.</div>
+              <button class="banner-btn" id="btnBannerShortcuts">Customize shortcuts</button>
+            </div>
+          </div>
+
+          <!-- History Feed Header -->
+          <div class="feed-header">
+            <div class="feed-label">Recent Dictations</div>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a867c" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="searchInput" placeholder="Search dictations...">
+            </div>
+          </div>
+
+          <!-- Timeline Items -->
+          <div class="timeline" id="historyTimeline">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+
+        <!-- 2. Settings View -->
+        <div class="view-panel" id="view-settings">
+          <div class="greeting-title">Settings</div>
+
+          <!-- Shortcut Customization -->
+          <div class="settings-section">
+            <div class="section-title">Keyboard Shortcuts</div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Push to talk (Hold)</div>
+                  <div class="subtitle">Hold shortcut, speak, release to type at cursor</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="kbd-badge" id="pttBadge"><kbd>Ctrl</kbd><kbd>Win</kbd></div>
+                  <button class="btn-outline" id="btnEditPtt">Change</button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Hands-free (Toggle)</div>
+                  <div class="subtitle">Press once to start dictating, press again to inject</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="kbd-badge" id="hfBadge"><kbd>Ctrl</kbd><kbd>Win</kbd><kbd>Space</kbd></div>
+                  <button class="btn-outline" id="btnEditHf">Change</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cloud Engine Settings -->
+          <div class="settings-section">
+            <div class="section-title">Cloud Engine (Groq)</div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Groq API Key</div>
+                  <div class="subtitle">Free tier at console.groq.com. Powers high-speed whisper-large-v3-turbo</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="password" class="input-text" id="groqKeyInput" placeholder="gsk_..." style="width:200px;">
+                  <button class="btn-primary" id="btnTestKey">Test key</button>
+                </div>
+              </div>
+              <div class="setting-row" style="padding-top:10px;padding-bottom:10px;">
+                <div style="font-size:12.5px;color:var(--text-muted);" id="keyStatusText">Enter your key above to enable speech-to-text.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Input -->
+          <div class="settings-section">
+            <div class="section-title">Audio & Corrections</div>
+            <div class="setting-card">
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Microphone</div>
+                  <div class="subtitle">Audio capture device for speech recognition</div>
+                </div>
+                <select class="input-text" id="micSelect" style="max-width:240px;"><option value="default">Default Device</option></select>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Smart corrections (AI Polish)</div>
+                  <div class="subtitle">Automatically clean grammar, capitalization, and punctuation</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="smartFixToggle" checked>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Launch on Windows startup</div>
+                  <div class="subtitle">Start Wispr Tell minimized in tray upon login</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="startupToggle">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Dictionary View ("My Words") -->
+        <div class="view-panel" id="view-dictionary">
+          <div class="greeting-title">Dictionary ("My words")</div>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-top:-10px;">Train Wispr Tell to write technical terms, names, or brand spellings exactly as intended.</p>
+
+          <div class="setting-card" style="padding:20px;">
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+              <input type="text" class="input-text" id="dictFromInput" placeholder="It hears... (e.g. whisper tell)" style="flex:1;">
+              <input type="text" class="input-text" id="dictToInput" placeholder="Write... (e.g. Wispr Tell)" style="flex:1;">
+              <button class="btn-primary" id="btnAddDict">Add word</button>
+            </div>
+            <div id="dictListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+
+        <!-- 4. Notetaker / Scratchpad View -->
+        <div class="view-panel" id="view-notetaker">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="greeting-title">Notetaker</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-outline" id="btnCopyNote">Copy Note</button>
+              <button class="btn-outline" id="btnClearNote">Clear</button>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:-10px;">A distraction-free pad to dictate, edit, or test spoken sentences directly.</p>
+          <textarea class="notetaker-box" id="noteTextarea" placeholder="Click here and hold Ctrl+Win or press Ctrl+Win+Space to dictate notes directly..."></textarea>
+          <div style="font-size:12px;color:var(--text-dim);" id="noteWordCount">0 words</div>
+        </div>
+
+        <!-- 5. Help View -->
+        <div class="view-panel" id="view-help">
+          <div class="greeting-title">Voice Commands & Help</div>
+          <div class="setting-card" style="padding:20px;">
+            <div style="font-size:14px;line-height:1.7;">
+              <p><b>Voice Commands:</b> Say these words during or at the end of speech:</p>
+              <ul style="margin-left:20px;margin-top:8px;">
+                <li><b>"new line"</b> — inserts a single line break</li>
+                <li><b>"new paragraph"</b> — inserts a double line break</li>
+                <li><b>"scratch that"</b> — reverts the last injection using Ctrl+Z</li>
+                <li><b>"undo that"</b> — sends Ctrl+Z to the target application</li>
+                <li><b>"delete word"</b> — deletes the word behind the cursor (Ctrl+Backspace)</li>
+                <li><b>Punctuation</b> — say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon"</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Stats & Voice Profile -->
+      <div class="right-col">
+        <!-- Stats Card -->
+        <div class="stat-card">
+          <div class="stat-row">
+            <span class="stat-val" id="totalWordsVal">12.9K</span>
+            <span class="stat-unit">total words</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-val" id="wpmVal">100</span>
+            <span class="stat-unit">wpm</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-val" id="streakVal">8</span>
+            <span class="stat-unit">day streak</span>
+          </div>
+        </div>
+
+        <!-- Engine Status Card -->
+        <div class="engine-card">
+          <div class="engine-badge">
+            <span class="engine-dot"></span>
+            Cloud Engine · Free
+          </div>
+          <div class="engine-title">Groq Cloud STT</div>
+          <div class="engine-desc">whisper-large-v3-turbo with GPT-OSS 20B intelligent cleanup.</div>
+          <button class="btn-outline" id="btnOpenEngineSettings" style="margin-top:6px;width:100%;">Configure API Key</button>
+        </div>
+
+        <!-- Voice Profile Card -->
+        <div class="profile-card">
+          <div class="profile-avatar">✨</div>
+          <div class="profile-info">
+            <div class="profile-name">Voice Profile</div>
+            <div class="profile-role">Natural · Punctuation-Aware</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="section"><h2>Audio</h2>
-    <div class="card">
-      <div class="row">
-        <div><div class="t">Microphone</div><div class="d">Input used for dictation</div></div>
-        <select id="mic"><option value="default">Loading…</option></select>
-      </div>
-      <div class="row">
-        <div><div class="t">Smart corrections</div><div class="d">Auto-fix spelling, grammar &amp; punctuation</div></div>
-        <label class="switch"><input type="checkbox" id="smartFix"><span class="track"></span></label>
-      </div>
-    </div>
-  </div>
-
-  <div class="section"><h2>My words</h2>
-    <div class="card"><div class="row" style="display:block">
-      <div class="t">Personal dictionary</div>
-      <div class="d">Words the transcription mishears — Wispr Tell will always write them your way.</div>
-      <div id="dictList" style="margin-top:6px"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input id="dictFrom" placeholder="It hears…" style="flex:1;background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;outline:none;min-width:0">
-        <input id="dictTo" placeholder="Write…" style="flex:1;background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;outline:none;min-width:0">
-        <button id="dictAdd" style="background:#0d9488;color:#fff;border:none;border-radius:9px;padding:8px 18px;font-size:13.5px;font-weight:600;cursor:pointer;flex:none">Add</button>
-      </div>
-    </div></div>
-  </div>
-
-  <div class="section"><h2>Voice commands</h2>
-    <div class="card"><div class="row">
-      <div><div class="t" style="font-weight:400;line-height:1.7">Say <b>"new line"</b>, <b>"new paragraph"</b>, <b>"scratch that"</b>, <b>"undo that"</b>, <b>"delete word"</b>, or punctuation — <b>"comma"</b>, <b>"period"</b>, <b>"question mark"</b>, <b>"exclamation mark"</b> — while dictating</div></div>
-    </div></div>
-  </div>
-
-  <div class="section"><h2>General</h2>
-    <div class="card">
-      <div class="row">
-        <div><div class="t">Start with Windows</div><div class="d">Launch Wispr Tell at login</div></div>
-        <label class="switch"><input type="checkbox" id="startup"><span class="track"></span></label>
-      </div>
-    </div>
-  </div>
-
-  <div class="pill-note" id="privacyNote">☁️ Cloud mode: audio is sent to Groq for transcription (free tier). No audio is stored by Wispr Tell.</div>
-  <div class="foot">Wispr Tell v0.4.0 · hold Ctrl+Win to talk</div>
+<!-- Custom Context Menu for Right Click -->
+<div id="contextMenu">
+  <div class="menu-item" id="ctxCut">Cut <span>Ctrl+X</span></div>
+  <div class="menu-item" id="ctxCopy">Copy <span>Ctrl+C</span></div>
+  <div class="menu-item" id="ctxPaste">Paste <span>Ctrl+V</span></div>
+  <div class="menu-separator"></div>
+  <div class="menu-item" id="ctxSelectAll">Select All <span>Ctrl+A</span></div>
+</div>
 
 <script>
   const api = window.wisprtell;
-  function setKeyStatus(ok, msg, color) {
-    const el = document.getElementById('keyStatus');
-    el.textContent = msg;
-    el.style.color = color;
-  }
-  (async () => {
-    const cfg = await api.getConfig();
-    document.getElementById('startup').checked = !!cfg.launchAtLogin;
-    document.getElementById('groqKey').value = cfg.groqKey || '';
-    document.getElementById('smartFix').checked = cfg.smartFix !== false;
-    if (cfg.groqKey) setKeyStatus(true, 'Key saved — press "Test key" to verify', '#9aa3b2');
-    const mics = await api.listMics();
-    const sel = document.getElementById('mic');
-    sel.innerHTML = '<option value="default">System default</option>' +
-      mics.map(m => `<option value="${m.id}">${m.label.replace(/</g,'&lt;')}</option>`).join('');
-    sel.value = cfg.micDeviceId || 'default';
 
-    sel.onchange = () => api.setConfig({ micDeviceId: sel.value });
-    document.getElementById('startup').onchange = e => api.setConfig({ launchAtLogin: e.target.checked });
-    document.getElementById('smartFix').onchange = e => api.setConfig({ smartFix: e.target.checked });
-    let keyTimer = null;
-    document.getElementById('groqKey').oninput = e => {
-      clearTimeout(keyTimer);
-      setKeyStatus(true, 'Saving…', '#9aa3b2');
-      keyTimer = setTimeout(async () => {
-        await api.setConfig({ groqKey: e.target.value.trim() });
-        setKeyStatus(true, 'Key saved — press "Test key" to verify', '#9aa3b2');
-      }, 600);
-    };
-    document.getElementById('testKey').onclick = async () => {
-      const btn = document.getElementById('testKey');
-      btn.disabled = true; btn.textContent = 'Testing…';
-      setKeyStatus(true, 'Contacting Groq…', '#9aa3b2');
-      const r = await api.validateKey(document.getElementById('groqKey').value.trim());
-      if (r.ok) setKeyStatus(true, '✓ Key works — you are ready to dictate', '#4ade80');
-      else setKeyStatus(false, '✗ ' + r.error, '#f87171');
-      btn.disabled = false; btn.textContent = 'Test key';
-    };
-  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  // ---- personal dictionary ("My words") ----
-  let dict = Array.isArray(cfg.dictionary) ? cfg.dictionary.slice() : [];
-  function renderDict() {
-    const list = document.getElementById('dictList');
-    list.innerHTML = dict.map((e, i) =>
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)">' +
-        '<span style="font-size:13.5px"><span style="color:#9aa3b2">' + escapeHtml(e.from) + '</span>' +
-        ' <span style="color:#5d6577">→</span> <b>' + escapeHtml(e.to) + '</b></span>' +
-        '<button data-i="' + i + '" class="dictDel" style="background:none;border:none;color:#f87171;font-size:15px;cursor:pointer;padding:2px 6px">✕</button>' +
-      '</div>').join('') ||
-      '<div style="color:#5d6577;font-size:13px;padding:6px 0">No words yet — add one below.</div>';
-    list.querySelectorAll('.dictDel').forEach(b => b.onclick = async () => {
-      dict.splice(Number(b.dataset.i), 1);
-      await api.setConfig({ dictionary: dict });
-      renderDict();
+  // State
+  let config = {};
+  let historyData = [];
+  let recordingShortcutType = null;
+
+  // DOM Elements
+  const navItems = document.querySelectorAll('.nav-item');
+  const viewPanels = document.querySelectorAll('.view-panel');
+  const historyTimeline = document.getElementById('historyTimeline');
+  const searchInput = document.getElementById('searchInput');
+
+  // Stats Elements
+  const totalWordsVal = document.getElementById('totalWordsVal');
+  const wpmVal = document.getElementById('wpmVal');
+  const streakVal = document.getElementById('streakVal');
+
+  // Switch Tabs
+  function showTab(tabName) {
+    navItems.forEach(n => {
+      n.classList.toggle('active', n.dataset.tab === tabName);
+    });
+    viewPanels.forEach(p => {
+      p.classList.toggle('active', p.id === 'view-' + tabName);
     });
   }
-  renderDict();
-  document.getElementById('dictAdd').onclick = async () => {
-    const fromEl = document.getElementById('dictFrom'), toEl = document.getElementById('dictTo');
+
+  navItems.forEach(item => {
+    item.onclick = () => {
+      const tab = item.dataset.tab;
+      if (tab === 'scratchpad') showTab('notetaker');
+      else if (['insights', 'style', 'snippets', 'transforms'].includes(tab)) showTab('dictation');
+      else showTab(tab);
+    };
+  });
+
+  document.getElementById('btnBannerShortcuts').onclick = () => showTab('settings');
+  document.getElementById('btnOpenEngineSettings').onclick = () => showTab('settings');
+  document.getElementById('btnDismissBanner').onclick = () => {
+    document.getElementById('heroBanner').style.display = 'none';
+  };
+
+  // Render Stats
+  function renderStats(stats) {
+    if (!stats) return;
+    totalWordsVal.textContent = stats.totalWordsFormatted || '12.9K';
+    wpmVal.textContent = stats.wpm || '100';
+    streakVal.textContent = stats.streak || '8';
+  }
+
+  // Format timestamp (e.g. "5:21 pm")
+  function formatTime(ts) {
+    if (!ts) return 'Just now';
+    const d = new Date(ts);
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${ampm}`;
+  }
+
+  // Render History Timeline
+  function renderHistory(items) {
+    const q = (searchInput.value || '').toLowerCase().trim();
+    const filtered = q ? items.filter(h => (h.text || '').toLowerCase().includes(q)) : items;
+
+    if (!filtered || filtered.length === 0) {
+      historyTimeline.innerHTML = '<div style="padding:24px 0;color:var(--text-muted);font-size:13.5px;">No dictations found. Hold Ctrl+Win or press Ctrl+Win+Space to speak!</div>';
+      return;
+    }
+
+    historyTimeline.innerHTML = filtered.map(item => `
+      <div class="timeline-item" data-id="${item.id}">
+        <div class="timeline-time">${formatTime(item.timestamp)}</div>
+        <div class="timeline-body">
+          <div class="timeline-text">${escapeHtml(item.text)}</div>
+          <div class="timeline-actions">
+            <button class="act-btn btn-speak" title="Read Aloud" data-text="${escapeAttr(item.text)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            </button>
+            <button class="act-btn btn-copy" title="Copy to clipboard" data-text="${escapeAttr(item.text)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <button class="act-btn btn-delete" title="Delete" data-id="${item.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+            <span class="copied-badge">Copied ✓</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // Attach Action Listeners
+    historyTimeline.querySelectorAll('.btn-copy').forEach(btn => {
+      btn.onclick = async () => {
+        const text = btn.dataset.text;
+        await api.copyText(text);
+        const badge = btn.parentElement.querySelector('.copied-badge');
+        if (badge) {
+          badge.style.display = 'inline';
+          setTimeout(() => { badge.style.display = 'none'; }, 1500);
+        }
+      };
+    });
+
+    historyTimeline.querySelectorAll('.btn-speak').forEach(btn => {
+      btn.onclick = () => {
+        const text = btn.dataset.text;
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const ut = new SpeechSynthesisUtterance(text);
+          window.speechSynthesis.speak(ut);
+        }
+      };
+    });
+
+    historyTimeline.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const res = await api.deleteHistory(id);
+        historyData = res.history;
+        renderHistory(historyData);
+        renderStats(res.stats);
+      };
+    });
+  }
+
+  searchInput.oninput = () => renderHistory(historyData);
+
+  // Settings Logic
+  function renderShortcuts() {
+    const ptt = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
+    const hf = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
+
+    document.getElementById('pttBadge').innerHTML = ptt.map(k => `<kbd>${k}</kbd>`).join('');
+    document.getElementById('hfBadge').innerHTML = hf.map(k => `<kbd>${k}</kbd>`).join('');
+  }
+
+  // Edit Shortcuts
+  function setupShortcutEditor(btnId, type) {
+    const btn = document.getElementById(btnId);
+    btn.onclick = () => {
+      if (recordingShortcutType) return;
+      recordingShortcutType = type;
+      btn.textContent = 'Press keys...';
+      btn.style.borderColor = 'var(--accent)';
+
+      const pressed = new Set();
+      function handleKey(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === 'Control') pressed.add('Ctrl');
+        else if (e.key === 'Meta' || e.key === 'OS') pressed.add('Win');
+        else if (e.key === 'Alt') pressed.add('Alt');
+        else if (e.key === 'Shift') pressed.add('Shift');
+        else if (e.key === ' ' || e.code === 'Space') pressed.add('Space');
+        else if (e.key.length === 1) pressed.add(e.key.toUpperCase());
+        else pressed.add(e.key);
+
+        if (pressed.size >= (type === 'handsFree' ? 3 : 2)) {
+          finishShortcut();
+        }
+      }
+
+      function finishShortcut() {
+        window.removeEventListener('keydown', handleKey);
+        const combo = Array.from(pressed);
+        if (combo.length > 0) {
+          config.shortcuts = config.shortcuts || {};
+          config.shortcuts[type] = combo;
+          api.setConfig({ shortcuts: config.shortcuts });
+          renderShortcuts();
+        }
+        btn.textContent = 'Change';
+        btn.style.borderColor = '';
+        recordingShortcutType = null;
+      }
+
+      window.addEventListener('keydown', handleKey);
+      setTimeout(finishShortcut, 4000);
+    };
+  }
+
+  setupShortcutEditor('btnEditPtt', 'pushToTalk');
+  setupShortcutEditor('btnEditHf', 'handsFree');
+
+  // Personal Dictionary ("My Words")
+  function renderDictionary() {
+    const dict = config.dictionary || [];
+    const container = document.getElementById('dictListContainer');
+    if (!dict.length) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No words mapped yet.</div>';
+      return;
+    }
+    container.innerHTML = dict.map((e, idx) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;">
+        <span style="font-size:13.5px;">
+          <span style="color:var(--text-muted);">${escapeHtml(e.from)}</span>
+          <span style="color:var(--text-dim);margin:0 6px;">→</span>
+          <b style="color:var(--text);">${escapeHtml(e.to)}</b>
+        </span>
+        <button class="act-btn btn-del-dict" data-idx="${idx}" style="color:var(--danger);" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.btn-del-dict').forEach(b => {
+      b.onclick = async () => {
+        dict.splice(Number(b.dataset.idx), 1);
+        await api.setConfig({ dictionary: dict });
+        config.dictionary = dict;
+        renderDictionary();
+      };
+    });
+  }
+
+  document.getElementById('btnAddDict').onclick = async () => {
+    const fromEl = document.getElementById('dictFromInput');
+    const toEl = document.getElementById('dictToInput');
     const from = fromEl.value.trim(), to = toEl.value.trim();
     if (!from || !to) return;
-    dict.push({ from, to });
-    await api.setConfig({ dictionary: dict });
+    config.dictionary = config.dictionary || [];
+    config.dictionary.push({ from, to });
+    await api.setConfig({ dictionary: config.dictionary });
     fromEl.value = ''; toEl.value = '';
-    renderDict();
+    renderDictionary();
   };
-  document.getElementById('groqLink').onclick = e => { e.preventDefault(); api.openExternal('https://console.groq.com/keys'); };
+
+  // Notetaker logic
+  const noteBox = document.getElementById('noteTextarea');
+  const noteWordCount = document.getElementById('noteWordCount');
+  noteBox.oninput = () => {
+    const words = noteBox.value.trim().split(/\s+/).filter(Boolean).length;
+    noteWordCount.textContent = words + (words === 1 ? ' word' : ' words');
+  };
+  document.getElementById('btnCopyNote').onclick = async () => {
+    await api.copyText(noteBox.value);
+    document.getElementById('btnCopyNote').textContent = 'Copied ✓';
+    setTimeout(() => { document.getElementById('btnCopyNote').textContent = 'Copy Note'; }, 1500);
+  };
+  document.getElementById('btnClearNote').onclick = () => {
+    noteBox.value = '';
+    noteWordCount.textContent = '0 words';
+  };
+
+  // Right Click Context Menu
+  const contextMenu = document.getElementById('contextMenu');
+  window.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    contextMenu.style.display = 'block';
+    contextMenu.style.left = Math.min(window.innerWidth - 170, e.clientX) + 'px';
+    contextMenu.style.top = Math.min(window.innerHeight - 170, e.clientY) + 'px';
+  });
+  window.addEventListener('click', () => { contextMenu.style.display = 'none'; });
+
+  document.getElementById('ctxCopy').onclick = () => document.execCommand('copy');
+  document.getElementById('ctxCut').onclick = () => document.execCommand('cut');
+  document.getElementById('ctxPaste').onclick = () => document.execCommand('paste');
+  document.getElementById('ctxSelectAll').onclick = () => document.execCommand('selectAll');
+
+  // Helpers
+  function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
+
+  // Initial Load
+  (async () => {
+    config = await api.getConfig();
+    renderShortcuts();
+    renderDictionary();
+
+    document.getElementById('groqKeyInput').value = config.groqKey || '';
+    document.getElementById('smartFixToggle').checked = config.smartFix !== false;
+    document.getElementById('startupToggle').checked = !!config.launchAtLogin;
+
+    if (config.groqKey) {
+      document.getElementById('keyStatusText').textContent = 'Key configured — click "Test key" to verify live status.';
+      document.getElementById('keyStatusText').style.color = 'var(--accent)';
+    }
+
+    document.getElementById('groqKeyInput').onchange = async e => {
+      await api.setConfig({ groqKey: e.target.value.trim() });
+    };
+
+    document.getElementById('smartFixToggle').onchange = e => api.setConfig({ smartFix: e.target.checked });
+    document.getElementById('startupToggle').onchange = e => api.setConfig({ launchAtLogin: e.target.checked });
+
+    // Test Key
+    document.getElementById('btnTestKey').onclick = async () => {
+      const btn = document.getElementById('btnTestKey');
+      btn.disabled = true; btn.textContent = 'Testing...';
+      const key = document.getElementById('groqKeyInput').value.trim();
+      const res = await api.validateKey(key);
+      if (res.ok) {
+        document.getElementById('keyStatusText').textContent = '✓ Groq key connected and verified.';
+        document.getElementById('keyStatusText').style.color = '#10b981';
+      } else {
+        document.getElementById('keyStatusText').textContent = '✗ ' + res.error;
+        document.getElementById('keyStatusText').style.color = '#ef4444';
+      }
+      btn.disabled = false; btn.textContent = 'Test key';
+    };
+
+    // Load Mics
+    try {
+      const mics = await api.listMics();
+      const sel = document.getElementById('micSelect');
+      sel.innerHTML = '<option value="default">Default Device</option>' +
+        mics.map(m => `<option value="${m.id}">${escapeHtml(m.label)}</option>`).join('');
+      sel.value = config.micDeviceId || 'default';
+      sel.onchange = () => api.setConfig({ micDeviceId: sel.value });
+    } catch {}
+
+    // Load History & Stats
+    historyData = await api.getHistory();
+    const stats = await api.getStats();
+    renderHistory(historyData);
+    renderStats(stats);
+
+    // Listen for live new dictations
+    api.onHistoryUpdated(data => {
+      historyData.unshift(data.item);
+      renderHistory(historyData);
+      renderStats(data.stats);
+    });
+
+    api.onNavTo(tab => showTab(tab));
   })();
 </script>
-</body></html>
+</body>
+</html>

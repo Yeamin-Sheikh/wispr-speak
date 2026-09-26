@@ -1,8 +1,8 @@
 {
   "name": "wispr-tell",
   "productName": "Wispr Tell",
-  "version": "0.4.0",
-  "description": "Hold-to-talk AI voice typing for Windows powered by Groq whisper-large-v3-turbo and gpt-oss-20b.",
+  "version": "0.5.0",
+  "description": "Voice typing application for Windows with Push-to-Talk, Hands-free toggle mode, history timeline, and Groq cloud STT.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

@@ -77,7 +77,7 @@
     show();
     if (state === 'listening') {
       startWave(); iconBox.innerHTML = '';
-      label.innerHTML = esc(text || 'Listening…') + ' <span class="dim">release to type</span>';
+      label.innerHTML = esc(text || 'Listening…') + ' <span class="dim">' + esc(transcript || 'release to type') + '</span>';
     } else if (state === 'working') {
       stopWave(); iconBox.innerHTML = '<div class="spin"></div>';
       label.textContent = text || 'Typing…';

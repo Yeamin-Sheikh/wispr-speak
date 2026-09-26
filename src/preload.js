@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+
 contextBridge.exposeInMainWorld('wisprtell', {
   // capture window
   onCaptureStart: cb => ipcRenderer.on('capture-start', cb),
@@ -6,14 +7,23 @@ contextBridge.exposeInMainWorld('wisprtell', {
   sendCaptureData: buf => ipcRenderer.send('capture-data', buf),
   sendCaptureError: msg => ipcRenderer.send('capture-error', msg),
   sendMicLevel: l => ipcRenderer.send('mic-level', l),
+
   // pill
   onPillState: cb => ipcRenderer.on('pill-state', (_e, s) => cb(s)),
   onMicLevel: cb => ipcRenderer.on('mic-level', (_e, l) => cb(l)),
-  // settings / welcome
+
+  // dashboard / settings
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: patch => ipcRenderer.invoke('set-config', patch),
+  getHistory: () => ipcRenderer.invoke('get-history'),
+  deleteHistory: id => ipcRenderer.invoke('delete-history', id),
+  clearHistory: () => ipcRenderer.invoke('clear-history'),
+  getStats: () => ipcRenderer.invoke('get-stats'),
+  onHistoryUpdated: cb => ipcRenderer.on('history-updated', (_e, data) => cb(data)),
+  onNavTo: cb => ipcRenderer.on('nav-to', (_e, target) => cb(target)),
   listMics: () => ipcRenderer.invoke('list-mics'),
   welcomeDone: () => ipcRenderer.send('welcome-done'),
   openExternal: url => ipcRenderer.send('open-external', url),
   validateKey: key => ipcRenderer.invoke('validate-key', key),
+  copyText: text => ipcRenderer.invoke('copy-text', text),
 });
