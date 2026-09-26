@@ -13,6 +13,23 @@
 
 ## Progress log
 
+### 2026-09-27: Installed v0.5.3 and updated publisher branding to Sheikh Technologies Inc.
+
+**Status:** Done
+
+#### What changed
+- Created automated installer script `scripts/install.ps1` with uninstallation support.
+- Updated publisher name across `package.json`, `LICENSE`, and Windows Registry to "Sheikh Technologies Inc.".
+- Updated Windows Installed Apps registration to display Wispr Tell 0.5.3 with Sheikh Technologies Inc.
+- Verified running process and startup log.
+
+#### Files touched
+- `scripts/install.ps1`: Created automated installer and shortcut generator.
+- `package.json`: Changed author to Sheikh Technologies Inc.
+- `LICENSE`: Updated copyright owner to Sheikh Technologies Inc.
+
+---
+
 ### 2026-09-27: Removed notetaker and streamlined navigation
 
 **Status:** Done
