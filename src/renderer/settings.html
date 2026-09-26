@@ -1,0 +1,176 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Wispr Tell Settings</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Segoe UI", system-ui, sans-serif; background:#14161c; color:#eef1f6;
+    padding:28px 32px; -webkit-user-select:none; }
+  h1 { font-size:20px; font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+  h1 .logo { width:28px; height:28px; border-radius:8px; background:#0d9488;
+    display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .sub { color:#9aa3b2; font-size:13px; margin-bottom:24px; }
+  .section { margin-bottom:26px; }
+  .section > h2 { font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase;
+    color:#7c8598; margin-bottom:10px; }
+  .card { background:#1d2029; border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:14px 18px; }
+  .row + .row { border-top:1px solid rgba(255,255,255,.05); }
+  .row .t { font-size:14px; font-weight:500; }
+  .row .d { font-size:12.5px; color:#9aa3b2; margin-top:3px; }
+  select { background:#14161c; color:#eef1f6; border:1px solid rgba(255,255,255,.14);
+    border-radius:9px; padding:8px 12px; font-size:13.5px; max-width:230px; outline:none; }
+  select:focus { border-color:#0d9488; }
+  .kbd { display:inline-flex; gap:6px; }
+  .kbd span { background:#2a2e3a; border:1px solid rgba(255,255,255,.14); border-bottom-width:3px;
+    border-radius:7px; padding:5px 11px; font-size:13px; font-weight:600; }
+  .switch { position:relative; width:46px; height:26px; flex:none; cursor:pointer; }
+  .switch input { opacity:0; width:0; height:0; }
+  .track { position:absolute; inset:0; background:#333948; border-radius:999px; transition:.2s; }
+  .track:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px;
+    background:#fff; border-radius:50%; transition:.2s; }
+  .switch input:checked + .track { background:#0d9488; }
+  .switch input:checked + .track:before { transform:translateX(20px); }
+  .foot { margin-top:8px; color:#5d6577; font-size:12px; text-align:center; }
+  .pill-note { margin-top:14px; background:rgba(13,148,136,.1); border:1px solid rgba(13,148,136,.35);
+    border-radius:12px; padding:12px 16px; font-size:13px; color:#a7e8df; }
+</style></head>
+<body>
+  <h1><span class="logo">🎙</span> Wispr Tell</h1>
+  <div class="sub">Hold the shortcut, speak, release — text appears at your cursor.</div>
+
+  <div class="section"><h2>Shortcut</h2>
+    <div class="card"><div class="row">
+      <div><div class="t">Push to talk</div><div class="d">Hold both keys, release either to finish</div></div>
+      <div class="kbd"><span>Ctrl</span><span>Win</span></div>
+    </div></div>
+  </div>
+
+  <div class="section"><h2>Cloud engine</h2>
+    <div class="card">
+      <div class="row">
+        <div><div class="t">Groq API key</div><div class="d">Free at <a href="#" id="groqLink" style="color:#0d9488">console.groq.com</a> — no card needed. Powers the fast cloud engine.</div></div>
+        <input type="password" id="groqKey" placeholder="gsk_…" style="background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;width:210px;outline:none">
+      </div>
+      <div class="row">
+        <div><div class="t">Key status</div><div class="d" id="keyStatus">Not tested yet</div></div>
+        <button id="testKey" style="background:#0d9488;color:#fff;border:none;border-radius:9px;padding:9px 22px;font-size:13.5px;font-weight:600;cursor:pointer">Test key</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section"><h2>Audio</h2>
+    <div class="card">
+      <div class="row">
+        <div><div class="t">Microphone</div><div class="d">Input used for dictation</div></div>
+        <select id="mic"><option value="default">Loading…</option></select>
+      </div>
+      <div class="row">
+        <div><div class="t">Smart corrections</div><div class="d">Auto-fix spelling, grammar &amp; punctuation</div></div>
+        <label class="switch"><input type="checkbox" id="smartFix"><span class="track"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section"><h2>My words</h2>
+    <div class="card"><div class="row" style="display:block">
+      <div class="t">Personal dictionary</div>
+      <div class="d">Words the transcription mishears — Wispr Tell will always write them your way.</div>
+      <div id="dictList" style="margin-top:6px"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="dictFrom" placeholder="It hears…" style="flex:1;background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;outline:none;min-width:0">
+        <input id="dictTo" placeholder="Write…" style="flex:1;background:#14161c;color:#eef1f6;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:8px 12px;font-size:13px;outline:none;min-width:0">
+        <button id="dictAdd" style="background:#0d9488;color:#fff;border:none;border-radius:9px;padding:8px 18px;font-size:13.5px;font-weight:600;cursor:pointer;flex:none">Add</button>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="section"><h2>Voice commands</h2>
+    <div class="card"><div class="row">
+      <div><div class="t" style="font-weight:400;line-height:1.7">Say <b>"new line"</b>, <b>"new paragraph"</b>, <b>"scratch that"</b>, <b>"undo that"</b>, <b>"delete word"</b>, or punctuation — <b>"comma"</b>, <b>"period"</b>, <b>"question mark"</b>, <b>"exclamation mark"</b> — while dictating</div></div>
+    </div></div>
+  </div>
+
+  <div class="section"><h2>General</h2>
+    <div class="card">
+      <div class="row">
+        <div><div class="t">Start with Windows</div><div class="d">Launch Wispr Tell at login</div></div>
+        <label class="switch"><input type="checkbox" id="startup"><span class="track"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="pill-note" id="privacyNote">☁️ Cloud mode: audio is sent to Groq for transcription (free tier). No audio is stored by Wispr Tell.</div>
+  <div class="foot">Wispr Tell v0.4.0 · hold Ctrl+Win to talk</div>
+
+<script>
+  const api = window.wisprtell;
+  function setKeyStatus(ok, msg, color) {
+    const el = document.getElementById('keyStatus');
+    el.textContent = msg;
+    el.style.color = color;
+  }
+  (async () => {
+    const cfg = await api.getConfig();
+    document.getElementById('startup').checked = !!cfg.launchAtLogin;
+    document.getElementById('groqKey').value = cfg.groqKey || '';
+    document.getElementById('smartFix').checked = cfg.smartFix !== false;
+    if (cfg.groqKey) setKeyStatus(true, 'Key saved — press "Test key" to verify', '#9aa3b2');
+    const mics = await api.listMics();
+    const sel = document.getElementById('mic');
+    sel.innerHTML = '<option value="default">System default</option>' +
+      mics.map(m => `<option value="${m.id}">${m.label.replace(/</g,'&lt;')}</option>`).join('');
+    sel.value = cfg.micDeviceId || 'default';
+
+    sel.onchange = () => api.setConfig({ micDeviceId: sel.value });
+    document.getElementById('startup').onchange = e => api.setConfig({ launchAtLogin: e.target.checked });
+    document.getElementById('smartFix').onchange = e => api.setConfig({ smartFix: e.target.checked });
+    let keyTimer = null;
+    document.getElementById('groqKey').oninput = e => {
+      clearTimeout(keyTimer);
+      setKeyStatus(true, 'Saving…', '#9aa3b2');
+      keyTimer = setTimeout(async () => {
+        await api.setConfig({ groqKey: e.target.value.trim() });
+        setKeyStatus(true, 'Key saved — press "Test key" to verify', '#9aa3b2');
+      }, 600);
+    };
+    document.getElementById('testKey').onclick = async () => {
+      const btn = document.getElementById('testKey');
+      btn.disabled = true; btn.textContent = 'Testing…';
+      setKeyStatus(true, 'Contacting Groq…', '#9aa3b2');
+      const r = await api.validateKey(document.getElementById('groqKey').value.trim());
+      if (r.ok) setKeyStatus(true, '✓ Key works — you are ready to dictate', '#4ade80');
+      else setKeyStatus(false, '✗ ' + r.error, '#f87171');
+      btn.disabled = false; btn.textContent = 'Test key';
+    };
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  // ---- personal dictionary ("My words") ----
+  let dict = Array.isArray(cfg.dictionary) ? cfg.dictionary.slice() : [];
+  function renderDict() {
+    const list = document.getElementById('dictList');
+    list.innerHTML = dict.map((e, i) =>
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)">' +
+        '<span style="font-size:13.5px"><span style="color:#9aa3b2">' + escapeHtml(e.from) + '</span>' +
+        ' <span style="color:#5d6577">→</span> <b>' + escapeHtml(e.to) + '</b></span>' +
+        '<button data-i="' + i + '" class="dictDel" style="background:none;border:none;color:#f87171;font-size:15px;cursor:pointer;padding:2px 6px">✕</button>' +
+      '</div>').join('') ||
+      '<div style="color:#5d6577;font-size:13px;padding:6px 0">No words yet — add one below.</div>';
+    list.querySelectorAll('.dictDel').forEach(b => b.onclick = async () => {
+      dict.splice(Number(b.dataset.i), 1);
+      await api.setConfig({ dictionary: dict });
+      renderDict();
+    });
+  }
+  renderDict();
+  document.getElementById('dictAdd').onclick = async () => {
+    const fromEl = document.getElementById('dictFrom'), toEl = document.getElementById('dictTo');
+    const from = fromEl.value.trim(), to = toEl.value.trim();
+    if (!from || !to) return;
+    dict.push({ from, to });
+    await api.setConfig({ dictionary: dict });
+    fromEl.value = ''; toEl.value = '';
+    renderDict();
+  };
+  document.getElementById('groqLink').onclick = e => { e.preventDefault(); api.openExternal('https://console.groq.com/keys'); };
+  })();
+</script>
+</body></html>

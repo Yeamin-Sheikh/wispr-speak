@@ -1,0 +1,26 @@
+{
+  "name": "wispr-tell",
+  "productName": "Wispr Tell",
+  "version": "0.4.0",
+  "description": "Hold-to-talk AI voice typing for Windows powered by Groq whisper-large-v3-turbo and gpt-oss-20b.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-native": "node scripts/build-native.js",
+    "pack": "electron-packager . \"Wispr Tell\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.6",
+    "uiohook-napi": "^1.5.5"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-packager": "^17.1.2"
+  },
+  "author": "Yeamin Sheikh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yeamin-Sheikh/wispr-tell.git"
+  }
+}

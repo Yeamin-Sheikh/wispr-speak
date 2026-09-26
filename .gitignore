@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.zip
+
+# Local configuration and debug logs
+wispr-tell-config.json
+wispr-tell-debug.log
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# System & editor files
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

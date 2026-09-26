@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Wispr Tell mic</title></head>
+<body>
+<script>
+// Hidden mic owner: captures 16kHz mono PCM via AudioWorklet, returns a WAV.
+// Also streams live mic levels so the pill can animate its waveform.
+let ctx = null, stream = null, node = null, analyser = null, chunks = [];
+let capturing = false, levelTimer = null, analyserData = null;
+
+const WORKLET = `
+class Cap extends AudioWorkletProcessor {
+  process(inputs) {
+    const ch = inputs[0] && inputs[0][0];
+    if (ch && ch.length) this.port.postMessage(ch.slice(0));
+    return true;
+  }
+}
+registerProcessor('wisprtell-cap', Cap);`;
+
+function encodeWav(samples, sampleRate) {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const wstr = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  wstr(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); wstr(8, 'WAVE');
+  wstr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  wstr(36, 'data'); v.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return buf;
+}
+
+function reportLevel() {
+  if (!capturing || !analyser) return;
+  analyser.getFloatTimeDomainData(analyserData);
+  let peak = 0;
+  for (let i = 0; i < analyserData.length; i += 4) {
+    const a = Math.abs(analyserData[i]);
+    if (a > peak) peak = a;
+  }
+  window.wisprtell.sendMicLevel(Math.min(1, peak * 1.6));
+}
+
+async function start() {
+  if (capturing) return;
+  chunks = [];
+  const cfg = await window.wisprtell.getConfig();
+  const audio = { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+  if (cfg.micDeviceId && cfg.micDeviceId !== 'default') audio.deviceId = { exact: cfg.micDeviceId };
+  stream = await navigator.mediaDevices.getUserMedia({ audio });
+  ctx = new AudioContext({ sampleRate: 16000 });
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' })));
+  const src = ctx.createMediaStreamSource(stream);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  analyserData = new Float32Array(analyser.fftSize);
+  src.connect(analyser);
+  node = new AudioWorkletNode(ctx, 'wisprtell-cap');
+  node.port.onmessage = e => chunks.push(e.data);
+  src.connect(node);
+  capturing = true;
+  levelTimer = setInterval(reportLevel, 60);
+}
+
+function stop() {
+  clearInterval(levelTimer);
+  window.wisprtell.sendMicLevel(0);
+  if (!capturing) { window.wisprtell.sendCaptureData(new ArrayBuffer(0)); return; }
+  capturing = false;
+  try { node.disconnect(); } catch {}
+  try { stream.getTracks().forEach(t => t.stop()); } catch {}
+  try { ctx.close(); } catch {}
+  analyser = null;
+  const total = chunks.reduce((a, c) => a + c.length, 0);
+  const flat = new Float32Array(total);
+  let o = 0;
+  for (const c of chunks) { flat.set(c, o); o += c.length; }
+  window.wisprtell.sendCaptureData(encodeWav(flat, 16000));
+}
+
+async function listMics() {
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    return devs.filter(d => d.kind === 'audioinput').map(d => ({ id: d.deviceId, label: d.label || 'Microphone' }));
+  } catch { return []; }
+}
+
+window.wisprtell.onCaptureStart(() => {
+  start().catch(e => window.wisprtell.sendCaptureError(String((e && e.message) || e)));
+});
+window.wisprtell.onCaptureStop(stop);
+window.wisprtell.handleListMics(listMics);
+</script>
+</body></html>

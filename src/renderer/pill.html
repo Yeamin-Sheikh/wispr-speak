@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Wispr Tell</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; }
+  html, body { width:100%; height:100%; background:transparent; overflow:hidden;
+    font-family:"Segoe UI", system-ui, -apple-system, sans-serif; }
+  body { display:flex; align-items:center; justify-content:center; }
+  #pill {
+    display:flex; align-items:center; gap:14px;
+    min-width:280px; max-width:460px; padding:14px 22px 14px 18px;
+    background:rgba(22,24,30,.88);
+    -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px);
+    border:1px solid rgba(255,255,255,.12); border-radius:20px;
+    box-shadow:0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.2);
+    color:#fff; opacity:0; transform:translateY(12px) scale(.96);
+    transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.3,1.2);
+  }
+  #pill.show { opacity:1; transform:translateY(0) scale(1); }
+  #wave { width:64px; height:36px; flex:none; }
+  #label { font-size:14.5px; font-weight:500; letter-spacing:.2px; color:#eef1f6;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #label .dim { color:#9aa3b2; font-weight:400; }
+  .check { width:26px; height:26px; flex:none; border-radius:50%;
+    background:#14b8a6; display:flex; align-items:center; justify-content:center;
+    font-size:15px; color:#062a27; font-weight:700; }
+  .spin { width:22px; height:22px; flex:none; border-radius:50%;
+    border:3px solid rgba(255,255,255,.18); border-top-color:#5eead4;
+    animation:rot .7s linear infinite; }
+  @keyframes rot { to { transform:rotate(360deg); } }
+  .errdot { width:22px; height:22px; flex:none; border-radius:50%; background:#f59e0b;
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#3a2200; font-weight:700; }
+</style></head>
+<body>
+<div id="pill">
+  <canvas id="wave" width="128" height="72"></canvas>
+  <div id="icon"></div>
+  <span id="label">Wispr Tell</span>
+</div>
+<script>
+  const pill = document.getElementById('pill');
+  const label = document.getElementById('label');
+  const iconBox = document.getElementById('icon');
+  const canvas = document.getElementById('wave');
+  const g = canvas.getContext('2d');
+
+  let level = 0, target = 0, bars = new Array(16).fill(0), raf = null, hideTimer = null;
+
+  function draw() {
+    target = Math.max(0, target * 0.86); // decay
+    level += (target - level) * 0.35;
+    g.clearRect(0, 0, 128, 72);
+    const n = bars.length, bw = 128 / n;
+    for (let i = 0; i < n; i++) {
+      const wave = Math.sin(Date.now() / 260 + i * 0.85) * 0.5 + 0.5;
+      const want = 6 + wave * 26 * (0.25 + level * 2.4);
+      bars[i] += (want - bars[i]) * 0.4;
+      const h = Math.max(3, Math.min(66, bars[i]));
+      const x = i * bw + bw * 0.22, w = bw * 0.56, y = (72 - h) / 2;
+      const grad = g.createLinearGradient(0, y, 0, y + h);
+      grad.addColorStop(0, '#5eead4'); grad.addColorStop(1, '#0d9488');
+      g.fillStyle = grad;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(x, y, w, h, w / 2); else g.rect(x, y, w, h);
+      g.fill();
+    }
+    raf = requestAnimationFrame(draw);
+  }
+  function startWave() { canvas.style.display = ''; if (!raf) draw(); }
+  function stopWave() { canvas.style.display = 'none'; if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+  function show() { clearTimeout(hideTimer); pill.classList.add('show'); }
+  function autoHide(ms) { clearTimeout(hideTimer); hideTimer = setTimeout(() => pill.classList.remove('show'), ms); }
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  window.wisprtell.onPillState(({ state, label: text, transcript }) => {
+    if (state === 'hidden') { pill.classList.remove('show'); return; }
+    show();
+    if (state === 'listening') {
+      startWave(); iconBox.innerHTML = '';
+      label.innerHTML = esc(text || 'Listening…') + ' <span class="dim">release to type</span>';
+    } else if (state === 'working') {
+      stopWave(); iconBox.innerHTML = '<div class="spin"></div>';
+      label.textContent = text || 'Typing…';
+    } else if (state === 'done') {
+      stopWave(); iconBox.innerHTML = '<div class="check">✓</div>';
+      label.textContent = (transcript || '').slice(0, 60) || 'Done';
+      autoHide(1400);
+    } else if (state === 'error') {
+      stopWave(); iconBox.innerHTML = '<div class="errdot">!</div>';
+      label.textContent = text || 'Something went wrong';
+      autoHide(2600);
+    }
+  });
+
+  window.wisprtell.onMicLevel(l => { target = Math.min(1, Math.max(0, l)); });
+</script>
+</body></html>
