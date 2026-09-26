@@ -13,6 +13,23 @@
 
 ## Progress log
 
+### 2026-09-27: Premium pill redesign, shortcut rework, and UI animation polish
+
+**Status:** Done
+
+#### What changed
+- Rebuilt the floating status pill into a text-free pure visual indicator. During listening, only an organic 5-bar waveform shows. Working state shows a minimal spinner. Done/error states morph outward with spring physics to show transcript or error text.
+- Redesigned shortcut logic: `Ctrl+Win+Space` activates hands-free, either `Ctrl+Win` or `Ctrl+Win+Space` ends it. Push-to-talk still works via `Ctrl+Win` hold with a 130ms debounce.
+- Added premium CSS animations throughout settings.html: staggered card entrances, animated nav active indicators with scaleY transitions, ambient glow drift, input focus ring glow, keycap hover lift, button press depth, and view panel crossfades.
+- Fixed double-toggle bug on setting row switches by excluding `.switch` and `label` from click propagation.
+
+#### Files touched
+- `src/renderer/pill.html`: Complete rewrite with CSS Grid morphing layout, organic waveform, and spring entrance/exit curves.
+- `src/main.js`: Rewrote uIOhook keydown handler for bidirectional hands-free stop (Ctrl+Win or Ctrl+Win+Space). Removed all text from setPill calls during listening/working states.
+- `src/renderer/settings.html`: Added ~170 lines of premium animation CSS, fixed duplicate nav indicator, and fixed switch click event bubbling.
+
+---
+
 ### 2026-09-27: 21st.dev UI redesign, micro Dynamic Island pill, and SmartScreen unblock
 
 **Status:** Done

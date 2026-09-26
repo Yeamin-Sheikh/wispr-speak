@@ -290,16 +290,6 @@
       color: var(--text);
       font-weight: 600;
     }
-    .nav-item.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 6px;
-      bottom: 6px;
-      width: 3px;
-      border-radius: 2px;
-      background: var(--accent);
-    }
     .nav-item svg {
       width: 17px;
       height: 17px;
@@ -890,6 +880,176 @@
     }
     .menu-item:hover { background: var(--nav-active); }
     .menu-separator { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+
+    /* ---- Premium animation keyframes ---- */
+
+    /* Staggered entrance for cards and panels */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* Entrance animation for view panels when activated */
+    .view-panel.active {
+      display: flex;
+      animation: fadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Staggered entrance for spotlight cards */
+    .spotlight-card {
+      animation: fadeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .spotlight-card:nth-child(1) { animation-delay: 0.04s; }
+    .spotlight-card:nth-child(2) { animation-delay: 0.08s; }
+    .spotlight-card:nth-child(3) { animation-delay: 0.12s; }
+    .spotlight-card:nth-child(4) { animation-delay: 0.16s; }
+
+    /* Dictation cards fade in with stagger */
+    .dictation-card {
+      animation: fadeSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Smooth active indicator on nav items */
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+      transform: scaleY(0);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-item.active::before {
+      transform: scaleY(1);
+    }
+
+    /* Subtle lift on spotlight cards */
+    .spotlight-card:hover {
+      border-color: var(--card-hover-border);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+    .spotlight-card {
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Bento stat values get a subtle scale on hover */
+    .stat-card:hover .stat-val {
+      color: var(--accent);
+      transition: color 0.2s ease;
+    }
+
+    /* Setting row active press feedback */
+    .setting-row:active {
+      background: var(--accent-light);
+      transition: background 0.06s;
+    }
+
+    /* Switch knob stretch animation on toggle */
+    .switch input:active + .switch-track:before {
+      width: 22px;
+    }
+
+    /* Pulsing dot on engine status */
+    .pulsing-dot {
+      animation: subtlePulse 2.4s ease-in-out infinite;
+    }
+
+    /* Smooth button press depth */
+    .btn-primary:active {
+      transform: translateY(0) scale(0.97);
+      transition: transform 0.08s;
+    }
+    .btn-outline:active {
+      transform: scale(0.97);
+      transition: transform 0.08s;
+    }
+
+    /* Tip bar entrance */
+    .tip-bar {
+      animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.1s;
+    }
+
+    /* Search box smooth expand */
+    .search-box {
+      transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, background 0.2s;
+    }
+
+    /* Theme card selection pop */
+    .theme-card.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-light);
+    }
+    .theme-card {
+      transition: border-color 0.15s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s, box-shadow 0.2s;
+    }
+
+    /* Content container subtle entrance */
+    .content-container {
+      animation: fadeIn 0.3s ease both;
+    }
+
+    /* Sidebar entrance */
+    .sidebar {
+      animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Input focus ring glow */
+    .input-text:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    /* Keycap hover lift */
+    .kbd-badge kbd {
+      transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.12s;
+    }
+    .kbd-badge kbd:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    /* Ambient glow slow drift animation */
+    .ambient-glow {
+      animation: ambientDrift 12s ease-in-out infinite alternate;
+    }
+    @keyframes ambientDrift {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+      50% { transform: translate(-20px, 15px) scale(1.05); opacity: 1; }
+      100% { transform: translate(10px, -10px) scale(0.98); opacity: 0.8; }
+    }
+
+    /* User card hover glow */
+    .sidebar-user:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-light);
+    }
+    .sidebar-user {
+      transition: border-color 0.18s, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s;
+    }
   </style>
 </head>
 <body>

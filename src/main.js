@@ -710,12 +710,9 @@ async function onHotkeyDown(handsFreeMode = false) {
   targetHwnd = await detectTargetWindow();
   log('hotkey down, target=' + targetHwnd + ', handsFree=' + handsFreeMode);
 
-  if (handsFreeMode) {
-    const hfShortcut = (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+');
-    setPill('listening', 'Listening (Hands-free)…', 'Press ' + hfShortcut + ' to finish');
-  } else {
-    setPill('listening', 'Listening…', 'release to type');
-  }
+  // Pill is now a pure visual indicator during listening, no text needed.
+  // The user already pressed a shortcut, they know what's happening.
+  setPill('listening');
 
   captureWin.webContents.send('capture-start');
 }
@@ -725,7 +722,7 @@ async function onHotkeyUp() {
   recording = false;
   isHandsFree = false;
   busy = true;
-  setPill('working', 'Typing…');
+  setPill('working');
 
   try {
     const wavBuffer = await new Promise((resolve, reject) => {
@@ -742,7 +739,7 @@ async function onHotkeyUp() {
     }
 
     const t0 = Date.now();
-    setPill('working', 'Transcribing…');
+    setPill('working');
     const raw = await transcribe(wavBuffer);
     const durationMs = Date.now() - t0;
     log('transcribe took', durationMs, 'ms');
@@ -753,7 +750,7 @@ async function onHotkeyUp() {
     if (cmd.action === 'delete-word') { await deleteWord(); return; }
 
     const formattedRaw = cmd.command ? cmd.text : formatText(cmd.text);
-    setPill('working', 'Polishing…');
+    setPill('working');
     let clean = cmd.command ? cmd.text : await smartPolish(formattedRaw);
     clean = applyDictionary(clean, config.dictionary);
     log('final: "' + clean.slice(0, 80) + '"');
@@ -831,7 +828,7 @@ async function onPolishSelection() {
     }
 
     log('polish-selection: got', selectedText.length, 'chars');
-    setPill('working', 'Polishing sentence…');
+    setPill('working');
 
     const t0 = Date.now();
     const polished = await polishSelectedText(selectedText);
@@ -1068,7 +1065,7 @@ if (!gotSingleLock) {
       { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
       {
         label: 'Test Groq key', click: async () => {
-          setPill('working', 'Testing key…');
+          setPill('working');
           const r = await validateGroqKey(config.groqKey);
           if (r.ok) { log('key test: OK'); setPill('done', null, 'Groq key works ✓'); }
           else { log('key test FAILED:', r.error); setPill('error', r.error); }
@@ -1094,24 +1091,20 @@ if (!gotSingleLock) {
     const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const polishCombo = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
 
-    // 1. Hands-free toggle mode check (Control + Windows + Spacebar)
+    // 1. Full three-key combo: Ctrl + Win + Space
+    //    - If not recording: start hands-free
+    //    - If recording (hands-free or PTT): end it
     if (isComboHeld(handsFreeCombo)) {
       if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
       if (now - handsFreeCooldown < 400) return;
       handsFreeCooldown = now;
 
       if (recording) {
-        if (isHandsFree) {
-          log('hands-free toggle: ending recording');
-          onHotkeyUp();
-        } else {
-          log('hands-free toggle: promoting active recording to hands-free');
-          isHandsFree = true;
-          const hfShortcut = (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+');
-          setPill('listening', 'Listening (Hands-free)…', 'Press ' + hfShortcut + ' to finish');
-        }
+        // End any active recording when full combo is pressed
+        log('hands-free: ending recording via Ctrl+Win+Space');
+        onHotkeyUp();
       } else if (!busy) {
-        log('hands-free toggle: starting recording');
+        log('hands-free: starting recording');
         onHotkeyDown(true);
       }
       return;
@@ -1129,9 +1122,24 @@ if (!gotSingleLock) {
       return;
     }
 
-    // 3. Push-to-talk hold mode check (Control + Windows)
-    if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
-      if (!pttPendingTimer) {
+    // 3. Two-key combo: Ctrl + Win (without Space)
+    //    - If hands-free recording is active: end it (this is the quick-stop shortcut)
+    //    - If not recording: start push-to-talk after a 130ms debounce (to let
+    //      the user add Space for hands-free without accidentally starting PTT)
+    if (isComboHeld(pttCombo)) {
+      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
+
+      if (recording && isHandsFree) {
+        // Ctrl+Win alone ends hands-free recording immediately
+        if (now - handsFreeCooldown < 400) return;
+        handsFreeCooldown = now;
+        log('hands-free: ending recording via Ctrl+Win');
+        onHotkeyUp();
+        return;
+      }
+
+      if (!recording && !busy) {
+        // Debounce: wait 130ms for Space to land before committing to PTT
         pttPendingTimer = setTimeout(() => {
           pttPendingTimer = null;
           if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
@@ -1144,10 +1152,12 @@ if (!gotSingleLock) {
 
   uIOhook.on('keyup', e => {
     heldKeys.delete(e.keycode);
+    // Cancel pending PTT if the user released modifier keys before the debounce
     if (pttPendingTimer && !isComboHeld(config.shortcuts?.pushToTalk || ['Ctrl', 'Win'])) {
       clearTimeout(pttPendingTimer);
       pttPendingTimer = null;
     }
+    // End push-to-talk (hold-to-record) when modifiers are released
     if (recording && !isHandsFree) {
       const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
       if (!isComboHeld(pttCombo)) {
