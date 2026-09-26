@@ -658,7 +658,7 @@ async function onHotkeyUp() {
 // ---------- app lifecycle ----------
 app.whenReady().then(() => {
   LOG_PATH = path.join(app.getPath('userData'), 'wispr-tell-debug.log');
-  log('=== Wispr Tell v0.5.0 starting ===');
+  log('=== Wispr Tell v' + app.getVersion() + ' starting ===');
   for (const [name, p] of [['paste-helper', PASTE_HELPER]])
     log('self-check', name, fs.existsSync(p) ? 'OK' : 'MISSING: ' + p);
   log('self-check groq-key', config.groqKey ? 'configured' : 'NOT SET');
@@ -714,7 +714,7 @@ app.whenReady().then(() => {
   ipcMain.handle('export-profile', () => {
     return {
       appName: 'Wispr Tell',
-      version: '0.5.1',
+      version: app.getVersion(),
       exportedAt: new Date().toISOString(),
       user: {
         name: config.userName || 'Yeamin',
