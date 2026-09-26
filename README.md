@@ -26,7 +26,6 @@ Wispr Tell is completely free and open source. It requires no subscription, paid
 - Inline correction learning: Edit any past dictation directly in your history timeline. Wispr Tell isolates the corrected phrase differences and lets you add the mapping to your personal dictionary with one click.
 - Profile backup and migration: Export your complete voice profile, stats, dictionary rules, and shortcut preferences as a JSON file, and import it on any Windows PC.
 - History and productivity stats: Browse past dictations, search by keyword, view total words transcribed, words per minute, and daily streaks.
-- Built-in scratchpad: Test voice typing or compose long drafts in a distraction-free notetaker with live word counting.
 
 ### Requirements
 

@@ -13,6 +13,23 @@
 
 ## Progress log
 
+### 2026-09-27: Removed notetaker and streamlined navigation
+
+**Status:** Done
+
+#### What changed
+- Removed notetaker and scratchpad feature per user preference.
+- Cleaned up settings interface navigation down to focused tabs: Dictation, Dictionary, Voice profile, Settings, and Help.
+- Removed unused textarea DOM elements, word count calculators, and clipboard handlers.
+- Updated documentation and bumped release version to 0.5.3.
+
+#### Files touched
+- `src/renderer/settings.html`: Removed notetaker CSS, view panel, tab navigation handler, and event listeners.
+- `README.md`: Removed built-in scratchpad feature bullet point.
+- `package.json`: Bumped version to 0.5.3.
+
+---
+
 ### 2026-09-27: Redesigned minimal logo, intent-aware speech recognition, and Win+Alt+Q sentence polishing
 
 **Status:** Done

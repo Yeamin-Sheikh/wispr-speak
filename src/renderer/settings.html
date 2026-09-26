@@ -724,18 +724,6 @@
     }
     .theme-name { font-size: 12.5px; font-weight: 600; text-align: center; }
 
-    /* Notetaker */
-    .notetaker-box {
-      width: 100%; height: 380px;
-      background: var(--card-bg);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 20px;
-      font-family: inherit; font-size: 14.5px; line-height: 1.6;
-      color: var(--text); outline: none; resize: none; user-select: text;
-    }
-    .notetaker-box:focus { border-color: var(--accent); }
-
     /* Right Click Menu */
     #contextMenu {
       position: fixed; display: none;
@@ -793,29 +781,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
             Dictation
           </div>
-          <div class="nav-item" data-tab="notetaker">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
-            Notetaker
-          </div>
-          <div class="nav-item" data-tab="insights">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            Insights
-          </div>
           <div class="nav-item" data-tab="dictionary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             Dictionary
           </div>
           <div class="nav-item" data-tab="profile">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            My Profile
-          </div>
-          <div class="nav-item" data-tab="snippets">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
-            Snippets
-          </div>
-          <div class="nav-item" data-tab="scratchpad">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-            Scratchpad
+            Voice profile
           </div>
         </div>
       </div>
@@ -1038,19 +1010,6 @@
           </div>
         </div>
 
-        <!-- 5. Notetaker View -->
-        <div class="view-panel" id="view-notetaker">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div class="greeting-title">Notetaker</div>
-            <div style="display:flex;gap:8px;">
-              <button class="btn-outline" id="btnCopyNote">Copy Note</button>
-              <button class="btn-outline" id="btnClearNote">Clear</button>
-            </div>
-          </div>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:-10px;">A distraction-free pad to dictate, edit, or test spoken sentences directly.</p>
-          <textarea class="notetaker-box" id="noteTextarea" placeholder="Click here and hold Ctrl+Win or press Ctrl+Win+Space to dictate notes directly..."></textarea>
-          <div style="font-size:12px;color:var(--text-dim);" id="noteWordCount">0 words</div>
-        </div>
 
         <!-- 6. Help View -->
         <div class="view-panel" id="view-help">
@@ -1146,10 +1105,7 @@
 
   navItems.forEach(item => {
     item.onclick = () => {
-      const tab = item.dataset.tab;
-      if (tab === 'scratchpad') showTab('notetaker');
-      else if (['insights', 'style', 'snippets'].includes(tab)) showTab('dictation');
-      else showTab(tab);
+      showTab(item.dataset.tab);
     };
   });
 
@@ -1479,22 +1435,6 @@
     renderDictionary();
   };
 
-  // Notetaker
-  const noteBox = document.getElementById('noteTextarea');
-  const noteWordCount = document.getElementById('noteWordCount');
-  noteBox.oninput = () => {
-    const words = noteBox.value.trim().split(/\s+/).filter(Boolean).length;
-    noteWordCount.textContent = words + (words === 1 ? ' word' : ' words');
-  };
-  document.getElementById('btnCopyNote').onclick = async () => {
-    await api.copyText(noteBox.value);
-    document.getElementById('btnCopyNote').textContent = 'Copied ✓';
-    setTimeout(() => { document.getElementById('btnCopyNote').textContent = 'Copy Note'; }, 1500);
-  };
-  document.getElementById('btnClearNote').onclick = () => {
-    noteBox.value = '';
-    noteWordCount.textContent = '0 words';
-  };
 
   // Profile Export & Import
   document.getElementById('btnExportProfile').onclick = async () => {
