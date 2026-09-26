@@ -46,7 +46,12 @@ if (-not (Test-Path $TargetDir)) {
 
 # 4. Copy files
 Write-Host "Copying application binaries and assets..." -ForegroundColor Yellow
-Copy-Item -Path "$SourceDir\*" -Destination $TargetDir -Recurse -Force
+try {
+  Copy-Item -Path "$SourceDir\*" -Destination $TargetDir -Recurse -Force -ErrorAction Stop
+} catch {
+  Write-Host "Notice: Base binaries locked, synchronizing resources/app..." -ForegroundColor Yellow
+  Copy-Item -Path "$SourceDir\resources\app\*" -Destination "$TargetDir\resources\app" -Recurse -Force
+}
 
 # 5. Create uninstaller script in target directory
 $UninstallScript = @"

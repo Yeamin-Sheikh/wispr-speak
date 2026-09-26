@@ -17,6 +17,7 @@
     border:1px solid rgba(255,255,255,0.12);
     border-top:1px solid rgba(255,255,255,0.24);
     border-radius:24px;
+    cursor:pointer;
     box-shadow:
       0 20px 50px rgba(0,0,0,0.55),
       0 0 1px rgba(255,255,255,0.25) inset,
@@ -186,5 +187,11 @@
   });
 
   window.wisprtell.onMicLevel(l => { target = Math.min(1, Math.max(0, l)); });
+
+  pill.addEventListener('click', () => {
+    if (window.wisprtell && window.wisprtell.toggleHandsFree) {
+      window.wisprtell.toggleHandsFree();
+    }
+  });
 </script>
 </body></html>

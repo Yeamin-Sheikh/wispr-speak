@@ -544,10 +544,28 @@ function pasteViaHelper() {
 }
 
 async function pasteViaNut() {
-  const { keyboard, Key } = require('@nut-tree-fork/nut-js');
-  keyboard.config.autoDelayMs = 5;
-  await keyboard.pressKey(Key.LeftControl, Key.V);
-  await keyboard.releaseKey(Key.LeftControl, Key.V);
+  try {
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 5;
+    await keyboard.pressKey(Key.LeftControl, Key.V);
+    await keyboard.releaseKey(Key.LeftControl, Key.V);
+  } catch (err) {
+    log('pasteViaNut error:', err.message);
+  }
+}
+
+function copyViaHelper() {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(PASTE_HELPER)) return reject(new Error('helper not built'));
+    const args = targetHwnd ? ['--copy', '--restore-window', targetHwnd] : ['--copy'];
+    const p = spawn(PASTE_HELPER, args, { windowsHide: true });
+    let out = '', err = '';
+    const to = setTimeout(() => { try { p.kill(); } catch {} reject(new Error('copy helper timeout')); }, 4000);
+    p.stdout.on('data', d => (out += d));
+    p.stderr.on('data', d => (err += d));
+    p.on('error', e => { clearTimeout(to); reject(e); });
+    p.on('close', code => { clearTimeout(to); code === 0 ? resolve(out) : reject(new Error('copy helper: ' + err.trim())); });
+  });
 }
 
 function detectTargetWindow() {
@@ -705,22 +723,35 @@ async function onPolishSelection() {
 
     const prevText = clipboard.readText();
 
-    // Release modifiers so Ctrl+C is not modified by Win, Alt, or Q
-    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
-    keyboard.config.autoDelayMs = 2;
-    await keyboard.releaseKey(Key.LeftWin, Key.RightWin, Key.LeftAlt, Key.RightAlt, Key.Q);
-    await new Promise(r => setTimeout(r, 60));
-
-    // Clear clipboard temporarily to detect if new text was selected
+    // Clear clipboard temporarily so we can reliably detect newly copied text
     clipboard.clear();
 
-    // Send Ctrl + C to copy selection
-    await keyboard.pressKey(Key.LeftControl, Key.C);
-    await keyboard.releaseKey(Key.LeftControl, Key.C);
+    // Copy selected text via native helper (releases Win/Alt/Q modifiers and sends Ctrl+C)
+    let copyOk = false;
+    try {
+      await copyViaHelper();
+      log('polish-selection: native copy helper OK');
+      copyOk = true;
+    } catch (e) {
+      log('polish-selection: native copy helper failed (' + e.message + '), falling back to nut-js');
+    }
 
-    // Wait for clipboard to populate
+    if (!copyOk) {
+      try {
+        const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+        keyboard.config.autoDelayMs = 2;
+        await keyboard.releaseKey(Key.LeftWin, Key.RightWin, Key.LeftAlt, Key.RightAlt, Key.Q);
+        await new Promise(r => setTimeout(r, 40));
+        await keyboard.pressKey(Key.LeftControl, Key.C);
+        await keyboard.releaseKey(Key.LeftControl, Key.C);
+      } catch (nutErr) {
+        log('polish-selection: nut-js fallback failed:', nutErr.message);
+      }
+    }
+
+    // Wait for clipboard to populate with copied text
     let selectedText = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       await new Promise(r => setTimeout(r, 40));
       selectedText = clipboard.readText().trim();
       if (selectedText) break;
@@ -911,12 +942,29 @@ app.whenReady().then(() => {
     if (typeof url === 'string') shell.openExternal(url);
   });
 
+  ipcMain.on('toggle-handsfree', () => {
+    if (recording && isHandsFree) {
+      log('hands-free: toggled off');
+      onHotkeyUp();
+    } else if (!recording && !busy) {
+      log('hands-free: toggled on');
+      onHotkeyDown(true);
+    }
+  });
+
   // Tray menu
   const trayIcon = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'tray.png');
   tray = new Tray(trayIcon);
   tray.setToolTip('Wispr Tell — Voice Typing');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open Wispr Tell', click: openSettings },
+    {
+      label: 'Toggle hands-free mode',
+      click: () => {
+        if (recording && isHandsFree) onHotkeyUp();
+        else if (!recording && !busy) onHotkeyDown(true);
+      },
+    },
     { type: 'separator' },
     { label: 'Push to talk: ' + (config.shortcuts?.pushToTalk || ['Ctrl', 'Win']).join('+'), enabled: false },
     { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
@@ -949,13 +997,20 @@ app.whenReady().then(() => {
 
     // 1. Hands-free toggle mode check (Control + Windows + Spacebar)
     if (isComboHeld(handsFreeCombo)) {
-      if (now - handsFreeCooldown < 500) return;
+      if (now - handsFreeCooldown < 400) return;
       handsFreeCooldown = now;
 
-      if (recording && isHandsFree) {
-        log('hands-free toggle: ending recording');
-        onHotkeyUp();
-      } else if (!recording && !busy) {
+      if (recording) {
+        if (isHandsFree) {
+          log('hands-free toggle: ending recording');
+          onHotkeyUp();
+        } else {
+          log('hands-free toggle: promoting active recording to hands-free');
+          isHandsFree = true;
+          const hfShortcut = (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+');
+          setPill('listening', 'Listening (Hands-free)…', 'Press ' + hfShortcut + ' to finish');
+        }
+      } else if (!busy) {
         log('hands-free toggle: starting recording');
         onHotkeyDown(true);
       }

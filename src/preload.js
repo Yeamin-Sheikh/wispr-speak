@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('wisprtell', {
   // pill
   onPillState: cb => ipcRenderer.on('pill-state', (_e, s) => cb(s)),
   onMicLevel: cb => ipcRenderer.on('mic-level', (_e, l) => cb(l)),
+  toggleHandsFree: () => ipcRenderer.send('toggle-handsfree'),
 
   // dashboard / settings
   getConfig: () => ipcRenderer.invoke('get-config'),

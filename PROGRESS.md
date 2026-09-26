@@ -13,6 +13,25 @@
 
 ## Progress log
 
+### 2026-09-27: Fixed hands-free shortcut collision and native selection polishing
+
+**Status:** Done
+
+#### What changed
+- Fixed missing `pako` and `clipboardy` dependencies that caused selection polish to fail with `Cannot find module 'pako'`.
+- Implemented native `copyViaHelper()` calling `tell-paste.exe --copy` to execute Win32 `SendInput` copying with automatic modifier release and focus restoration.
+- Resolved shortcut collision where `Ctrl + Win` push-to-talk blocked `Ctrl + Win + Space` hands-free mode. Added active session promotion so pressing Space while holding Ctrl+Win transitions into persistent hands-free recording.
+- Added interactive pill click to toggle hands-free recording, plus a tray menu toggle option.
+- Bumped application version to 0.5.4.
+
+#### Files touched
+- `src/main.js`: Added `copyViaHelper`, updated `onPolishSelection` copy flow, added hands-free promotion logic, and added tray/IPC toggles.
+- `src/preload.js`: Exposed `toggleHandsFree` method to context bridge.
+- `src/renderer/pill.html`: Added cursor pointer and click handler to finish hands-free recording.
+- `package.json`: Bumped version to 0.5.4.
+
+---
+
 ### 2026-09-27: Installed v0.5.3 and updated publisher branding to Sheikh Technologies Inc.
 
 **Status:** Done
