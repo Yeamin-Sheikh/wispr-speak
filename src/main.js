@@ -419,6 +419,18 @@ function setPill(state, label, transcript) {
 }
 
 // ---------- main dashboard & settings window ----------
+function updateTitleBarTheme(themeName) {
+  if (!settingsWin || settingsWin.isDestroyed()) return;
+  try {
+    const isDark = themeName === 'dark-obsidian' || themeName === 'cyber-teal';
+    settingsWin.setTitleBarOverlay({
+      color: isDark ? '#0c0e12' : '#f8f7f4',
+      symbolColor: isDark ? '#f1f3f7' : '#1f1f1d',
+      height: 38,
+    });
+  } catch {}
+}
+
 function openSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) {
     if (settingsWin.isMinimized()) settingsWin.restore();
@@ -426,16 +438,21 @@ function openSettings() {
     settingsWin.focus();
     return;
   }
+  const isDark = config.theme === 'dark-obsidian' || config.theme === 'cyber-teal';
   settingsWin = new BrowserWindow({
     width: 1140,
     height: 760,
     minWidth: 960,
     minHeight: 640,
     title: 'Wispr Tell',
-    backgroundColor: '#fbfaf8',
+    backgroundColor: isDark ? '#0c0e12' : '#fbfaf8',
     show: false,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#fbfaf8', symbolColor: '#2b2a27', height: 38 },
+    titleBarOverlay: {
+      color: isDark ? '#0c0e12' : '#f8f7f4',
+      symbolColor: isDark ? '#f1f3f7' : '#1f1f1d',
+      height: 38,
+    },
     icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -656,6 +673,9 @@ app.whenReady().then(() => {
     if (patch.shortcuts) {
       config.shortcuts = { ...config.shortcuts, ...patch.shortcuts };
     }
+    if (patch.theme) {
+      updateTitleBarTheme(patch.theme);
+    }
     saveConfig();
     if (patch.launchAtLogin !== undefined && process.platform === 'win32') {
       app.setLoginItemSettings({ openAtLogin: !!patch.launchAtLogin });
@@ -666,6 +686,15 @@ app.whenReady().then(() => {
   // history IPC
   ipcMain.handle('get-history', () => history);
   ipcMain.handle('get-stats', () => getStats());
+  ipcMain.handle('update-history-item', (_e, { id, text }) => {
+    const item = history.find(h => h.id === id);
+    if (item) {
+      item.text = String(text || '').trim();
+      item.wordCount = item.text.split(/\s+/).filter(Boolean).length;
+      saveHistory();
+    }
+    return { history, stats: getStats() };
+  });
   ipcMain.handle('delete-history', (_e, id) => {
     history = history.filter(h => h.id !== id);
     saveHistory();
@@ -679,6 +708,65 @@ app.whenReady().then(() => {
   ipcMain.handle('copy-text', (_e, text) => {
     clipboard.writeText(String(text || ''));
     return true;
+  });
+
+  // profile import / export
+  ipcMain.handle('export-profile', () => {
+    return {
+      appName: 'Wispr Tell',
+      version: '0.5.1',
+      exportedAt: new Date().toISOString(),
+      user: {
+        name: config.userName || 'Yeamin',
+        profileTitle: 'Inquiry Catalyst / Natural Voice',
+      },
+      stats: getStats(),
+      preferences: {
+        theme: config.theme || 'warm-light',
+        shortcuts: config.shortcuts,
+        smartFix: config.smartFix,
+        micDeviceId: config.micDeviceId,
+      },
+      dictionary: config.dictionary || [],
+      historyCount: history.length,
+      recentHistory: history.slice(0, 50),
+    };
+  });
+
+  ipcMain.handle('import-profile', (_e, profileData) => {
+    if (!profileData || typeof profileData !== 'object') {
+      return { ok: false, error: 'Invalid profile data' };
+    }
+    if (profileData.dictionary && Array.isArray(profileData.dictionary)) {
+      config.dictionary = profileData.dictionary;
+    }
+    if (profileData.preferences) {
+      if (profileData.preferences.shortcuts) {
+        config.shortcuts = { ...config.shortcuts, ...profileData.preferences.shortcuts };
+      }
+      if (profileData.preferences.theme) {
+        config.theme = profileData.preferences.theme;
+        updateTitleBarTheme(config.theme);
+      }
+      if (profileData.preferences.smartFix !== undefined) {
+        config.smartFix = profileData.preferences.smartFix;
+      }
+      if (profileData.preferences.micDeviceId) {
+        config.micDeviceId = profileData.preferences.micDeviceId;
+      }
+    }
+    if (profileData.recentHistory && Array.isArray(profileData.recentHistory) && profileData.recentHistory.length > 0) {
+      const existingIds = new Set(history.map(h => h.id));
+      for (const h of profileData.recentHistory) {
+        if (!existingIds.has(h.id)) {
+          history.push(h);
+        }
+      }
+      history.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      saveHistory();
+    }
+    saveConfig();
+    return { ok: true, config, stats: getStats(), history };
   });
 
   ipcMain.handle('validate-key', async (_e, key) => validateGroqKey(key));

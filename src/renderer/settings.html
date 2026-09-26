@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="warm-light">
 <head>
   <meta charset="utf-8">
   <title>Wispr Tell</title>
   <style>
-    :root {
+    /* Theme Definitions */
+    :root, [data-theme="warm-light"] {
       --bg: #f8f7f4;
       --sidebar: #f2efe9;
       --card-bg: #ffffff;
@@ -14,13 +15,94 @@
       --text-dim: #99958d;
       --nav-active: #eae6de;
       --accent: #0f766e;
+      --accent-hover: #115e59;
       --accent-light: #f0fdfa;
       --accent-warm: #d97706;
       --border-subtle: #ede9e1;
+      --kbd-bg: #f4f2ee;
+      --kbd-border: #ddd9d0;
+      --input-bg: #f8f7f4;
+      --banner-bg: linear-gradient(135deg, #1b3842 0%, #2f2520 100%);
+      --banner-text: #ffffff;
+      --banner-desc: #cbd5e1;
       --danger: #dc2626;
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --radius-sm: 8px;
+      --tag-bg: rgba(15, 118, 110, 0.1);
+      --tag-border: rgba(15, 118, 110, 0.25);
+    }
+
+    [data-theme="dark-obsidian"] {
+      --bg: #0c0e12;
+      --sidebar: #13171f;
+      --card-bg: #1a1e27;
+      --card-border: #282e3b;
+      --text: #f1f3f7;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --nav-active: #232936;
+      --accent: #2dd4bf;
+      --accent-hover: #14b8a6;
+      --accent-light: #0d2826;
+      --accent-warm: #f59e0b;
+      --border-subtle: #242936;
+      --kbd-bg: #222733;
+      --kbd-border: #333a4a;
+      --input-bg: #13161e;
+      --banner-bg: linear-gradient(135deg, #13242c 0%, #1e1917 100%);
+      --banner-text: #ffffff;
+      --banner-desc: #94a3b8;
+      --danger: #ef4444;
+      --tag-bg: rgba(45, 212, 191, 0.12);
+      --tag-border: rgba(45, 212, 191, 0.3);
+    }
+
+    [data-theme="slate-clean"] {
+      --bg: #f1f5f9;
+      --sidebar: #e2e8f0;
+      --card-bg: #ffffff;
+      --card-border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --nav-active: #cbd5e1;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-light: #f0f9ff;
+      --accent-warm: #d97706;
+      --border-subtle: #e2e8f0;
+      --kbd-bg: #f1f5f9;
+      --kbd-border: #cbd5e1;
+      --input-bg: #f8fafc;
+      --banner-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --banner-text: #ffffff;
+      --banner-desc: #94a3b8;
+      --danger: #e11d48;
+      --tag-bg: rgba(2, 132, 199, 0.1);
+      --tag-border: rgba(2, 132, 199, 0.25);
+    }
+
+    [data-theme="cyber-teal"] {
+      --bg: #08131a;
+      --sidebar: #0d1e29;
+      --card-bg: #122838;
+      --card-border: #1c3d54;
+      --text: #e2f1f8;
+      --text-muted: #80a4b8;
+      --text-dim: #50768c;
+      --nav-active: #18374d;
+      --accent: #14b8a6;
+      --accent-hover: #0d9488;
+      --accent-light: #0d282c;
+      --accent-warm: #f59e0b;
+      --border-subtle: #19384e;
+      --kbd-bg: #163246;
+      --kbd-border: #234b66;
+      --input-bg: #0b1a24;
+      --banner-bg: linear-gradient(135deg, #0d2736 0%, #17374a 100%);
+      --banner-text: #ffffff;
+      --banner-desc: #80a4b8;
+      --danger: #f43f5e;
+      --tag-bg: rgba(20, 184, 166, 0.15);
+      --tag-border: rgba(20, 184, 166, 0.35);
     }
 
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -28,13 +110,13 @@
       width: 100%; height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, system-ui, sans-serif;
       overflow: hidden;
       user-select: none;
       -webkit-font-smoothing: antialiased;
+      transition: background 0.2s ease, color 0.2s ease;
     }
 
-    /* Window Header / Drag Area */
     .app-window {
       display: flex;
       flex-direction: column;
@@ -43,7 +125,7 @@
     }
 
     .titlebar {
-      height: 42px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -71,23 +153,22 @@
       color: var(--text-muted);
       transition: background 0.15s, color 0.15s;
     }
-    .icon-btn:hover { background: #eae6de; color: var(--text); }
+    .icon-btn:hover { background: var(--nav-active); color: var(--text); }
 
     .avatar-sm {
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: #e2ddd4;
+      background: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
+      font-weight: 700;
+      color: #fff;
       cursor: pointer;
     }
 
-    /* Main App Layout */
     .main-layout {
       display: flex;
       flex: 1;
@@ -148,7 +229,7 @@
       align-items: center;
       gap: 11px;
       padding: 8px 12px;
-      border-radius: var(--radius-sm);
+      border-radius: 8px;
       font-size: 13.5px;
       font-weight: 500;
       color: var(--text-muted);
@@ -156,7 +237,7 @@
       transition: background 0.12s, color 0.12s;
     }
     .nav-item:hover {
-      background: #eeebe3;
+      background: var(--nav-active);
       color: var(--text);
     }
     .nav-item.active {
@@ -179,18 +260,17 @@
       padding-top: 8px;
     }
 
-    /* Content Area (Rounded white container) */
+    /* Content Area */
     .content-container {
       flex: 1;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
+      border-radius: 20px;
       display: flex;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
 
-    /* Middle Main Column */
     .center-col {
       flex: 1;
       overflow-y: auto;
@@ -210,10 +290,10 @@
     /* Hero Banner */
     .hero-banner {
       position: relative;
-      background: linear-gradient(135deg, #1b3842 0%, #2f2520 100%);
+      background: var(--banner-bg);
       border-radius: 16px;
       padding: 24px 28px;
-      color: #fff;
+      color: var(--banner-text);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -221,7 +301,7 @@
     }
 
     .banner-content {
-      max-width: 380px;
+      max-width: 420px;
       z-index: 1;
     }
 
@@ -236,7 +316,7 @@
     .banner-desc {
       font-size: 13px;
       line-height: 1.5;
-      color: #cbd5e1;
+      color: var(--banner-desc);
       margin-bottom: 16px;
     }
 
@@ -251,10 +331,7 @@
       cursor: pointer;
       transition: background 0.15s, transform 0.15s;
     }
-    .banner-btn:hover {
-      background: #f1f5f9;
-      transform: translateY(-1px);
-    }
+    .banner-btn:hover { background: #f1f5f9; transform: translateY(-1px); }
 
     .banner-close {
       position: absolute;
@@ -271,12 +348,11 @@
       justify-content: center;
       cursor: pointer;
       font-size: 13px;
-      transition: background 0.15s;
       z-index: 2;
     }
     .banner-close:hover { background: rgba(255,255,255,0.3); }
 
-    /* Feed Header & Search */
+    /* Feed Header */
     .feed-header {
       display: flex;
       align-items: center;
@@ -298,7 +374,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: var(--bg);
+      background: var(--input-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 20px;
       padding: 4px 12px;
@@ -308,7 +384,7 @@
     .search-box:focus-within {
       width: 220px;
       border-color: var(--accent);
-      background: #fff;
+      background: var(--card-bg);
     }
     .search-box input {
       border: none;
@@ -319,7 +395,7 @@
       width: 100%;
     }
 
-    /* Timeline & History List */
+    /* Timeline */
     .timeline {
       display: flex;
       flex-direction: column;
@@ -328,7 +404,7 @@
 
     .timeline-item {
       display: flex;
-      gap: 24px;
+      gap: 20px;
       position: relative;
     }
 
@@ -357,8 +433,8 @@
       width: 7.5px;
       height: 7.5px;
       border-radius: 50%;
-      background: #d4cec4;
-      border: 1.5px solid #ffffff;
+      background: var(--text-dim);
+      border: 1.5px solid var(--card-bg);
     }
 
     .timeline-text {
@@ -369,6 +445,41 @@
       user-select: text;
     }
 
+    .timeline-edit-box {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .timeline-textarea {
+      width: 100%;
+      min-height: 70px;
+      padding: 10px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      outline: none;
+      user-select: text;
+    }
+
+    .correction-learn-banner {
+      display: none;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--text);
+    }
+
     .timeline-actions {
       display: flex;
       align-items: center;
@@ -376,9 +487,7 @@
       opacity: 0.35;
       transition: opacity 0.15s;
     }
-    .timeline-item:hover .timeline-actions {
-      opacity: 1;
-    }
+    .timeline-item:hover .timeline-actions { opacity: 1; }
 
     .act-btn {
       background: transparent;
@@ -394,7 +503,7 @@
     }
     .act-btn:hover {
       color: var(--text);
-      background: var(--bg);
+      background: var(--border-subtle);
     }
     .act-btn svg { width: 15px; height: 15px; stroke-width: 1.8; }
 
@@ -405,7 +514,7 @@
       display: none;
     }
 
-    /* Right Panel (Stats & Engine) */
+    /* Right Column */
     .right-col {
       width: 250px;
       flex: none;
@@ -414,40 +523,27 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      background: #fdfcfb;
+      background: var(--bg);
     }
 
     .stat-card {
-      background: var(--bg);
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 16px;
       padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    .stat-row {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .stat-val {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text);
-    }
-    .stat-unit {
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
+    .stat-row { display: flex; align-items: baseline; gap: 8px; }
+    .stat-val { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+    .stat-unit { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
     .engine-card {
-      background: var(--bg);
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 16px;
       padding: 16px 18px;
       display: flex;
       flex-direction: column;
@@ -462,28 +558,14 @@
       font-weight: 600;
       color: var(--accent);
     }
-    .engine-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #10b981;
-    }
-
-    .engine-title {
-      font-size: 13.5px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .engine-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
+    .engine-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
+    .engine-title { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .engine-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 
     .profile-card {
-      background: var(--bg);
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 16px;
       padding: 16px 18px;
       display: flex;
       align-items: center;
@@ -493,58 +575,32 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: #fde68a;
+      background: var(--accent-light);
+      border: 1px solid var(--tag-border);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 18px;
       flex: none;
     }
-    .profile-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .profile-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .profile-role {
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
+    .profile-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .profile-role { font-size: 11.5px; color: var(--text-muted); }
 
-    /* Views container (switching between Dictation, Settings, Dictionary, Notetaker) */
-    .view-panel {
-      display: none;
-      flex-direction: column;
-      gap: 20px;
-      width: 100%;
-    }
-    .view-panel.active {
-      display: flex;
-    }
+    /* View panels */
+    .view-panel { display: none; flex-direction: column; gap: 20px; width: 100%; }
+    .view-panel.active { display: flex; }
 
     /* Form & Settings Cards */
-    .settings-section {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
+    .settings-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     .section-title {
-      font-size: 11.5px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-muted);
+      font-size: 11.5px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-muted);
     }
 
     .setting-card {
-      background: #ffffff;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 14px;
       overflow: hidden;
     }
 
@@ -555,21 +611,15 @@
       padding: 15px 20px;
       gap: 16px;
     }
-    .setting-row + .setting-row {
-      border-top: 1px solid var(--border-subtle);
-    }
+    .setting-row + .setting-row { border-top: 1px solid var(--border-subtle); }
 
     .setting-text .title { font-size: 14px; font-weight: 600; color: var(--text); }
     .setting-text .subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
-    .kbd-badge {
-      display: inline-flex;
-      gap: 5px;
-      align-items: center;
-    }
+    .kbd-badge { display: inline-flex; gap: 5px; align-items: center; }
     .kbd-badge kbd {
-      background: #f4f2ee;
-      border: 1px solid #ddd9d0;
+      background: var(--kbd-bg);
+      border: 1px solid var(--kbd-border);
       border-bottom-width: 2.5px;
       border-radius: 6px;
       padding: 4px 9px;
@@ -580,7 +630,7 @@
     }
 
     .btn-outline {
-      background: #fff;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       padding: 7px 14px;
       border-radius: 8px;
@@ -590,10 +640,7 @@
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
-    .btn-outline:hover {
-      background: var(--bg);
-      border-color: #d4cec4;
-    }
+    .btn-outline:hover { background: var(--bg); border-color: var(--text-dim); }
 
     .btn-primary {
       background: var(--accent);
@@ -606,10 +653,10 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-primary:hover { background: #115e59; }
+    .btn-primary:hover { background: var(--accent-hover); }
 
     .input-text {
-      background: var(--bg);
+      background: var(--input-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
       padding: 8px 12px;
@@ -619,29 +666,19 @@
     }
     .input-text:focus { border-color: var(--accent); }
 
-    /* Switch toggle */
-    .switch {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      flex: none;
-      cursor: pointer;
-    }
+    /* Switch */
+    .switch { position: relative; width: 44px; height: 24px; flex: none; cursor: pointer; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .switch-track {
-      position: absolute;
-      inset: 0;
-      background: #d4cec4;
+      position: absolute; inset: 0;
+      background: var(--border-subtle);
       border-radius: 999px;
       transition: 0.2s;
     }
     .switch-track:before {
       content: "";
       position: absolute;
-      width: 18px;
-      height: 18px;
-      left: 3px;
-      top: 3px;
+      width: 18px; height: 18px; left: 3px; top: 3px;
       background: #ffffff;
       border-radius: 50%;
       transition: 0.2s;
@@ -650,52 +687,66 @@
     .switch input:checked + .switch-track { background: var(--accent); }
     .switch input:checked + .switch-track:before { transform: translateX(20px); }
 
-    /* Notetaker view */
+    /* Theme Picker Grid */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 16px 20px;
+    }
+    .theme-card {
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .theme-card:hover { transform: translateY(-1px); border-color: var(--accent); }
+    .theme-card.active { border-color: var(--accent); background: var(--tag-bg); }
+    .theme-preview {
+      height: 36px;
+      border-radius: 6px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .theme-name { font-size: 12.5px; font-weight: 600; text-align: center; }
+
+    /* Notetaker */
     .notetaker-box {
-      width: 100%;
-      height: 380px;
-      background: #fff;
+      width: 100%; height: 380px;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: 14px;
       padding: 20px;
-      font-family: inherit;
-      font-size: 14.5px;
-      line-height: 1.6;
-      color: var(--text);
-      outline: none;
-      resize: none;
-      user-select: text;
+      font-family: inherit; font-size: 14.5px; line-height: 1.6;
+      color: var(--text); outline: none; resize: none; user-select: text;
     }
     .notetaker-box:focus { border-color: var(--accent); }
 
-    /* Custom Right Click Menu */
+    /* Right Click Menu */
     #contextMenu {
-      position: fixed;
-      display: none;
-      background: #ffffff;
-      border: 1px solid #e2ddd4;
+      position: fixed; display: none;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
       border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      padding: 4px;
-      z-index: 10000;
-      width: 160px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 4px; z-index: 10000; width: 160px;
     }
     .menu-item {
-      padding: 7px 12px;
-      font-size: 13px;
-      color: var(--text);
-      border-radius: 6px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
+      padding: 7px 12px; font-size: 13px; color: var(--text);
+      border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between;
     }
-    .menu-item:hover { background: #f2efe9; }
-    .menu-separator { height: 1px; background: #ede9e1; margin: 4px 0; }
+    .menu-item:hover { background: var(--nav-active); }
+    .menu-separator { height: 1px; background: var(--border-subtle); margin: 4px 0; }
   </style>
 </head>
 <body>
 <div class="app-window">
-  <!-- Top App Header / Drag Region -->
+  <!-- Titlebar -->
   <div class="titlebar">
     <div class="titlebar-left">
       <div class="icon-btn" id="btnToggleSidebar" title="Toggle Sidebar">
@@ -710,9 +761,8 @@
     <div style="width: 50px;"></div>
   </div>
 
-  <!-- Main Layout -->
   <div class="main-layout">
-    <!-- Left Navigation Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <div>
         <div class="brand">
@@ -739,17 +789,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             Dictionary
           </div>
+          <div class="nav-item" data-tab="profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            My Profile
+          </div>
           <div class="nav-item" data-tab="snippets">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
             Snippets
-          </div>
-          <div class="nav-item" data-tab="style">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
-            Style
-          </div>
-          <div class="nav-item" data-tab="transforms">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
-            Transforms
           </div>
           <div class="nav-item" data-tab="scratchpad">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
@@ -770,15 +816,13 @@
       </div>
     </div>
 
-    <!-- Main Content Container -->
+    <!-- Content Container -->
     <div class="content-container">
-      <!-- Center Main Column -->
       <div class="center-col">
         <!-- 1. Dictation Feed View -->
         <div class="view-panel active" id="view-dictation">
           <div class="greeting-title">Welcome back, Yeamin</div>
 
-          <!-- Hero Tip Banner -->
           <div class="hero-banner" id="heroBanner">
             <button class="banner-close" id="btnDismissBanner">✕</button>
             <div class="banner-content">
@@ -788,32 +832,53 @@
             </div>
           </div>
 
-          <!-- History Feed Header -->
           <div class="feed-header">
             <div class="feed-label">Recent Dictations</div>
             <div class="search-box">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a867c" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input type="text" id="searchInput" placeholder="Search dictations...">
             </div>
           </div>
 
-          <!-- Timeline Items -->
-          <div class="timeline" id="historyTimeline">
-            <!-- Dynamically populated by JS -->
-          </div>
+          <div class="timeline" id="historyTimeline"></div>
         </div>
 
         <!-- 2. Settings View -->
         <div class="view-panel" id="view-settings">
           <div class="greeting-title">Settings</div>
 
+          <!-- Color Themes -->
+          <div class="settings-section">
+            <div class="section-title">Color theme</div>
+            <div class="setting-card">
+              <div class="theme-grid">
+                <div class="theme-card active" data-theme-id="warm-light">
+                  <div class="theme-preview" style="background:#f8f7f4;"><div style="width:30%;background:#f2efe9;"></div><div style="flex:1;background:#fff;"></div></div>
+                  <div class="theme-name">Warm Light</div>
+                </div>
+                <div class="theme-card" data-theme-id="dark-obsidian">
+                  <div class="theme-preview" style="background:#0c0e12;"><div style="width:30%;background:#13171f;"></div><div style="flex:1;background:#1a1e27;"></div></div>
+                  <div class="theme-name">Dark Obsidian</div>
+                </div>
+                <div class="theme-card" data-theme-id="slate-clean">
+                  <div class="theme-preview" style="background:#f1f5f9;"><div style="width:30%;background:#e2e8f0;"></div><div style="flex:1;background:#fff;"></div></div>
+                  <div class="theme-name">Slate Clean</div>
+                </div>
+                <div class="theme-card" data-theme-id="cyber-teal">
+                  <div class="theme-preview" style="background:#08131a;"><div style="width:30%;background:#0d1e29;"></div><div style="flex:1;background:#122838;"></div></div>
+                  <div class="theme-name">Cyber Teal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Shortcut Customization -->
           <div class="settings-section">
-            <div class="section-title">Keyboard Shortcuts</div>
+            <div class="section-title">Keyboard shortcuts</div>
             <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Push to talk (Hold)</div>
+                  <div class="title">Push to talk</div>
                   <div class="subtitle">Hold shortcut, speak, release to type at cursor</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
@@ -824,7 +889,7 @@
 
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Hands-free (Toggle)</div>
+                  <div class="title">Hands-free</div>
                   <div class="subtitle">Press once to start dictating, press again to inject</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
@@ -837,11 +902,11 @@
 
           <!-- Cloud Engine Settings -->
           <div class="settings-section">
-            <div class="section-title">Cloud Engine (Groq)</div>
+            <div class="section-title">Cloud engine</div>
             <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text">
-                  <div class="title">Groq API Key</div>
+                  <div class="title">Groq API key</div>
                   <div class="subtitle">Free tier at console.groq.com. Powers high-speed whisper-large-v3-turbo</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
@@ -857,7 +922,7 @@
 
           <!-- Audio Input -->
           <div class="settings-section">
-            <div class="section-title">Audio & Corrections</div>
+            <div class="section-title">Audio and corrections</div>
             <div class="setting-card">
               <div class="setting-row">
                 <div class="setting-text">
@@ -892,9 +957,9 @@
           </div>
         </div>
 
-        <!-- 3. Dictionary View ("My Words") -->
+        <!-- 3. Dictionary View -->
         <div class="view-panel" id="view-dictionary">
-          <div class="greeting-title">Dictionary ("My words")</div>
+          <div class="greeting-title">Personal dictionary</div>
           <p style="font-size:13.5px;color:var(--text-muted);margin-top:-10px;">Train Wispr Tell to write technical terms, names, or brand spellings exactly as intended.</p>
 
           <div class="setting-card" style="padding:20px;">
@@ -907,7 +972,46 @@
           </div>
         </div>
 
-        <!-- 4. Notetaker / Scratchpad View -->
+        <!-- 4. Profile & Habits View -->
+        <div class="view-panel" id="view-profile">
+          <div class="greeting-title">Voice profile and habits</div>
+          <p style="font-size:13.5px;color:var(--text-muted);margin-top:-10px;">Export and backup your speech habits, personalized dictionary, and setup.</p>
+
+          <div class="setting-card" style="padding:24px;display:flex;flex-direction:column;gap:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:16px;">
+                <div style="width:54px;height:54px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;">Y</div>
+                <div>
+                  <div style="font-size:17px;font-weight:700;color:var(--text);" id="profName">Yeamin Sheikh</div>
+                  <div style="font-size:13px;color:var(--text-muted);">Inquiry Catalyst · Natural Voice Mode</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <button class="btn-outline" id="btnExportProfile">Export Profile</button>
+                <button class="btn-primary" id="btnImportProfile">Import Profile</button>
+                <input type="file" id="fileImportProfile" accept=".json" style="display:none;">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;border-top:1px solid var(--border-subtle);padding-top:20px;">
+              <div style="background:var(--bg);padding:14px;border-radius:10px;">
+                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">LIFETIME WORDS</div>
+                <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:4px;" id="profTotalWords">12.9K</div>
+              </div>
+              <div style="background:var(--bg);padding:14px;border-radius:10px;">
+                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">ACTIVE HABITS</div>
+                <div style="font-size:14px;font-weight:600;color:var(--accent);margin-top:4px;">Punctuation-Aware</div>
+              </div>
+              <div style="background:var(--bg);padding:14px;border-radius:10px;">
+                <div style="font-size:12px;color:var(--text-muted);font-weight:600;">LEARNED WORDS</div>
+                <div style="font-size:20px;font-weight:700;color:var(--text);margin-top:4px;" id="profLearnedWords">2</div>
+              </div>
+            </div>
+            <div id="importExportStatus" style="font-size:12.5px;color:var(--accent);display:none;"></div>
+          </div>
+        </div>
+
+        <!-- 5. Notetaker View -->
         <div class="view-panel" id="view-notetaker">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div class="greeting-title">Notetaker</div>
@@ -921,28 +1025,27 @@
           <div style="font-size:12px;color:var(--text-dim);" id="noteWordCount">0 words</div>
         </div>
 
-        <!-- 5. Help View -->
+        <!-- 6. Help View -->
         <div class="view-panel" id="view-help">
-          <div class="greeting-title">Voice Commands & Help</div>
+          <div class="greeting-title">Voice commands and help</div>
           <div class="setting-card" style="padding:20px;">
             <div style="font-size:14px;line-height:1.7;">
               <p><b>Voice Commands:</b> Say these words during or at the end of speech:</p>
               <ul style="margin-left:20px;margin-top:8px;">
-                <li><b>"new line"</b> — inserts a single line break</li>
-                <li><b>"new paragraph"</b> — inserts a double line break</li>
-                <li><b>"scratch that"</b> — reverts the last injection using Ctrl+Z</li>
-                <li><b>"undo that"</b> — sends Ctrl+Z to the target application</li>
-                <li><b>"delete word"</b> — deletes the word behind the cursor (Ctrl+Backspace)</li>
-                <li><b>Punctuation</b> — say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon"</li>
+                <li><b>"new line"</b> inserts a single line break.</li>
+                <li><b>"new paragraph"</b> inserts a double line break.</li>
+                <li><b>"scratch that"</b> reverts the last injection using Ctrl+Z.</li>
+                <li><b>"undo that"</b> sends Ctrl+Z to the target application.</li>
+                <li><b>"delete word"</b> deletes the word behind the cursor.</li>
+                <li><b>Punctuation:</b> say "comma", "period", "question mark", "exclamation mark", "colon", or "semicolon".</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Stats & Voice Profile -->
+      <!-- Right Column -->
       <div class="right-col">
-        <!-- Stats Card -->
         <div class="stat-card">
           <div class="stat-row">
             <span class="stat-val" id="totalWordsVal">12.9K</span>
@@ -958,7 +1061,6 @@
           </div>
         </div>
 
-        <!-- Engine Status Card -->
         <div class="engine-card">
           <div class="engine-badge">
             <span class="engine-dot"></span>
@@ -969,9 +1071,8 @@
           <button class="btn-outline" id="btnOpenEngineSettings" style="margin-top:6px;width:100%;">Configure API Key</button>
         </div>
 
-        <!-- Voice Profile Card -->
-        <div class="profile-card">
-          <div class="profile-avatar">✨</div>
+        <div class="profile-card" id="btnGoProfile" style="cursor:pointer;">
+          <div class="profile-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg></div>
           <div class="profile-info">
             <div class="profile-name">Voice Profile</div>
             <div class="profile-role">Natural · Punctuation-Aware</div>
@@ -982,7 +1083,7 @@
   </div>
 </div>
 
-<!-- Custom Context Menu for Right Click -->
+<!-- Context Menu -->
 <div id="contextMenu">
   <div class="menu-item" id="ctxCut">Cut <span>Ctrl+X</span></div>
   <div class="menu-item" id="ctxCopy">Copy <span>Ctrl+C</span></div>
@@ -999,41 +1100,52 @@
   let historyData = [];
   let recordingShortcutType = null;
 
-  // DOM Elements
+  // DOM
   const navItems = document.querySelectorAll('.nav-item');
   const viewPanels = document.querySelectorAll('.view-panel');
   const historyTimeline = document.getElementById('historyTimeline');
   const searchInput = document.getElementById('searchInput');
 
-  // Stats Elements
   const totalWordsVal = document.getElementById('totalWordsVal');
   const wpmVal = document.getElementById('wpmVal');
   const streakVal = document.getElementById('streakVal');
 
   // Switch Tabs
   function showTab(tabName) {
-    navItems.forEach(n => {
-      n.classList.toggle('active', n.dataset.tab === tabName);
-    });
-    viewPanels.forEach(p => {
-      p.classList.toggle('active', p.id === 'view-' + tabName);
-    });
+    navItems.forEach(n => n.classList.toggle('active', n.dataset.tab === tabName));
+    viewPanels.forEach(p => p.classList.toggle('active', p.id === 'view-' + tabName));
   }
 
   navItems.forEach(item => {
     item.onclick = () => {
       const tab = item.dataset.tab;
       if (tab === 'scratchpad') showTab('notetaker');
-      else if (['insights', 'style', 'snippets', 'transforms'].includes(tab)) showTab('dictation');
+      else if (['insights', 'style', 'snippets'].includes(tab)) showTab('dictation');
       else showTab(tab);
     };
   });
 
   document.getElementById('btnBannerShortcuts').onclick = () => showTab('settings');
   document.getElementById('btnOpenEngineSettings').onclick = () => showTab('settings');
+  document.getElementById('btnGoProfile').onclick = () => showTab('profile');
+  document.getElementById('userAvatar').onclick = () => showTab('profile');
   document.getElementById('btnDismissBanner').onclick = () => {
     document.getElementById('heroBanner').style.display = 'none';
   };
+
+  // Theme Switcher
+  function applyTheme(themeId) {
+    document.documentElement.setAttribute('data-theme', themeId);
+    document.querySelectorAll('.theme-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.themeId === themeId);
+    });
+    config.theme = themeId;
+    api.setConfig({ theme: themeId });
+  }
+
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.onclick = () => applyTheme(card.dataset.themeId);
+  });
 
   // Render Stats
   function renderStats(stats) {
@@ -1041,9 +1153,10 @@
     totalWordsVal.textContent = stats.totalWordsFormatted || '12.9K';
     wpmVal.textContent = stats.wpm || '100';
     streakVal.textContent = stats.streak || '8';
+    document.getElementById('profTotalWords').textContent = stats.totalWordsFormatted || '12.9K';
+    document.getElementById('profLearnedWords').textContent = (config.dictionary || []).length;
   }
 
-  // Format timestamp (e.g. "5:21 pm")
   function formatTime(ts) {
     if (!ts) return 'Just now';
     const d = new Date(ts);
@@ -1054,7 +1167,38 @@
     return `${hours}:${minutes} ${ampm}`;
   }
 
-  // Render History Timeline
+  // Phrase diff detector to find what words the user corrected
+  function detectDiffWords(orig, edited) {
+    const origWords = orig.trim().split(/\s+/).filter(Boolean);
+    const editWords = edited.trim().split(/\s+/).filter(Boolean);
+
+    let start = 0;
+    while (start < origWords.length && start < editWords.length &&
+           origWords[start].toLowerCase() === editWords[start].toLowerCase()) {
+      start++;
+    }
+
+    let endOrig = origWords.length - 1;
+    let endEdit = editWords.length - 1;
+    while (endOrig >= start && endEdit >= start &&
+           origWords[endOrig].toLowerCase() === editWords[endEdit].toLowerCase()) {
+      endOrig--;
+      endEdit--;
+    }
+
+    if (start <= endOrig && start <= endEdit) {
+      let from = origWords.slice(start, endOrig + 1).join(' ');
+      let to = editWords.slice(start, endEdit + 1).join(' ');
+      from = from.replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()]+|[.,\/#!$%\^&\*;:{}=\-_`~()]+$/g, '').trim();
+      to = to.replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()]+|[.,\/#!$%\^&\*;:{}=\-_`~()]+$/g, '').trim();
+      if (from && to && from !== to) {
+        return { from, to };
+      }
+    }
+    return null;
+  }
+
+  // Render History Timeline with Inline Edit & Auto-Learner
   function renderHistory(items) {
     const q = (searchInput.value || '').toLowerCase().trim();
     const filtered = q ? items.filter(h => (h.text || '').toLowerCase().includes(q)) : items;
@@ -1068,13 +1212,35 @@
       <div class="timeline-item" data-id="${item.id}">
         <div class="timeline-time">${formatTime(item.timestamp)}</div>
         <div class="timeline-body">
-          <div class="timeline-text">${escapeHtml(item.text)}</div>
-          <div class="timeline-actions">
+          <div class="timeline-text" id="text_${item.id}">${escapeHtml(item.text)}</div>
+
+          <!-- Edit box -->
+          <div class="timeline-edit-box" id="editBox_${item.id}">
+            <textarea class="timeline-textarea" id="textarea_${item.id}">${escapeHtml(item.text)}</textarea>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-primary btn-save-edit" data-id="${item.id}" style="padding:5px 12px;font-size:12px;">Save Correction</button>
+              <button class="btn-outline btn-cancel-edit" data-id="${item.id}" style="padding:5px 12px;font-size:12px;">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Auto-learn detection card -->
+          <div class="correction-learn-banner" id="learnBanner_${item.id}">
+            <span id="learnMsg_${item.id}"></span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-primary btn-add-learned" id="btnAddLearned_${item.id}" style="padding:4px 10px;font-size:11.5px;">Add to Dictionary</button>
+              <button class="btn-outline btn-dismiss-learned" id="btnDismissLearned_${item.id}" style="padding:4px 8px;font-size:11.5px;">✕</button>
+            </div>
+          </div>
+
+          <div class="timeline-actions" id="actions_${item.id}">
             <button class="act-btn btn-speak" title="Read Aloud" data-text="${escapeAttr(item.text)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
             </button>
             <button class="act-btn btn-copy" title="Copy to clipboard" data-text="${escapeAttr(item.text)}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <button class="act-btn btn-edit" title="Correct misheard word" data-id="${item.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
             </button>
             <button class="act-btn btn-delete" title="Delete" data-id="${item.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -1088,8 +1254,7 @@
     // Attach Action Listeners
     historyTimeline.querySelectorAll('.btn-copy').forEach(btn => {
       btn.onclick = async () => {
-        const text = btn.dataset.text;
-        await api.copyText(text);
+        await api.copyText(btn.dataset.text);
         const badge = btn.parentElement.querySelector('.copied-badge');
         if (badge) {
           badge.style.display = 'inline';
@@ -1100,10 +1265,9 @@
 
     historyTimeline.querySelectorAll('.btn-speak').forEach(btn => {
       btn.onclick = () => {
-        const text = btn.dataset.text;
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
-          const ut = new SpeechSynthesisUtterance(text);
+          const ut = new SpeechSynthesisUtterance(btn.dataset.text);
           window.speechSynthesis.speak(ut);
         }
       };
@@ -1111,27 +1275,91 @@
 
     historyTimeline.querySelectorAll('.btn-delete').forEach(btn => {
       btn.onclick = async () => {
-        const id = btn.dataset.id;
-        const res = await api.deleteHistory(id);
+        const res = await api.deleteHistory(btn.dataset.id);
         historyData = res.history;
         renderHistory(historyData);
         renderStats(res.stats);
+      };
+    });
+
+    // Inline Edit & Auto-Learner
+    historyTimeline.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        document.getElementById('text_' + id).style.display = 'none';
+        document.getElementById('actions_' + id).style.display = 'none';
+        document.getElementById('editBox_' + id).style.display = 'flex';
+      };
+    });
+
+    historyTimeline.querySelectorAll('.btn-cancel-edit').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        document.getElementById('editBox_' + id).style.display = 'none';
+        document.getElementById('text_' + id).style.display = 'block';
+        document.getElementById('actions_' + id).style.display = 'flex';
+      };
+    });
+
+    historyTimeline.querySelectorAll('.btn-save-edit').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+        const textarea = document.getElementById('textarea_' + id);
+        const origItem = historyData.find(h => h.id === id);
+        const originalText = origItem ? origItem.text : '';
+        const newText = textarea.value.trim();
+
+        if (newText && newText !== originalText) {
+          // Detect diff
+          const diff = detectDiffWords(originalText, newText);
+          const res = await api.updateHistoryItem({ id, text: newText });
+          historyData = res.history;
+
+          document.getElementById('text_' + id).textContent = newText;
+          document.getElementById('editBox_' + id).style.display = 'none';
+          document.getElementById('text_' + id).style.display = 'block';
+          document.getElementById('actions_' + id).style.display = 'flex';
+          renderStats(res.stats);
+
+          if (diff && diff.from && diff.to) {
+            const banner = document.getElementById('learnBanner_' + id);
+            const msg = document.getElementById('learnMsg_' + id);
+            const addBtn = document.getElementById('btnAddLearned_' + id);
+            const dismissBtn = document.getElementById('btnDismissLearned_' + id);
+
+            msg.innerHTML = `Correction detected: <b>"${escapeHtml(diff.from)}"</b> → <b>"${escapeHtml(diff.to)}"</b>`;
+            banner.style.display = 'flex';
+
+            addBtn.onclick = async () => {
+              config.dictionary = config.dictionary || [];
+              config.dictionary.push({ from: diff.from, to: diff.to });
+              await api.setConfig({ dictionary: config.dictionary });
+              renderDictionary();
+              banner.innerHTML = `<span style="color:var(--accent);font-weight:600;">Learned. Wispr Tell will now write "${escapeHtml(diff.to)}" automatically.</span>`;
+              setTimeout(() => { banner.style.display = 'none'; }, 3000);
+            };
+
+            dismissBtn.onclick = () => { banner.style.display = 'none'; };
+          }
+        } else {
+          document.getElementById('editBox_' + id).style.display = 'none';
+          document.getElementById('text_' + id).style.display = 'block';
+          document.getElementById('actions_' + id).style.display = 'flex';
+        }
       };
     });
   }
 
   searchInput.oninput = () => renderHistory(historyData);
 
-  // Settings Logic
+  // Shortcuts
   function renderShortcuts() {
     const ptt = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const hf = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
-
     document.getElementById('pttBadge').innerHTML = ptt.map(k => `<kbd>${k}</kbd>`).join('');
     document.getElementById('hfBadge').innerHTML = hf.map(k => `<kbd>${k}</kbd>`).join('');
   }
 
-  // Edit Shortcuts
   function setupShortcutEditor(btnId, type) {
     const btn = document.getElementById(btnId);
     btn.onclick = () => {
@@ -1152,9 +1380,7 @@
         else if (e.key.length === 1) pressed.add(e.key.toUpperCase());
         else pressed.add(e.key);
 
-        if (pressed.size >= (type === 'handsFree' ? 3 : 2)) {
-          finishShortcut();
-        }
+        if (pressed.size >= (type === 'handsFree' ? 3 : 2)) finishShortcut();
       }
 
       function finishShortcut() {
@@ -1179,16 +1405,17 @@
   setupShortcutEditor('btnEditPtt', 'pushToTalk');
   setupShortcutEditor('btnEditHf', 'handsFree');
 
-  // Personal Dictionary ("My Words")
+  // Dictionary
   function renderDictionary() {
     const dict = config.dictionary || [];
     const container = document.getElementById('dictListContainer');
+    document.getElementById('profLearnedWords').textContent = dict.length;
     if (!dict.length) {
       container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No words mapped yet.</div>';
       return;
     }
     container.innerHTML = dict.map((e, idx) => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--input-bg);border-radius:8px;">
         <span style="font-size:13.5px;">
           <span style="color:var(--text-muted);">${escapeHtml(e.from)}</span>
           <span style="color:var(--text-dim);margin:0 6px;">→</span>
@@ -1220,7 +1447,7 @@
     renderDictionary();
   };
 
-  // Notetaker logic
+  // Notetaker
   const noteBox = document.getElementById('noteTextarea');
   const noteWordCount = document.getElementById('noteWordCount');
   noteBox.oninput = () => {
@@ -1236,6 +1463,55 @@
     noteBox.value = '';
     noteWordCount.textContent = '0 words';
   };
+
+  // Profile Export & Import
+  document.getElementById('btnExportProfile').onclick = async () => {
+    const profile = await api.exportProfile();
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(profile, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', dataStr);
+    dlAnchor.setAttribute('download', `wispr-tell-profile-${(config.userName || 'user').toLowerCase()}.json`);
+    dlAnchor.click();
+    showProfileStatus('Profile exported successfully.');
+  };
+
+  document.getElementById('btnImportProfile').onclick = () => {
+    document.getElementById('fileImportProfile').click();
+  };
+
+  document.getElementById('fileImportProfile').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async event => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        const res = await api.importProfile(parsed);
+        if (res.ok) {
+          config = res.config;
+          historyData = res.history;
+          renderStats(res.stats);
+          renderShortcuts();
+          renderDictionary();
+          renderHistory(historyData);
+          if (config.theme) applyTheme(config.theme);
+          showProfileStatus('Profile imported and activated.');
+        } else {
+          showProfileStatus('Import failed: ' + res.error);
+        }
+      } catch (err) {
+        showProfileStatus('Invalid profile JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  function showProfileStatus(msg) {
+    const el = document.getElementById('importExportStatus');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
 
   // Right Click Context Menu
   const contextMenu = document.getElementById('contextMenu');
@@ -1259,6 +1535,7 @@
   // Initial Load
   (async () => {
     config = await api.getConfig();
+    if (config.theme) applyTheme(config.theme);
     renderShortcuts();
     renderDictionary();
 
@@ -1267,7 +1544,7 @@
     document.getElementById('startupToggle').checked = !!config.launchAtLogin;
 
     if (config.groqKey) {
-      document.getElementById('keyStatusText').textContent = 'Key configured — click "Test key" to verify live status.';
+      document.getElementById('keyStatusText').textContent = 'Key configured. Click "Test key" to verify live status.';
       document.getElementById('keyStatusText').style.color = 'var(--accent)';
     }
 
@@ -1285,10 +1562,10 @@
       const key = document.getElementById('groqKeyInput').value.trim();
       const res = await api.validateKey(key);
       if (res.ok) {
-        document.getElementById('keyStatusText').textContent = '✓ Groq key connected and verified.';
+        document.getElementById('keyStatusText').textContent = 'Groq key connected and verified.';
         document.getElementById('keyStatusText').style.color = '#10b981';
       } else {
-        document.getElementById('keyStatusText').textContent = '✗ ' + res.error;
+        document.getElementById('keyStatusText').textContent = res.error;
         document.getElementById('keyStatusText').style.color = '#ef4444';
       }
       btn.disabled = false; btn.textContent = 'Test key';
@@ -1310,7 +1587,6 @@
     renderHistory(historyData);
     renderStats(stats);
 
-    // Listen for live new dictations
     api.onHistoryUpdated(data => {
       historyData.unshift(data.item);
       renderHistory(historyData);
