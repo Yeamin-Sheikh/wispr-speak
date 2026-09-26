@@ -443,8 +443,12 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('validate-key', async (_e, key) => validateGroqKey(key));
   ipcMain.handle('list-mics', async () => {
-    try { return await captureWin.webContents.invoke('list-mics'); }
-    catch { return []; }
+    try {
+      if (!captureWin || captureWin.isDestroyed()) return [];
+      return await captureWin.webContents.executeJavaScript('window.listMics()');
+    } catch {
+      return [];
+    }
   });
   ipcMain.on('welcome-done', () => {
     config.firstRun = false; saveConfig();
@@ -461,7 +465,8 @@ app.whenReady().then(() => {
     if (typeof url === 'string' && /^https:\/\/console\.groq\.com\//.test(url)) shell.openExternal(url);
   });
 
-  tray = new Tray(path.join(__dirname, '..', 'assets', 'tray.png'));
+  const trayIcon = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'tray.png');
+  tray = new Tray(trayIcon);
   tray.setToolTip(config.groqKey
     ? 'Wispr Tell — hold Ctrl+Win to voice type'
     : 'Wispr Tell — add your Groq key in Settings');

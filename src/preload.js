@@ -6,7 +6,6 @@ contextBridge.exposeInMainWorld('wisprtell', {
   sendCaptureData: buf => ipcRenderer.send('capture-data', buf),
   sendCaptureError: msg => ipcRenderer.send('capture-error', msg),
   sendMicLevel: l => ipcRenderer.send('mic-level', l),
-  handleListMics: fn => ipcRenderer.handle('list-mics', fn),
   // pill
   onPillState: cb => ipcRenderer.on('pill-state', (_e, s) => cb(s)),
   onMicLevel: cb => ipcRenderer.on('mic-level', (_e, l) => cb(l)),
