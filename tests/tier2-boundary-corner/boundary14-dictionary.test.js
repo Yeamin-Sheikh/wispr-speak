@@ -70,4 +70,33 @@ describe('Tier 2 - Boundary 14: Custom Dictionary Whisper Prompt Boundary Cases'
     const prompt = buildWhisperPromptBounded(mixedDict);
     assert.strictEqual(prompt, 'ValidTerm');
   });
+
+  it('TC-T2-B14-06: applyDictionary sorts multi-word phrases by length to prevent substring mangling', () => {
+    const { applyDictionary } = require('../../src/text-utils.js');
+    const dict = [
+      { from: 'whisper', to: 'Wispr' },
+      { from: 'whisper flow', to: 'Wispr Flow' },
+      { from: 'whisper speak', to: 'Wispr Speak' }
+    ];
+    const res = applyDictionary('I use whisper flow and whisper speak alongside whisper daily.', dict);
+    assert.strictEqual(res, 'I use Wispr Flow and Wispr Speak alongside Wispr daily.');
+  });
+
+  it('TC-T2-B14-07: applyDictionary normalizes case for single vocabulary words', () => {
+    const { applyDictionary } = require('../../src/text-utils.js');
+    const dict = [
+      { word: 'Yeamin Sheikh' },
+      { to: 'Antigravity' },
+      'Kubernetes'
+    ];
+    const res = applyDictionary('hello yeamin sheikh, testing antigravity and kubernetes.', dict);
+    assert.strictEqual(res, 'hello Yeamin Sheikh, testing Antigravity and Kubernetes.');
+  });
+
+  it('TC-T2-B14-08: applyDictionary matches hyphenated and spaced variants', () => {
+    const { applyDictionary } = require('../../src/text-utils.js');
+    const dict = [{ from: 'whisper flow', to: 'Wispr Flow' }];
+    assert.strictEqual(applyDictionary('try whisper-flow now', dict), 'try Wispr Flow now');
+    assert.strictEqual(applyDictionary('try whisper  flow now', dict), 'try Wispr Flow now');
+  });
 });

@@ -281,6 +281,7 @@ const DEFAULTS = {
   launchAtLogin: false,
   firstRun: true,
   groqKey: '',
+  whisperModel: 'whisper-large-v3',
   smartFix: true,
   contextPolishEnabled: true,
   activePersonaId: 'natural',
@@ -600,7 +601,8 @@ function registerGlobalShortcuts() {
 }
 
 // ---------- Groq cloud engine ----------
-const GROQ_STT_MODEL = 'whisper-large-v3-turbo';
+const DEFAULT_STT_MODEL = 'whisper-large-v3';
+const GROQ_STT_MODEL = 'whisper-large-v3';
 const GROQ_POLISH_MODEL = 'openai/gpt-oss-20b';
 const GROQ_POLISH_FALLBACK_MODEL = 'qwen/qwen3.8-27b';
 
@@ -739,14 +741,15 @@ async function groqPost(pathname, { body, contentType, timeoutMs = 30000 }) {
 
 async function transcribeGroq(wavBuffer, customPrompt = null) {
   const formFields = {
-    model: GROQ_STT_MODEL,
+    model: config.whisperModel || GROQ_STT_MODEL,
     response_format: 'json',
     language: 'en',
+    temperature: '0.0',
   };
 
   const dictPrompt = customPrompt !== null ? customPrompt : buildWhisperPromptBounded(config.dictionary, 800);
   if (dictPrompt) {
-    formFields.prompt = dictPrompt;
+    formFields.prompt = `Spoken English dictation context with custom vocabulary: ${dictPrompt}.`;
   }
 
   const mp = buildMultipart(formFields, 'file', 'audio.wav', wavBuffer, 'audio/wav');
@@ -1887,16 +1890,20 @@ async function transcribeChunk(wavBuffer, promptText = '') {
   if (!config.groqKey) throw new Error(NEEDS_KEY);
 
   const formFields = {
-    model: GROQ_STT_MODEL,
+    model: config.whisperModel || GROQ_STT_MODEL,
     response_format: 'json',
     language: 'en',
+    temperature: '0.0',
   };
 
+  const dictGlossary = buildWhisperPromptBounded(config.dictionary, 250);
   let promptStr = '';
   if (promptText) {
-    promptStr = promptText.slice(-200);
+    promptStr = (dictGlossary ? `Vocabulary: ${dictGlossary}. ` : '') + promptText.slice(-150);
   } else {
-    promptStr = 'Clean, properly punctuated spoken English dictation.';
+    promptStr = dictGlossary
+      ? `Spoken English dictation context with custom vocabulary: ${dictGlossary}.`
+      : 'Clean, properly punctuated spoken English dictation.';
   }
   formFields.prompt = promptStr;
 
@@ -2371,7 +2378,7 @@ function learnFromCorrection(original, corrected, source = 'auto') {
   for (const item of corrections) {
     const from = String(item.from).trim();
     const to = String(item.to).trim();
-    if (!from || !to || from.toLowerCase() === to.toLowerCase()) continue;
+    if (!from || !to || from === to) continue;
 
     // Check if an existing entry matches `from` (case-insensitive)
     const existingIndex = config.dictionary.findIndex(d => d && d.from && d.from.toLowerCase() === from.toLowerCase());

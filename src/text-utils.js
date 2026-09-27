@@ -97,17 +97,52 @@ function applyVoiceCommands(text, customCommands = null) {
   return defaultEngine.evaluate(text);
 }
 
-// Personal dictionary: [{ from, to }] — fixes words the transcription mishears
+// Personal dictionary: [{ from, to }, { word }] — fixes words the transcription mishears
 // ("whisper flow" -> "Wispr Flow"). Case-insensitive, whole-word/phrase match.
 function escapeReg(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function applyDictionary(text, dict) {
+  if (!text || !dict || !Array.isArray(dict) || dict.length === 0) return String(text || '');
   let t = String(text);
-  for (const e of (dict || [])) {
-    if (!e || !e.from || !e.to) continue;
-    const from = String(e.from).trim(), to = String(e.to).trim();
-    if (!from || !to) continue;
-    const re = new RegExp('(^|[^A-Za-z0-9])' + escapeReg(from) + '(?![A-Za-z0-9])', 'gi');
-    t = t.replace(re, (m, p1) => p1 + to);
+
+  // Normalize entries into clean { from, to } rules
+  const rules = [];
+  for (const item of dict) {
+    if (!item) continue;
+    let from = '', to = '';
+    if (typeof item === 'string') {
+      to = item.trim();
+      from = to;
+    } else if (typeof item === 'object') {
+      to = String(item.to || item.word || '').trim();
+      from = String(item.from || item.word || item.to || '').trim();
+    }
+    if (!from && !to) continue;
+    if (!from) from = to;
+    if (!to) to = from;
+    rules.push({ from, to });
+  }
+
+  // Sort longest `from` phrases first so multi-word expressions take precedence over single words
+  rules.sort((a, b) => b.from.length - a.from.length);
+
+  for (const { from, to } of rules) {
+    const escaped = escapeReg(from);
+    // Allow flexible spacing for multi-word phrases (e.g. matching multiple spaces or hyphens)
+    const flexiblePattern = escaped.replace(/\s+/g, '[\\s_-]+');
+
+    const startsAlpha = /^[A-Za-z0-9]/.test(from);
+    const endsAlpha = /[A-Za-z0-9]$/.test(from);
+
+    const prefix = startsAlpha ? '(^|[^A-Za-z0-9])' : '';
+    const suffix = endsAlpha ? '(?![A-Za-z0-9])' : '';
+
+    const re = new RegExp(prefix + flexiblePattern + suffix, 'gi');
+    t = t.replace(re, (m, p1) => {
+      if (startsAlpha) {
+        return p1 + to;
+      }
+      return to;
+    });
   }
   return t;
 }
@@ -252,8 +287,8 @@ function buildPolishingPrompt(optsOrContext, maybeText) {
   let prompt = selectedPersona.systemPrompt;
 
   const validWords = (dictionary || [])
-    .filter(d => d && (d.to || d.from))
-    .map(d => String(d.to || d.from).trim())
+    .filter(d => d)
+    .map(d => typeof d === 'string' ? d.trim() : String(d.to || d.word || d.from || '').trim())
     .filter(Boolean);
 
   const uniqueWords = Array.from(new Set(validWords));

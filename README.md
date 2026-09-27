@@ -9,20 +9,22 @@ Wispr Speak is completely free and open source. It requires no subscription, pai
 1. Press or hold your shortcut. Default push-to-talk is `Ctrl + Win`. Default hands-free toggle is `Ctrl + Win + Space`.
 2. The hidden audio capture window records 16 kHz mono WAV audio with browser echo cancellation and noise suppression.
 3. The floating status pill pops up with a spring animation and real-time audio waveform.
-4. On shortcut release or toggle stop, the WAV audio is sent to Groq running whisper-large-v3-turbo.
+4. On shortcut release or toggle stop, the WAV audio is sent to Groq running whisper-large-v3 with greedy decoding (temperature 0.0) and vocabulary conditioning.
 5. Voice commands and spoken punctuation are evaluated.
-6. The transcribed text is cleaned by openai/gpt-oss-20b on Groq to format grammar, capitalization, and punctuation.
-7. Personal dictionary rules and non-sentence period truncation are applied.
+6. The transcribed text is cleaned by openai/gpt-oss-20b on Groq with fallback to qwen/qwen3.8-27b.
+7. Personal dictionary rules, multi-word substitutions, and exact casing preservation are applied.
 8. The native Windows helper restores the target window, releases modifier keys, and injects the text via clipboard paste. Standard windows receive Ctrl+V, while terminal windows receive Ctrl+Shift+V. Previous clipboard contents are restored after 600ms.
 
 ### Key features
 
+- High accuracy transcription: Uses Whisper Large v3 by default with greedy temperature 0.0 decoding to prevent hallucinations and misheard phrases, with an option for Large v3 Turbo in settings.
+- Productive personal dictionary: Add single vocabulary words, brand names, or multi-word replacements with automatic case preservation, bulk paste import, search filtering, and 1-click popular tech presets. Dictionary terms condition both the Whisper speech model and the language model.
+- Slim floating status pill: Minimalist 20px audio-reactive equalizer pill with proportionally scaled bars centered cleanly on screen.
 - Re-paste latest dictation: Missed focus or was not in a text box? Press `Alt + Shift + Z` at any time to paste your latest dictation into any active cursor.
 - Cancel on Escape: Press `Esc` at any time during listening or processing to cancel immediately without pasting.
 - Smart punctuation: Full sentences receive standard punctuation, while singular words and button labels never get unwanted trailing periods.
 - Selection polishing shortcut: Highlight any text in any application and press `Win + Alt + Q` to polish grammar, spelling, flow, and punctuation.
-- Context-based auto-learning: Edit any sentence or copy corrected text after dictating, and Wispr Speak extracts substitutions (like words or symbols) and adds them to your personal dictionary automatically. You can also highlight text and press `Win + Alt + L` to learn immediately.
-- Slim floating status pill: Minimalist 20px audio-reactive equalizer pill centered cleanly on screen.
+- Context-based auto-learning: Edit any sentence or copy corrected text after dictating, and Wispr Speak extracts substitutions and adds them to your personal dictionary automatically. You can also highlight text and press `Win + Alt + L` to learn immediately.
 - Push-to-talk and hands-free modes: Hold to talk or press once to start and press again to inject. All shortcuts are customizable in settings.
 - Four interface themes: Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal, with Windows 11 caption button color synchronization.
 - Data backup and migration: Export your settings, dictionary rules, and shortcut preferences as a clean JSON backup file, and import it on any Windows PC.
@@ -58,10 +60,11 @@ Open the tray icon menu and select Settings to adjust configuration:
 - Color theme: Switch between Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal.
 - Keyboard shortcuts: Remap push-to-talk, hands-free toggle, or selection polishing key combinations.
 - Groq API key: Required for speech-to-text and language model correction.
+- Transcription model: Select between Whisper Large v3 (highest accuracy) and Whisper Large v3 Turbo (lowest latency).
 - Microphone input: Select a specific microphone hardware device or use the system default.
 - Smart corrections: Toggle automatic grammar and punctuation cleanup.
-- Personal dictionary: Map frequently misheard words or acronyms to exact spelling (for example, map `wispr tell` to `Wispr Tell`).
-- Start with Windows: Automatically launch the app on user login.
+- Personal dictionary: Add custom words or replacements with search, bulk add, and 1-click developer presets.
+- Start with Windows: Automatically launch the app in the tray on user login.
 
 Configuration data is saved to `%APPDATA%\wispr-tell\wispr-tell-config.json`.
 

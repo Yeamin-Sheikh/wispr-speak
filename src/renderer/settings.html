@@ -183,31 +183,7 @@
       color: var(--text);
     }
 
-    .titlebar-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-right: 140px;
-      -webkit-app-region: no-drag;
-    }
 
-    .titlebar-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: background 0.12s, color 0.12s;
-    }
-    .titlebar-btn:hover {
-      background: var(--nav-active);
-      color: var(--text);
-    }
 
     .main-layout {
       display: flex;
@@ -1219,11 +1195,6 @@
       <span>Wispr Speak</span>
     </div>
 
-    <div class="titlebar-controls">
-      <button class="titlebar-btn" id="btnToggleThemeQuick" title="Toggle Dark/Light Theme">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      </button>
-    </div>
   </div>
 
   <div class="main-layout">
@@ -1420,6 +1391,18 @@
               <div class="setting-row" style="padding-top:8px;padding-bottom:8px;">
                 <div style="font-size:12px;color:var(--text-muted);" id="keyStatusText">Enter your free key from console.groq.com.</div>
               </div>
+              <div class="setting-row" style="border-top:1px solid var(--border-subtle);padding-top:12px;">
+                <div class="setting-text">
+                  <div class="title">Transcription Model</div>
+                  <div class="subtitle">Whisper Large v3 provides maximum speech accuracy; Turbo provides lower latency</div>
+                </div>
+                <div>
+                  <select class="input-text" id="selWhisperModel" style="width:230px;">
+                    <option value="whisper-large-v3">Whisper Large v3 (High Accuracy)</option>
+                    <option value="whisper-large-v3-turbo">Whisper Large v3 Turbo (Max Speed)</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1503,16 +1486,47 @@
 
         <!-- 3. Dictionary View -->
         <div class="view-panel" id="view-dictionary">
-          <div class="greeting-title">Personal Dictionary</div>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Train Wispr Speak to write technical terms, names, or brand spellings exactly as intended.</p>
-
-          <div class="spotlight-card setting-card" style="padding:18px;">
-            <div style="display:flex;gap:10px;margin-bottom:14px;">
-              <input type="text" class="input-text" id="dictFromInput" placeholder="It hears... (e.g. whisper flow)" style="flex:1;">
-              <input type="text" class="input-text" id="dictToInput" placeholder="Write... (e.g. Wispr Flow)" style="flex:1;">
-              <button class="btn-primary" id="btnAddDict">Add word</button>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+            <div>
+              <div class="greeting-title">Personal Dictionary</div>
+              <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Condition Whisper speech recognition and AI polish to spell names, jargon, and brand terms with 100% accuracy.</p>
             </div>
-            <div id="dictListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-outline" id="btnPresetTech" style="font-size:11px;padding:4px 10px;">+ Common Tech Words</button>
+              <button class="btn-outline" id="btnToggleBulkDict" style="font-size:11px;padding:4px 10px;">Bulk Add</button>
+            </div>
+          </div>
+
+          <!-- Add Term / Replacement Card -->
+          <div class="spotlight-card setting-card" style="padding:16px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Add Term or Word Replacement</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input type="text" class="input-text" id="dictToInput" placeholder="Word to write (e.g. Yeamin Sheikh, Wispr Flow, PostgreSQL)" style="flex:1;">
+              <input type="text" class="input-text" id="dictFromInput" placeholder="If misheard as (optional, e.g. whisper flow)" style="flex:1;">
+              <button class="btn-primary" id="btnAddDict" style="white-space:nowrap;padding:7px 14px;">Add to Dictionary</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">
+              Tip: Leave "If misheard as" empty to add a proper noun or jargon term. Wispr Speak will preserve its exact casing and condition the Whisper engine to recognize it.
+            </div>
+
+            <!-- Collapsible Bulk Add Panel -->
+            <div id="bulkDictPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
+              <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">PASTE MULTIPLE WORDS (ONE PER LINE OR COMMA-SEPARATED)</label>
+              <textarea class="edit-textarea" id="bulkDictText" placeholder="Yeamin Sheikh&#10;Antigravity&#10;TypeScript&#10;Kubernetes" style="min-height:75px;width:100%;font-size:12px;"></textarea>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                <button class="btn-outline" id="btnCancelBulk" style="padding:4px 10px;font-size:11px;">Cancel</button>
+                <button class="btn-primary" id="btnImportBulk" style="padding:4px 12px;font-size:11px;">Import All Terms</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dictionary Entries List -->
+          <div class="spotlight-card setting-card" style="padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;" id="dictListHeader">Active Rules</div>
+              <input type="text" class="input-text" id="dictSearchInput" placeholder="Search dictionary..." style="width:180px;padding:3px 8px;font-size:11.5px;">
+            </div>
+            <div id="dictListContainer" style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:4px;"></div>
           </div>
         </div>
         <!-- Personas View -->
@@ -1825,11 +1839,6 @@
     card.onclick = () => applyTheme(card.dataset.themeId);
   });
 
-  document.getElementById('btnToggleThemeQuick').onclick = () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'cyber-teal';
-    const next = current.includes('light') ? 'cyber-teal' : 'warm-light';
-    applyTheme(next);
-  };
 
   // Stats Renderer
   function renderStats(stats) {
@@ -2214,47 +2223,176 @@
   setupShortcutEditor('btnEditPolish', 'polishSelection');
 
   // Personal Dictionary
+  let dictSearchQuery = '';
+
   function renderDictionary() {
-    const dict = config.dictionary || [];
+    const rawDict = config.dictionary || [];
     const container = document.getElementById('dictListContainer');
     const dictCountEl = document.getElementById('statDictCount');
-    if (dictCountEl) dictCountEl.textContent = `${dict.length} rules learned`;
-    if (!dict.length) {
-      container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:8px 0;">No words mapped yet. Add commonly misheard names or jargon above.</div>';
+    const headerEl = document.getElementById('dictListHeader');
+    if (dictCountEl) dictCountEl.textContent = `${rawDict.length} rules active`;
+    if (headerEl) headerEl.textContent = `Active Rules (${rawDict.length})`;
+
+    if (!rawDict.length) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:14px 0;text-align:center;">No words mapped yet. Add proper nouns, names, or click "+ Common Tech Words" above.</div>';
       return;
     }
-    container.innerHTML = dict.map((e, idx) => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--input-bg);border-radius:8px;">
-        <span style="font-size:13px;">
-          <span style="color:var(--text-muted);">${escapeHtml(e.from)}</span>
-          <span style="color:var(--text-dim);margin:0 6px;">→</span>
-          <b style="color:var(--text);">${escapeHtml(e.to)}</b>
-        </span>
-        <button class="act-btn btn-del-dict" data-idx="${idx}" style="color:var(--danger);" title="Remove">✕</button>
-      </div>
-    `).join('');
+
+    const filtered = rawDict.map((item, originalIndex) => ({ item, originalIndex })).filter(({ item }) => {
+      if (!dictSearchQuery) return true;
+      const q = dictSearchQuery.toLowerCase();
+      const from = String(item.from || item.word || '').toLowerCase();
+      const to = String(item.to || item.word || '').toLowerCase();
+      return from.includes(q) || to.includes(q);
+    });
+
+    if (!filtered.length) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:14px 0;text-align:center;">No matching dictionary rules found.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(({ item, originalIndex }) => {
+      const from = String(item.from || item.word || '').trim();
+      const to = String(item.to || item.word || '').trim();
+      const isReplacement = from && to && from.toLowerCase() !== to.toLowerCase();
+
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;min-width:0;overflow:hidden;">
+            ${isReplacement
+              ? `<span style="background:rgba(94, 234, 212, 0.12);color:var(--accent);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:0.4px;">REPLACE</span>
+                 <span style="color:var(--text-muted);">${escapeHtml(from)}</span>
+                 <span style="color:var(--text-dim);margin:0 4px;">→</span>
+                 <b style="color:var(--text);">${escapeHtml(to)}</b>`
+              : `<span style="background:rgba(255, 255, 255, 0.08);color:var(--text);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:0.4px;">VOCABULARY</span>
+                 <b style="color:var(--text);">${escapeHtml(to || from)}</b>
+                 <span style="font-size:11px;color:var(--text-dim);margin-left:4px;">(exact casing)</span>`
+            }
+          </div>
+          <button class="act-btn btn-del-dict" data-idx="${originalIndex}" style="color:var(--danger);font-size:14px;padding:2px 6px;" title="Remove">✕</button>
+        </div>
+      `;
+    }).join('');
 
     container.querySelectorAll('.btn-del-dict').forEach(b => {
       b.onclick = async () => {
-        dict.splice(Number(b.dataset.idx), 1);
-        await api.setConfig({ dictionary: dict });
-        config.dictionary = dict;
+        const idx = Number(b.dataset.idx);
+        rawDict.splice(idx, 1);
+        await api.setConfig({ dictionary: rawDict });
+        config.dictionary = rawDict;
         renderDictionary();
       };
     });
   }
 
+  // Quick Add Single Word or Replacement
   document.getElementById('btnAddDict').onclick = async () => {
     const fromEl = document.getElementById('dictFromInput');
     const toEl = document.getElementById('dictToInput');
-    const from = fromEl.value.trim(), to = toEl.value.trim();
-    if (!from || !to) return;
+    let to = toEl.value.trim();
+    let from = fromEl.value.trim();
+
+    if (!to && !from) return;
+    if (!to) to = from;
+    if (!from) from = to;
+
     config.dictionary = config.dictionary || [];
-    config.dictionary.push({ from, to });
+    const existingIdx = config.dictionary.findIndex(d => d && String(d.from || d.to).toLowerCase() === from.toLowerCase());
+    if (existingIdx >= 0) {
+      config.dictionary[existingIdx] = { from, to };
+    } else {
+      config.dictionary.push({ from, to });
+    }
     await api.setConfig({ dictionary: config.dictionary });
     fromEl.value = ''; toEl.value = '';
     renderDictionary();
   };
+
+  ['dictToInput', 'dictFromInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('btnAddDict').click();
+        }
+      });
+    }
+  });
+
+  const dictSearchInput = document.getElementById('dictSearchInput');
+  if (dictSearchInput) {
+    dictSearchInput.oninput = (e) => {
+      dictSearchQuery = e.target.value.trim();
+      renderDictionary();
+    };
+  }
+
+  const btnToggleBulk = document.getElementById('btnToggleBulkDict');
+  const bulkPanel = document.getElementById('bulkDictPanel');
+  if (btnToggleBulk && bulkPanel) {
+    btnToggleBulk.onclick = () => {
+      bulkPanel.style.display = bulkPanel.style.display === 'none' ? 'block' : 'none';
+    };
+  }
+  const btnCancelBulk = document.getElementById('btnCancelBulk');
+  if (btnCancelBulk && bulkPanel) {
+    btnCancelBulk.onclick = () => { bulkPanel.style.display = 'none'; };
+  }
+  const btnImportBulk = document.getElementById('btnImportBulk');
+  if (btnImportBulk && bulkPanel) {
+    btnImportBulk.onclick = async () => {
+      const text = document.getElementById('bulkDictText').value;
+      if (!text.trim()) return;
+      const terms = text.split(/[\r\n,]+/).map(t => t.trim()).filter(Boolean);
+      config.dictionary = config.dictionary || [];
+      for (const t of terms) {
+        if (!config.dictionary.some(d => String(d.to || d.from).toLowerCase() === t.toLowerCase())) {
+          config.dictionary.push({ from: t, to: t });
+        }
+      }
+      await api.setConfig({ dictionary: config.dictionary });
+      document.getElementById('bulkDictText').value = '';
+      bulkPanel.style.display = 'none';
+      renderDictionary();
+    };
+  }
+
+  const btnPresetTech = document.getElementById('btnPresetTech');
+  if (btnPresetTech) {
+    btnPresetTech.onclick = async () => {
+      const PRESETS = [
+        { from: 'whisper speak', to: 'Wispr Speak' },
+        { from: 'whisper flow', to: 'Wispr Flow' },
+        { from: 'vs code', to: 'VS Code' },
+        { from: 'vscode', to: 'VS Code' },
+        { from: 'github', to: 'GitHub' },
+        { from: 'typescript', to: 'TypeScript' },
+        { from: 'javascript', to: 'JavaScript' },
+        { from: 'python', to: 'Python' },
+        { from: 'nodejs', to: 'Node.js' },
+        { from: 'docker', to: 'Docker' },
+        { from: 'postgresql', to: 'PostgreSQL' },
+        { from: 'fastapi', to: 'FastAPI' },
+        { from: 'electron', to: 'Electron' },
+        { from: 'chatgpt', to: 'ChatGPT' },
+        { from: 'groq', to: 'Groq' },
+        { from: 'whisper', to: 'Whisper' },
+      ];
+      config.dictionary = config.dictionary || [];
+      let added = 0;
+      for (const p of PRESETS) {
+        if (!config.dictionary.some(d => String(d.from).toLowerCase() === p.from.toLowerCase())) {
+          config.dictionary.push(p);
+          added++;
+        }
+      }
+      if (added > 0) {
+        await api.setConfig({ dictionary: config.dictionary });
+        renderDictionary();
+      }
+    };
+  }
 
   // Data Export & Import (zero user profiles or personal names)
   const exportBtn = document.getElementById('btnExportData');
@@ -2623,6 +2761,14 @@
     await loadPersonas();
 
     document.getElementById('groqKeyInput').value = config.groqKey || '';
+    const selWhisperModel = document.getElementById('selWhisperModel');
+    if (selWhisperModel) {
+      selWhisperModel.value = config.whisperModel || 'whisper-large-v3';
+      selWhisperModel.onchange = async e => {
+        config.whisperModel = e.target.value;
+        await api.setConfig({ whisperModel: e.target.value });
+      };
+    }
     document.getElementById('smartFixToggle').checked = config.smartFix !== false;
     document.getElementById('startupToggle').checked = !!config.launchAtLogin;
     const typingAnimToggle = document.getElementById('typingAnimationToggle');

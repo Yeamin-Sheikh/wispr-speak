@@ -133,12 +133,12 @@
   }
 
   /* Width Triggers for different states */
-  #pill.state-listening #eq-wrapper { grid-template-columns: 36px; }
+  #pill.state-listening #eq-wrapper { grid-template-columns: 26px; }
   
   #pill.state-working #icon-wrapper,
   #pill.state-done #icon-wrapper,
   #pill.state-error #icon-wrapper {
-    grid-template-columns: 18px; 
+    grid-template-columns: 15px; 
   }
 
   /* Only error shows text, done state just shows checkmark */
@@ -146,22 +146,22 @@
     grid-template-columns: 1fr;
   }
 
-  /* Equalizer Music Bars */
+  /* Equalizer Music Bars - Proportionally scaled for 20px pill */
   .eq-bars {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2.5px;
-    height: 12px;
-    width: 30px;
+    gap: 2px;
+    height: 10px;
+    width: 22px;
   }
   .eq-bar {
-    width: 2.8px;
+    width: 2px;
     border-radius: 999px;
     background: linear-gradient(to top, #0d9488, #5eead4);
-    height: 3px;
+    height: 2px;
     min-height: 2px;
-    max-height: 11px;
+    max-height: 9px;
     transition: height 0.08s ease-out;
     will-change: height;
   }
@@ -178,9 +178,9 @@
   #pill.state-listening .eq-bars.idle .eq-bar:nth-child(4) { animation: eqBounce2 0.8s ease-in-out infinite alternate 0.15s; }
   #pill.state-listening .eq-bars.idle .eq-bar:nth-child(5) { animation: eqBounce1 0.85s ease-in-out infinite alternate 0.1s; }
 
-  @keyframes eqBounce1 { 0% { height: 2.5px; } 100% { height: 6.5px; } }
-  @keyframes eqBounce2 { 0% { height: 3px; } 100% { height: 9.5px; } }
-  @keyframes eqBounce3 { 0% { height: 4px; } 100% { height: 11px; } }
+  @keyframes eqBounce1 { 0% { height: 2px; } 100% { height: 4.5px; } }
+  @keyframes eqBounce2 { 0% { height: 2.5px; } 100% { height: 6.5px; } }
+  @keyframes eqBounce3 { 0% { height: 3px; } 100% { height: 8.5px; } }
 
   /* Offline Mode Styling */
   #pill.offline-mode {
@@ -255,12 +255,12 @@
     color: #fcd34d;
   }
 
-  /* Icon Animations & Styles */
+  /* Icon Animations & Styles - Scaled for 20px pill */
   .spinner {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
     border-top-color: #5eead4;
     border-right-color: rgba(94, 234, 212, 0.3);
     animation: spin 0.65s linear infinite;
@@ -268,19 +268,19 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .check {
-    width: 18px;
-    height: 18px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
     background: linear-gradient(135deg, #2dd4bf, #0f766e);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 8px rgba(45, 212, 191, 0.3);
+    box-shadow: 0 0 6px rgba(45, 212, 191, 0.3);
     animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .check svg {
-    width: 10px;
-    height: 10px;
+    width: 7.5px;
+    height: 7.5px;
     color: #fff;
     stroke-width: 3;
     stroke-linecap: round;
@@ -288,19 +288,19 @@
   }
 
   .warn {
-    width: 18px;
-    height: 18px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fbbf24, #b45309);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
     animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .warn svg {
-    width: 10px;
-    height: 10px;
+    width: 7.5px;
+    height: 7.5px;
     color: #fff;
     stroke-width: 3;
     stroke-linecap: round;
@@ -886,11 +886,11 @@
       const e3 = Math.max(b3, energy * 0.8);
       const e4 = Math.max(b4, energy * 0.55);
 
-      barElements[0].style.height = `${Math.min(18, Math.max(3, 4 + e0 * 13))}px`;
-      barElements[1].style.height = `${Math.min(18, Math.max(3, 4 + e1 * 16))}px`;
-      barElements[2].style.height = `${Math.min(18, Math.max(3, 4 + e2 * 18))}px`;
-      barElements[3].style.height = `${Math.min(18, Math.max(3, 4 + e3 * 16))}px`;
-      barElements[4].style.height = `${Math.min(18, Math.max(3, 4 + e4 * 13))}px`;
+      barElements[0].style.height = `${Math.min(8.5, Math.max(2, 2.2 + e0 * 6))}px`;
+      barElements[1].style.height = `${Math.min(9, Math.max(2, 2.5 + e1 * 6.5))}px`;
+      barElements[2].style.height = `${Math.min(9.5, Math.max(2.5, 2.8 + e2 * 6.5))}px`;
+      barElements[3].style.height = `${Math.min(9, Math.max(2, 2.5 + e3 * 6.5))}px`;
+      barElements[4].style.height = `${Math.min(8.5, Math.max(2, 2.2 + e4 * 6))}px`;
     } else {
       if (!eqBars.classList.contains('idle')) eqBars.classList.add('idle');
       for (let i = 0; i < barElements.length; i++) {
