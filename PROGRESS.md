@@ -13,6 +13,16 @@
 
 ## Progress log
 
+### 2026-09-27: GitHub repository rename and v1.0.3 release publication
+
+**Status:** Done
+
+#### What changed
+- Renamed repository from `wispr-tell` to `wispr-speak` on GitHub.
+- Updated git remote URL, package metadata, autoupdate feed URL, and documentation.
+- Built portable package `Wispr-Speak-v1.0.3-win-x64.zip` containing `Wispr Speak.exe` and production runtime.
+- Published GitHub release `v1.0.3` with release notes and binary assets.
+
 ### 2026-09-27: Settings row hover fix and deployment sync
 
 **Status:** Done
