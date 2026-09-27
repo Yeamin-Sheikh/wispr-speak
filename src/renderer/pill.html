@@ -20,7 +20,7 @@
     justify-content: center;
   }
 
-  /* Core Pill Styles */
+  /* Core Pill Styles - Strictly Monochrome Black and White */
   #pill {
     position: relative;
     display: flex;
@@ -29,11 +29,11 @@
     max-width: 300px;
     border-radius: 999px;
     
-    background: var(--pill-bg, rgba(18, 18, 22, 0.65));
-    border: 1px solid var(--pill-border, rgba(255, 255, 255, 0.08));
-    border-top: 1px solid var(--pill-border-top, rgba(255, 255, 255, 0.20));
-    color: var(--pill-text, #ffffff);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    background: #000000 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
     
     cursor: grab;
     overflow: hidden;
@@ -89,25 +89,25 @@
   #pill.state-listening { 
     padding: 0 8px;
     box-shadow: 
-      0 0 calc(var(--mic-level) * 12px) rgba(94, 234, 212, calc(var(--mic-level) * 0.35)),
-      0 4px 16px rgba(0, 0, 0, 0.4);
+      0 0 calc(var(--mic-level) * 10px) rgba(255, 255, 255, calc(var(--mic-level) * 0.4)),
+      0 4px 16px rgba(0, 0, 0, 0.6) !important;
     animation: listeningGlow 2.5s ease-in-out infinite;
   }
   @keyframes listeningGlow {
-    0%, 100% { border-color: rgba(94, 234, 212, 0.12); }
-    50% { border-color: rgba(94, 234, 212, 0.28); }
+    0%, 100% { border-color: rgba(255, 255, 255, 0.16); }
+    50% { border-color: rgba(255, 255, 255, 0.38); }
   }
   #pill.state-working { padding: 0 8px; }
   #pill.state-done { padding: 0 8px; }
   
   #pill.state-error { 
     padding: 0 10px 0 8px;
-    background: rgba(35, 20, 10, 0.7);
-    border: 1px solid rgba(245, 158, 11, 0.15);
-    border-top: 1px solid rgba(245, 158, 11, 0.3);
+    background: #000000 !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.45) !important;
     box-shadow: 
-      0 0 10px rgba(245, 158, 11, 0.15),
-      0 4px 16px rgba(0, 0, 0, 0.5);
+      0 0 10px rgba(255, 255, 255, 0.15),
+      0 4px 16px rgba(0, 0, 0, 0.6) !important;
   }
 
   /* Internal Layout */
@@ -158,18 +158,18 @@
   .eq-bar {
     width: 2px;
     border-radius: 999px;
-    background: linear-gradient(to top, #0d9488, #5eead4);
+    background: #ffffff !important;
     height: 2px;
     min-height: 2px;
     max-height: 9px;
     transition: height 0.08s ease-out;
     will-change: height;
   }
-  .eq-bar:nth-child(1) { opacity: 0.75; }
-  .eq-bar:nth-child(2) { opacity: 0.9; }
+  .eq-bar:nth-child(1) { opacity: 0.6; }
+  .eq-bar:nth-child(2) { opacity: 0.85; }
   .eq-bar:nth-child(3) { opacity: 1.0; }
-  .eq-bar:nth-child(4) { opacity: 0.9; }
-  .eq-bar:nth-child(5) { opacity: 0.75; }
+  .eq-bar:nth-child(4) { opacity: 0.85; }
+  .eq-bar:nth-child(5) { opacity: 0.6; }
 
   /* Idle breathing rhythm when listening */
   #pill.state-listening .eq-bars.idle .eq-bar:nth-child(1) { animation: eqBounce1 0.9s ease-in-out infinite alternate; }
@@ -182,12 +182,12 @@
   @keyframes eqBounce2 { 0% { height: 2.5px; } 100% { height: 6.5px; } }
   @keyframes eqBounce3 { 0% { height: 3px; } 100% { height: 8.5px; } }
 
-  /* Offline Mode Styling */
+  /* Offline Mode Styling - Monochrome */
   #pill.offline-mode {
-    border-color: rgba(245, 158, 11, 0.45);
+    border-color: rgba(255, 255, 255, 0.35) !important;
     box-shadow: 
-      0 0 14px rgba(245, 158, 11, 0.25),
-      0 4px 16px rgba(0, 0, 0, 0.5);
+      0 0 12px rgba(255, 255, 255, 0.18),
+      0 4px 16px rgba(0, 0, 0, 0.6) !important;
   }
 
   .offline-badge {
@@ -196,9 +196,9 @@
     gap: 4px;
     padding: 2px 6px;
     border-radius: 999px;
-    background: rgba(245, 158, 11, 0.16);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: #fbbf24;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.3px;
@@ -210,6 +210,8 @@
     width: 10px;
     height: 10px;
     stroke-width: 2.5;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
   }
 
   #pill.offline-mode #offline-wrapper {
@@ -250,19 +252,17 @@
   #pill.state-error #text {
     opacity: 1;
     transition-delay: 0.1s;
-  }
-  #pill.state-error #text {
-    color: #fcd34d;
+    color: #ffffff !important;
   }
 
-  /* Icon Animations & Styles - Scaled for 20px pill */
+  /* Icon Animations & Styles - Scaled for 20px pill (Monochrome Black & White) */
   .spinner {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-top-color: #5eead4;
-    border-right-color: rgba(94, 234, 212, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    border-top-color: #ffffff !important;
+    border-right-color: rgba(255, 255, 255, 0.4) !important;
     animation: spin 0.65s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -271,18 +271,19 @@
     width: 13px;
     height: 13px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #2dd4bf, #0f766e);
+    background: #ffffff !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 6px rgba(45, 212, 191, 0.3);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
     animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .check svg {
     width: 7.5px;
     height: 7.5px;
-    color: #fff;
-    stroke-width: 3;
+    color: #000000 !important;
+    stroke: #000000 !important;
+    stroke-width: 3.5;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
@@ -291,18 +292,19 @@
     width: 13px;
     height: 13px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #fbbf24, #b45309);
+    background: #ffffff !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
     animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .warn svg {
     width: 7.5px;
     height: 7.5px;
-    color: #fff;
-    stroke-width: 3;
+    color: #000000 !important;
+    stroke: #000000 !important;
+    stroke-width: 3.5;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
@@ -442,8 +444,8 @@
       this.startTime = performance.now();
       this.isContextLost = false;
 
-      this.primaryColor = [0.369, 0.918, 0.831];   // #5eead4
-      this.secondaryColor = [0.051, 0.580, 0.533]; // #0d9488
+      this.primaryColor = [1.0, 1.0, 1.0];   // #ffffff
+      this.secondaryColor = [0.75, 0.75, 0.75]; // #bfbfbf
 
       this.init();
     }
@@ -573,8 +575,9 @@
     }
 
     setThemeColors(hexPrimary, hexSecondary) {
-      if (hexPrimary) this.primaryColor = this.parseHexColor(hexPrimary);
-      if (hexSecondary) this.secondaryColor = this.parseHexColor(hexSecondary);
+      // Pill is strictly monochrome black and white regardless of theme
+      this.primaryColor = [1.0, 1.0, 1.0];
+      this.secondaryColor = [0.75, 0.75, 0.75];
     }
 
     parseHexColor(hex) {
@@ -976,10 +979,14 @@
       for (const [prop, val] of Object.entries(variables)) {
         document.documentElement.style.setProperty(prop, val);
       }
-      const accent = variables['--pill-accent'] || variables['--accent'];
-      const secondary = variables['--accent-hover'] || variables['--accent'];
-      visualizer.setThemeColors(accent, secondary);
     }
+    // Pill is strictly monochrome black and white regardless of active theme
+    document.documentElement.style.setProperty('--pill-bg', '#000000');
+    document.documentElement.style.setProperty('--pill-border', 'rgba(255, 255, 255, 0.14)');
+    document.documentElement.style.setProperty('--pill-border-top', 'rgba(255, 255, 255, 0.28)');
+    document.documentElement.style.setProperty('--pill-text', '#ffffff');
+    document.documentElement.style.setProperty('--pill-accent', '#ffffff');
+    visualizer.setThemeColors('#ffffff', '#bfbfbf');
   }
 
   if (window.wisprtell && window.wisprtell.onThemeSync) {
