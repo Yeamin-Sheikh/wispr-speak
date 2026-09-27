@@ -13,6 +13,26 @@
 
 ## Progress log
 
+### 2026-09-27: Settings row hover fix and deployment sync
+
+**Status:** Done
+
+#### What changed
+- Fixed settings row highlight bug: removed `.setting-row:hover` and `.setting-row:active` full-row background fills in `src/renderer/settings.html`.
+- Removed row-level `cursor: pointer` so row labels retain default cursor while toggle switches preserve pointer cursor.
+- Corrected application deployment target to active install directory at `C:\Users\Yeamin-Sheikh\AppData\Local\Programs\Whisper Speak\resources\app\`.
+- Synchronized all updated source code across git repository, release staging, and installed application folders.
+
+### 2026-09-27: Monochrome pill aesthetic and visualizer scaling
+
+**Status:** Done
+
+#### What changed
+- Restyled floating status pill with a strict monochrome black and white color scheme across light and dark themes.
+- Scaled audio visualizer bars proportionally inside the slim 20px pill height.
+- Enhanced transcription accuracy through Whisper prompt conditioning and personal dictionary injection.
+- Overhauled personal dictionary with exact casing preservation and contextual term recognition.
+
 ### 2026-09-27: Fix Groq polish model to match documentation (openai/gpt-oss-20b)
 
 **Status:** Done
