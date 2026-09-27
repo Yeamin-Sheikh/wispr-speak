@@ -601,7 +601,8 @@ function registerGlobalShortcuts() {
 
 // ---------- Groq cloud engine ----------
 const GROQ_STT_MODEL = 'whisper-large-v3-turbo';
-const GROQ_POLISH_MODEL = 'llama-3.1-8b-instant';
+const GROQ_POLISH_MODEL = 'openai/gpt-oss-20b';
+const GROQ_POLISH_FALLBACK_MODEL = 'qwen/qwen3.8-27b';
 
 const POLISH_SYSTEM = 'You are an intelligent voice dictation assistant. Your job is to transform raw spoken audio into what the speaker meant to write: ' +
   'Convert spoken punctuation and symbols (such as "exclamation mark" to "!", "question mark" to "?", "comma" to ",", "colon" to ":") into actual punctuation. ' +
@@ -625,14 +626,16 @@ function polishSystemPrompt() {
 const NEEDS_KEY = 'NEEDS_KEY';
 
 function groqError(what, status, errMsg) {
-  if (status === 401) return 'Groq key rejected — check the key in Settings.';
-  if (status === 429) return 'Groq rate limit reached — please wait a moment.';
-  if (status === 400) return 'Audio unreadable by Groq — speak a little longer.';
-  if (status && status >= 500) return 'Groq server error — try again momentarily.';
-  if (errMsg && /timeout/i.test(errMsg)) return 'Groq connection timed out — check internet connection.';
+  if (status === 401) return 'Groq key rejected — check key in Settings';
+  if (status === 429) return 'Groq rate limit reached — please wait a moment';
+  if (status === 400 && what === 'Transcription') return 'Audio unreadable — speak a little longer';
+  if (status === 404) return 'Groq model not found or deprecated';
+  if (status && status >= 500) return 'Groq server error — try again momentarily';
+  if (errMsg && /timeout/i.test(errMsg)) return 'Groq timed out — check connection';
   if (errMsg && /(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH)/i.test(errMsg))
-    return 'No internet connection — connect and try again.';
-  return (what || 'Speech') + ' failed — please try again.';
+    return 'No internet connection';
+  if (errMsg && typeof errMsg === 'string' && errMsg.length < 50) return errMsg;
+  return (what || 'Operation') + ' failed — please try again';
 }
 
 const httpsAgent = new (require('https').Agent)({ keepAlive: true, maxSockets: 4 });
@@ -769,8 +772,8 @@ async function polishGroq(text) {
     dictionary: config.dictionary || [],
   });
 
-  const body = JSON.stringify({
-    model: GROQ_POLISH_MODEL,
+  const makeBody = (model) => JSON.stringify({
+    model,
     messages: [
       { role: 'system', content: promptSpec.systemPrompt },
       { role: 'user', content: text },
@@ -778,11 +781,30 @@ async function polishGroq(text) {
     temperature: promptSpec.temperature,
     max_tokens: 1024,
   });
+
   let r;
   try {
-    r = await groqPost('/openai/v1/chat/completions', { body, contentType: 'application/json', timeoutMs: 30000 });
-  } catch (e) { throw new Error(groqError('Cleanup', 0, e.message)); }
-  if (r.status !== 200) throw new Error(groqError('Cleanup', r.status));
+    r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+    if (r && r.status !== 200 && GROQ_POLISH_FALLBACK_MODEL) {
+      log('groqChat: primary model failed with status ' + r.status + ', trying fallback model ' + GROQ_POLISH_FALLBACK_MODEL);
+      r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_FALLBACK_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+    }
+  } catch (e) {
+    if (GROQ_POLISH_FALLBACK_MODEL) {
+      try {
+        r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_FALLBACK_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+      } catch (e2) {
+        throw new Error(groqError('Cleanup', 0, e2.message));
+      }
+    } else {
+      throw new Error(groqError('Cleanup', 0, e.message));
+    }
+  }
+  if (!r || r.status !== 200) {
+    let detail = '';
+    try { detail = JSON.parse(r.body)?.error?.message; } catch {}
+    throw new Error(groqError('Cleanup', r ? r.status : 0, detail));
+  }
   let out = (JSON.parse(r.body).choices?.[0]?.message?.content || '').trim();
   if (/^["'][\s\S]*["']$/.test(out) && out.length >= 2) {
     out = out.slice(1, -1).trim();
@@ -792,8 +814,8 @@ async function polishGroq(text) {
 
 async function polishSelectedText(text) {
   if (!config.groqKey) throw new Error(NEEDS_KEY);
-  const body = JSON.stringify({
-    model: GROQ_POLISH_MODEL,
+  const makeBody = (model) => JSON.stringify({
+    model,
     messages: [
       { role: 'system', content: SELECTION_POLISH_SYSTEM },
       { role: 'user', content: text },
@@ -801,11 +823,30 @@ async function polishSelectedText(text) {
     temperature: 0.1,
     max_tokens: 2048,
   });
+
   let r;
   try {
-    r = await groqPost('/openai/v1/chat/completions', { body, contentType: 'application/json', timeoutMs: 30000 });
-  } catch (e) { throw new Error(groqError('Polishing', 0, e.message)); }
-  if (r.status !== 200) throw new Error(groqError('Polishing', r.status));
+    r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+    if (r && r.status !== 200 && GROQ_POLISH_FALLBACK_MODEL) {
+      log('polishSelectedText: primary model failed with status ' + r.status + ', trying fallback model ' + GROQ_POLISH_FALLBACK_MODEL);
+      r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_FALLBACK_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+    }
+  } catch (e) {
+    if (GROQ_POLISH_FALLBACK_MODEL) {
+      try {
+        r = await groqPost('/openai/v1/chat/completions', { body: makeBody(GROQ_POLISH_FALLBACK_MODEL), contentType: 'application/json', timeoutMs: 30000 });
+      } catch (e2) {
+        throw new Error(groqError('Polishing', 0, e2.message));
+      }
+    } else {
+      throw new Error(groqError('Polishing', 0, e.message));
+    }
+  }
+  if (!r || r.status !== 200) {
+    let detail = '';
+    try { detail = JSON.parse(r.body)?.error?.message; } catch {}
+    throw new Error(groqError('Polishing', r ? r.status : 0, detail));
+  }
   let out = (JSON.parse(r.body).choices?.[0]?.message?.content || '').trim();
   if (/^["'][\s\S]*["']$/.test(out) && out.length >= 2) {
     out = out.slice(1, -1).trim();
@@ -2536,7 +2577,7 @@ async function onPolishSelection() {
       setPill('error', 'Add your Groq key in Settings');
       openSettings();
     } else {
-      setPill('error', 'Polish failed: ' + String(err.message).slice(0, 50));
+      setPill('error', String(err.message).slice(0, 50));
     }
   } finally {
     busy = false;

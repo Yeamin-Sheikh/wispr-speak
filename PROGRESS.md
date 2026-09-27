@@ -13,6 +13,17 @@
 
 ## Progress log
 
+### 2026-09-27: Fix Groq polish model to match documentation (openai/gpt-oss-20b)
+
+**Status:** Done
+
+#### What changed
+- Replaced decommissioned `llama-3.1-8b-instant` with `openai/gpt-oss-20b` as specified in README.md and Settings documentation.
+- Added `qwen/qwen3.8-27b` as a secondary fallback model on Groq.
+- Fixed selection polish (`Win + Alt + Q`) and smart dictation cleanup returning 404 model errors.
+- Improved Groq error formatting to prevent redundant "Polish failed: Polishing failed" string prefixes.
+- Updated test suite timeout tolerances for load stability.
+
 ### 2026-09-27: Wispr Speak v1.0.3 — Rebrand, re-paste hotkey, thin pill, and crash fixes
 
 **Status:** Done

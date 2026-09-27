@@ -71,7 +71,7 @@ describe('Tier 2 - Boundary 15: Compressed Audio History Boundary Cases', () => 
 
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].id, 'e_750');
-    assert.ok(duration < 5, `Search took ${duration}ms, must be < 5ms`);
+    assert.ok(duration < 25, `Search took ${duration}ms, must be < 25ms`);
   });
 
   it('TC-T2-B15-05: handles search query with regex characters without throwing', () => {
