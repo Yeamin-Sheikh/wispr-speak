@@ -41,8 +41,8 @@ Wispr Speak is completely free and open source. It requires no subscription, pai
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/Yeamin-Sheikh/wispr-tell.git
-cd wispr-tell
+git clone https://github.com/Yeamin-Sheikh/wispr-speak.git
+cd wispr-speak
 npm install
 npm start
 ```
@@ -82,7 +82,7 @@ Wispr Tell recognizes spoken commands during dictation:
 ### Project layout
 
 ```
-wispr-tell/
+wispr-speak/
 ├── src/
 │   ├── main.js             # Electron main process, hotkey lifecycle, Groq client
 │   ├── preload.js          # Context bridge for renderer IPC

@@ -1,5 +1,5 @@
 {
-  "name": "wispr-tell",
+  "name": "wispr-speak",
   "productName": "Wispr Speak",
   "version": "1.0.3",
   "description": "Voice typing application for Windows with Push-to-Talk, Hands-free toggle mode, history timeline, and Groq cloud STT.",
@@ -27,7 +27,7 @@
       {
         "provider": "github",
         "owner": "Yeamin-Sheikh",
-        "repo": "wispr-tell"
+        "repo": "wispr-speak"
       }
     ]
   },
@@ -35,6 +35,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Yeamin-Sheikh/wispr-tell.git"
+    "url": "https://github.com/Yeamin-Sheikh/wispr-speak.git"
   }
 }

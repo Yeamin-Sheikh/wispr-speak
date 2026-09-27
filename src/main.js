@@ -2604,7 +2604,7 @@ function initAutoUpdater() {
       autoUpdater.setFeedURL({
         provider: 'github',
         owner: 'Yeamin-Sheikh',
-        repo: 'wispr-tell'
+        repo: 'wispr-speak'
       });
     } catch (feedErr) {
       log('autoUpdater: feed configuration note:', feedErr.message);
