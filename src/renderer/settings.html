@@ -695,10 +695,7 @@
       justify-content: space-between;
       padding: 13px 18px;
       gap: 16px;
-      transition: background 0.12s;
-    }
-    .setting-row:hover {
-      background: var(--nav-active);
+      background: transparent;
     }
     .setting-row + .setting-row { border-top: 1px solid var(--border-subtle); }
 
@@ -934,11 +931,7 @@
       transition: color 0.2s ease;
     }
 
-    /* Setting row active press feedback */
-    .setting-row:active {
-      background: var(--accent-light);
-      transition: background 0.06s;
-    }
+
 
     /* Switch knob stretch animation on toggle */
     .switch input:active + .switch-track:before {
@@ -2789,7 +2782,6 @@
     document.querySelectorAll('.setting-row').forEach(row => {
       const sw = row.querySelector('.switch input');
       if (sw) {
-        row.style.cursor = 'pointer';
         row.addEventListener('click', (e) => {
           if (!e.target.closest('.switch') && !e.target.closest('label') && !e.target.closest('button') && !e.target.closest('input') && !e.target.closest('select')) {
             sw.checked = !sw.checked;
