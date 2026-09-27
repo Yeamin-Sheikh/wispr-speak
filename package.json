@@ -1,14 +1,14 @@
 {
   "name": "wispr-tell",
-  "productName": "Wispr Tell",
-  "version": "1.0.2",
+  "productName": "Wispr Speak",
+  "version": "1.0.3",
   "description": "Voice typing application for Windows with Push-to-Talk, Hands-free toggle mode, history timeline, and Groq cloud STT.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node tests/run-all-tests.js",
     "build-native": "node scripts/build-native.js",
-    "pack": "electron-packager . \"Wispr Tell\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico"
+    "pack": "electron-packager . \"Wispr Speak\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "com.sheikh.wisprtell",
-    "productName": "Wispr Tell",
+    "productName": "Wispr Speak",
     "publish": [
       {
         "provider": "github",

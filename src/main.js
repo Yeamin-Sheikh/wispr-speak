@@ -21,6 +21,7 @@ const {
   DEFAULT_COMMANDS,
   extractDictionaryCorrections,
   areTextsRelated,
+  cleanTrailingPeriod,
 } = require('./text-utils');
 
 let voiceEngine = new VoiceCommandEngine(DEFAULT_COMMANDS);
@@ -249,6 +250,26 @@ function setupAudioVizChannel() {
 
 
 // ---------- config ----------
+// Auto-migrate legacy user config and history when upgrading from Wispr Tell to Wispr Speak
+try {
+  const currentConfig = path.join(app.getPath('userData'), 'wispr-tell-config.json');
+  const legacyUserData = path.join(app.getPath('appData'), 'Wispr Tell');
+  const legacyConfig = path.join(legacyUserData, 'wispr-tell-config.json');
+  if (!fs.existsSync(currentConfig) && fs.existsSync(legacyConfig)) {
+    if (!fs.existsSync(app.getPath('userData'))) {
+      fs.mkdirSync(app.getPath('userData'), { recursive: true });
+    }
+    fs.copyFileSync(legacyConfig, currentConfig);
+    const legacyHistory = path.join(legacyUserData, 'wispr-tell-history.json');
+    const currentHistory = path.join(app.getPath('userData'), 'wispr-tell-history.json');
+    if (!fs.existsSync(currentHistory) && fs.existsSync(legacyHistory)) {
+      fs.copyFileSync(legacyHistory, currentHistory);
+    }
+  }
+} catch (migErr) {
+  console.error('[wispr-speak] migration error:', migErr.message);
+}
+
 const CONFIG_PATH = path.join(app.getPath('userData'), 'wispr-tell-config.json');
 const AUDIO_HISTORY_DIR = path.join(app.getPath('userData'), 'audio-history');
 try {
@@ -269,10 +290,14 @@ const DEFAULTS = {
     handsFree: ['Ctrl', 'Win', 'Space'],
     polishSelection: ['Win', 'Alt', 'Q'],
     learnCorrection: ['Win', 'Alt', 'L'],
+    pasteLatest: ['Alt', 'Shift', 'Z'],
   },
   dictionary: [
+    { from: 'whisper speak', to: 'Wispr Speak' },
+    { from: 'wispr speak', to: 'Wispr Speak' },
+    { from: 'whisper tell', to: 'Wispr Speak' },
+    { from: 'wispr tell', to: 'Wispr Speak' },
     { from: 'whisper flow', to: 'Wispr Flow' },
-    { from: 'wispr tell', to: 'Wispr Tell' },
   ],
   theme: 'cyber-teal',
   typingAnimation: false,
@@ -559,6 +584,19 @@ function registerGlobalShortcuts() {
       log('globalShortcut register error for polishSelection:', e.message);
     }
   }
+
+  const pstAcc = shortcutToAccelerator(config.shortcuts?.pasteLatest || ['Alt', 'Shift', 'Z']);
+  if (pstAcc) {
+    try {
+      const ok = globalShortcut.register(pstAcc, () => {
+        log('globalShortcut pasteLatest triggered (' + pstAcc + ')');
+        pasteLatestDictation();
+      });
+      log('globalShortcut registered pasteLatest:', pstAcc, ok ? 'SUCCESS' : 'FAILED');
+    } catch (e) {
+      log('globalShortcut register error for pasteLatest:', e.message);
+    }
+  }
 }
 
 // ---------- Groq cloud engine ----------
@@ -833,6 +871,50 @@ async function validateGroqKey(key) {
   }
 }
 
+
+let currentPipelineId = 0;
+
+function cancelCurrentDictation() {
+  log('cancelCurrentDictation: aborting active dictation');
+  currentPipelineId++;
+  if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
+  if (captureWin && !captureWin.isDestroyed()) {
+    captureWin.webContents.send('capture-stop');
+  }
+  busy = false;
+  recording = false;
+  isHandsFree = false;
+  hotkeyFsm.resetState();
+  setPill('done', null, 'Cancelled');
+  setTimeout(() => { setPill('hidden'); }, 400);
+}
+
+async function pasteLatestDictation() {
+  let textToPaste = '';
+  if (lastInject && lastInject.text && lastInject.text.trim()) {
+    textToPaste = lastInject.text.trim();
+  } else if (history && history.length > 0 && history[0].text && history[0].text.trim()) {
+    textToPaste = history[0].text.trim();
+  }
+
+  if (!textToPaste) {
+    log('paste-latest: no recent dictation to paste');
+    setPill('error', 'No recent dictation');
+    return;
+  }
+
+  log('paste-latest: re-injecting', textToPaste.length, 'chars');
+  setPill('working');
+  try {
+    targetHwnd = await detectTargetWindow();
+    await injectText(textToPaste);
+    setPill('done', null, 'Pasted latest ✓');
+  } catch (err) {
+    log('paste-latest failed:', err.message);
+    setPill('error', 'Could not paste');
+  }
+}
+
 // ---------- undo / scratch ----------
 let lastInject = null;
 async function scratchLast() {
@@ -972,7 +1054,7 @@ class WindowMaterialConfigurator {
   static getPillWindowOptions(isWin11 = this.shouldUseNativeMaterials()) {
     const baseOptions = {
       width: 320,
-      height: 44,
+      height: 32,
       frame: false,
       transparent: true,
       alwaysOnTop: true,
@@ -1017,7 +1099,7 @@ class WindowMaterialConfigurator {
       height: 760,
       minWidth: 960,
       minHeight: 640,
-      title: 'Wispr Tell',
+      title: 'Wispr Speak',
       titleBarStyle: 'hidden',
       frame: false,
       show: false,
@@ -1052,7 +1134,7 @@ class WindowMaterialConfigurator {
       resizable: false,
       minimizable: false,
       maximizable: false,
-      title: 'Welcome to Wispr Tell',
+      title: 'Welcome to Wispr Speak',
       autoHideMenuBar: true,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
@@ -1397,6 +1479,13 @@ function openSettings() {
   }
   const options = WindowMaterialConfigurator.getSettingsWindowOptions(config.theme);
   settingsWin = new BrowserWindow(options);
+
+  settingsWin.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      settingsWin.hide();
+    }
+  });
 
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
 
@@ -1842,6 +1931,7 @@ ipcMain.on('capture-chunk', async (_event, payload) => {
 async function executeAudioPipeline() {
   const releaseTimestamp = Date.now();
   const session = activeStreamSession;
+  const pipelineId = ++currentPipelineId;
 
   try {
     let raw = '';
@@ -1981,6 +2071,8 @@ async function executeAudioPipeline() {
       }
     }
     clean = applyDictionary(clean, config.dictionary);
+    clean = cleanTrailingPeriod(clean);
+    if (pipelineId !== currentPipelineId) { log('pipeline aborted'); return; }
 
     if (clean) {
       await injectText(clean);
@@ -2425,7 +2517,8 @@ async function onPolishSelection() {
     setPill('working');
 
     const t0 = Date.now();
-    const polished = await polishSelectedText(selectedText);
+    let polished = await polishSelectedText(selectedText);
+    polished = cleanTrailingPeriod(polished);
     const durationMs = Date.now() - t0;
     log('polish-selection: polished in', durationMs, 'ms');
 
@@ -2849,7 +2942,7 @@ if (!gotSingleLock) {
   // data import / export (zero user profiles or personal names)
   const handleExportData = () => {
     return {
-      appName: 'Wispr Tell',
+      appName: 'Wispr Speak',
       version: app.getVersion(),
       exportedAt: new Date().toISOString(),
       stats: getStats(),
@@ -2963,9 +3056,9 @@ if (!gotSingleLock) {
   try {
     const trayIcon = path.join(__dirname, '..', 'assets', process.platform === 'win32' ? 'icon.ico' : 'tray.png');
     tray = new Tray(trayIcon);
-    tray.setToolTip('Wispr Tell — Voice Typing');
+    tray.setToolTip('Wispr Speak — Voice Typing');
     tray.setContextMenu(Menu.buildFromTemplate([
-      { label: 'Open Wispr Tell', click: openSettings },
+      { label: 'Open Wispr Speak', click: openSettings },
       {
         label: 'Toggle hands-free mode',
         click: () => {
@@ -2978,6 +3071,7 @@ if (!gotSingleLock) {
       { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
       { label: 'Polish selection: ' + (config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']).join('+'), enabled: false },
       { label: 'Learn correction: ' + (config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L']).join('+'), enabled: false },
+      { label: 'Paste latest: ' + (config.shortcuts?.pasteLatest || ['Alt', 'Shift', 'Z']).join('+'), enabled: false },
       { type: 'separator' },
       { label: 'Settings', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'settings'); } },
       { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
@@ -3009,6 +3103,7 @@ if (!gotSingleLock) {
   }
 
   let pttPendingTimer = null;
+let isQuitting = false;
 
   // Global keyboard shortcuts hook with OS autorepeat suppression
   uIOhook.on('keydown', e => {
@@ -3020,6 +3115,15 @@ if (!gotSingleLock) {
     const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const polishCombo = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
     const learnCombo = config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L'];
+    const pasteLatestCombo = config.shortcuts?.pasteLatest || ['Alt', 'Shift', 'Z'];
+
+    // 0. Escape key cancels active dictation
+    if (e.keycode === 1) {
+      if (hotkeyFsm.state !== 'IDLE' || busy || recording) {
+        cancelCurrentDictation();
+        return;
+      }
+    }
 
     // 1. Hands-free combo: Ctrl + Win + Space
     if (isComboHeld(handsFreeCombo)) {
@@ -3039,6 +3143,13 @@ if (!gotSingleLock) {
     if (isComboHeld(learnCombo)) {
       if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
       enqueueHotkeyEvent('LEARN_SELECTION');
+      return;
+    }
+
+    // 2c. Paste latest dictation combo: Alt + Shift + Z
+    if (isComboHeld(pasteLatestCombo)) {
+      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
+      pasteLatestDictation();
       return;
     }
 
@@ -3083,19 +3194,34 @@ if (!gotSingleLock) {
   uIOhook.start();
 
   if (process.platform === 'win32') {
-    app.setLoginItemSettings({ openAtLogin: !!config.launchAtLogin });
+    app.setLoginItemSettings({ openAtLogin: !!config.launchAtLogin, args: ['--hidden'] });
+  }
+
+  let isSilentStart = process.argv.includes('--hidden') || process.argv.includes('--minimized');
+  if (!isSilentStart && process.platform === 'win32') {
+    try {
+      isSilentStart = app.getLoginItemSettings().wasOpenedAtLogin;
+    } catch {}
   }
 
   if (config.firstRun) {
     showWelcome();
-  } else if (!process.argv.includes('--hidden')) {
+  } else if (!isSilentStart) {
     openSettings();
   }
 });
 }
 
+process.on('uncaughtException', err => {
+  log('uncaughtException caught:', err && err.stack ? err.stack : err);
+});
+process.on('unhandledRejection', reason => {
+  log('unhandledRejection caught:', reason && reason.stack ? reason.stack : reason);
+});
+
 app.on('window-all-closed', e => e.preventDefault());
 app.on('before-quit', () => {
+  isQuitting = true;
   try { globalShortcut.unregisterAll(); } catch {}
   try { uIOhook.stop(); } catch {}
 });

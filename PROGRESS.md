@@ -13,6 +13,31 @@
 
 ## Progress log
 
+### 2026-09-27: Wispr Speak v1.0.3 — Rebrand, re-paste hotkey, thin pill, and crash fixes
+
+**Status:** Done
+
+#### What changed
+- Rebranded application from Wispr Tell to Wispr Speak across window titles, UI headers, descriptions, default dictionaries, and package metadata.
+- Added re-paste latest dictation hotkey (`Alt + Shift + Z`):
+  - Injects the most recent dictation at the cursor if focus was missed during voice input.
+  - Registered via both global shortcut and uIOhook with instant visual pill confirmation.
+- Added non-sentence trailing period truncation:
+  - Singular words and standalone button labels (such as "Submit", "Cancel", "Hello") no longer receive unwanted trailing periods.
+  - Complete sentences and punctuated questions or exclamations retain standard punctuation.
+- Escape key cancellation:
+  - Pressing `Esc` during listening or processing aborts the pipeline, resets state machine to IDLE, and hides the pill without pasting.
+- Graphical error fix in Settings titlebar:
+  - Adjusted titlebar controls margin by 140px to eliminate overlap between the quick theme toggle and Windows caption buttons.
+- Slim floating status pill:
+  - Decreased pill height to 20px with proportional equalizer bars and icons for a modern, sleek appearance.
+- Background startup and crash prevention:
+  - Closing the settings window now hides to system tray rather than destroying the process.
+  - Startup at login with `--hidden` stays purely in the background tray without popup windows.
+  - Added process-level uncaughtException and unhandledRejection handlers.
+- Onboarding and Settings:
+  - Added dedicated "Get Free Key" button in settings and setup wizard to open the Groq console directly.
+
 ### 2026-09-27: Wispr Tell v1.0.2 — Context-based auto-learning and profile removal
 
 **Status:** Done

@@ -5,6 +5,37 @@ const defaultEngine = new VoiceCommandEngine(DEFAULT_COMMANDS);
 
 const FILLERS = /\b(um|uh|er|ah|like|you know)\b[, ]*/gi;
 
+function shouldHaveTrailingPeriod(text) {
+  if (!text) return false;
+  const clean = String(text).trim();
+  const words = clean.replace(/[.!?…]+$/, '').trim().split(/\s+/).filter(Boolean);
+
+  // Single words must NEVER end with a period
+  if (words.length <= 1) return false;
+
+  // 2 words: only if it contains a finite verb / clause structure
+  if (words.length === 2) {
+    const commonVerbs = new Set(['is', 'are', 'was', 'were', 'am', 'be', 'been', 'has', 'have', 'had', 'do', 'does', 'did', 'can', 'could', 'will', 'would', 'should', 'must', 'run', 'ran', 'go', 'went', 'see', 'saw', 'said', 'agree', 'works', 'failed']);
+    const hasVerb = words.some(w => commonVerbs.has(w.toLowerCase()));
+    if (!hasVerb) return false;
+  }
+
+  return true;
+}
+
+function cleanTrailingPeriod(text) {
+  if (!text) return '';
+  let t = String(text).trim();
+  if (/[?!…"]$/.test(t) || t.endsWith('...')) return t;
+
+  if (t.endsWith('.')) {
+    if (!shouldHaveTrailingPeriod(t)) {
+      t = t.slice(0, -1).trim();
+    }
+  }
+  return t;
+}
+
 function formatText(raw) {
   let t = String(raw).replace(FILLERS, ' ').replace(/\s+/g, ' ').trim();
   if (!t) return '';
@@ -14,7 +45,13 @@ function formatText(raw) {
   if (/\b(or)\s*$/i.test(t)) {
     t = t.replace(/\s*,\s*or\s*$/i, ', or?').replace(/\s+or\s*$/i, ', or?');
   } else if (!/[.!?…]$/.test(t) && !t.endsWith('...')) {
-    t += '.';
+    if (shouldHaveTrailingPeriod(t)) {
+      t += '.';
+    }
+  } else if (t.endsWith('.')) {
+    if (!shouldHaveTrailingPeriod(t)) {
+      t = t.slice(0, -1).trim();
+    }
   }
   return t;
 }
@@ -138,7 +175,7 @@ const DEFAULT_PERSONAS = [
   {
     id: 'natural',
     name: 'Natural',
-    systemPrompt: 'You are an intelligent voice typing assistant. Clean up grammar, remove filler words like um and uh, and format punctuation naturally while preserving spoken cadence. Return ONLY the final text with no quotes, explanations, or introductory remarks.',
+    systemPrompt: 'You are an intelligent voice typing assistant. Clean up grammar, remove filler words like um and uh, and format punctuation naturally while preserving spoken cadence. Do not add a trailing period to single words, standalone labels, or short fragments. Return ONLY the final text with no quotes, explanations, or introductory remarks.',
     temperature: 0.3,
     isDefault: true,
   },
@@ -380,6 +417,8 @@ module.exports = {
   buildWhisperPromptBounded,
   VoiceCommandEngine,
   DEFAULT_COMMANDS,
+  cleanTrailingPeriod,
+  shouldHaveTrailingPeriod,
   extractDictionaryCorrections,
   areTextsRelated,
 };

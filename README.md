@@ -1,8 +1,8 @@
-# Wispr Tell
+# Wispr Speak
 
-Hold-to-talk and hands-free voice typing for Windows powered by Groq cloud speech-to-text and language model cleanup. Speak naturally, and Wispr Tell types directly into your cursor in any application.
+Hold-to-talk and hands-free voice typing for Windows powered by Groq cloud speech-to-text and language model cleanup. Speak naturally, and Wispr Speak types directly into your cursor in any application.
 
-Wispr Tell is completely free and open source. It requires no subscription, paid tier, or upgrade.
+Wispr Speak is completely free and open source. It requires no subscription, paid tier, or upgrade.
 
 ### How it works
 
@@ -12,18 +12,19 @@ Wispr Tell is completely free and open source. It requires no subscription, paid
 4. On shortcut release or toggle stop, the WAV audio is sent to Groq running whisper-large-v3-turbo.
 5. Voice commands and spoken punctuation are evaluated.
 6. The transcribed text is cleaned by openai/gpt-oss-20b on Groq to format grammar, capitalization, and punctuation.
-7. Personal dictionary rules are applied.
+7. Personal dictionary rules and non-sentence period truncation are applied.
 8. The native Windows helper restores the target window, releases modifier keys, and injects the text via clipboard paste. Standard windows receive Ctrl+V, while terminal windows receive Ctrl+Shift+V. Previous clipboard contents are restored after 600ms.
 
 ### Key features
 
-- Selection polishing shortcut: Highlight any text in any application (browser, chat, text editor, code) and press `Win + Alt + Q` to polish grammar, spelling, flow, and punctuation.
-- Writes what you mean: Intelligent intent engine transforms spoken punctuation (say "comma", "exclamation mark", "question mark", "colon") and trailing question inflections (such as ending thoughts with "or?") into natural written punctuation.
-- Minimal color-neutral brand design: Clean acoustic wave monogram in vector SVG format, accompanied by high-resolution Windows icon assets (16, 24, 32, 48, 64, 128, and 256 sizes).
+- Re-paste latest dictation: Missed focus or was not in a text box? Press `Alt + Shift + Z` at any time to paste your latest dictation into any active cursor.
+- Cancel on Escape: Press `Esc` at any time during listening or processing to cancel immediately without pasting.
+- Smart punctuation: Full sentences receive standard punctuation, while singular words and button labels never get unwanted trailing periods.
+- Selection polishing shortcut: Highlight any text in any application and press `Win + Alt + Q` to polish grammar, spelling, flow, and punctuation.
+- Context-based auto-learning: Edit any sentence or copy corrected text after dictating, and Wispr Speak extracts substitutions (like words or symbols) and adds them to your personal dictionary automatically. You can also highlight text and press `Win + Alt + L` to learn immediately.
+- Slim floating status pill: Minimalist 20px audio-reactive equalizer pill centered cleanly on screen.
 - Push-to-talk and hands-free modes: Hold to talk or press once to start and press again to inject. All shortcuts are customizable in settings.
 - Four interface themes: Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal, with Windows 11 caption button color synchronization.
-- Animated status pill: Features a spring entrance curve, frosted glass background, dynamic 5-bar glowing audio equalizer, and smooth exit fade.
-- Context-based auto-learning: Edit any sentence or copy corrected text after dictating, and Wispr Tell extracts substitutions (like words or symbols) and adds them to your personal dictionary automatically. You can also highlight text and press `Win + Alt + L` to learn immediately.
 - Data backup and migration: Export your settings, dictionary rules, and shortcut preferences as a clean JSON backup file, and import it on any Windows PC.
 - History and productivity stats: Browse past dictations, search by keyword, view total words transcribed, words per minute, and daily streaks.
 

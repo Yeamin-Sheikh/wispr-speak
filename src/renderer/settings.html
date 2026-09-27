@@ -2,7 +2,7 @@
 <html lang="en" data-theme="cyber-teal">
 <head>
   <meta charset="utf-8">
-  <title>Wispr Tell</title>
+  <title>Wispr Speak</title>
   <style>
     /* 21st.dev Inspired Design Tokens & Themes */
     :root, [data-theme="cyber-teal"] {
@@ -187,6 +187,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-right: 140px;
       -webkit-app-region: no-drag;
     }
 
@@ -1215,7 +1216,7 @@
         <line x1="12" y1="19" x2="12" y2="22"/>
         <line x1="8" y1="22" x2="16" y2="22"/>
       </svg>
-      <span>Wispr Tell</span>
+      <span>Wispr Speak</span>
     </div>
 
     <div class="titlebar-controls">
@@ -1237,7 +1238,7 @@
             <line x1="8" y1="22" x2="16" y2="22"/>
           </svg>
           <div class="brand-info">
-            <span class="brand-title">Wispr Tell</span>
+            <span class="brand-title">Wispr Speak</span>
             <span class="brand-subtitle">Desktop Voice Typing</span>
           </div>
         </div>
@@ -1388,6 +1389,16 @@
                   <div class="kbd-badge" id="learnBadge"><kbd>Win</kbd><kbd>Alt</kbd><kbd>L</kbd></div>
                 </div>
               </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Paste latest dictation</div>
+                  <div class="subtitle">Re-paste the most recent dictation if target window focus was missed</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="kbd-badge" id="pasteLatestBadge"><kbd>Alt</kbd><kbd>Shift</kbd><kbd>Z</kbd></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1401,7 +1412,8 @@
                   <div class="subtitle">Powers high-speed whisper-large-v3-turbo and GPT-OSS 20B</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
-                  <input type="password" class="input-text" id="groqKeyInput" placeholder="gsk_..." style="width:210px;">
+                  <input type="password" class="input-text" id="groqKeyInput" placeholder="gsk_..." style="width:200px;">
+                  <button class="btn-outline" id="btnGetGroqKey" title="Open console.groq.com/keys in browser">Get Free Key</button>
                   <button class="btn-primary" id="btnTestKey">Test key</button>
                 </div>
               </div>
@@ -1437,7 +1449,7 @@
               <div class="setting-row" id="rowStartup">
                 <div class="setting-text">
                   <div class="title">Launch on Windows startup</div>
-                  <div class="subtitle">Start Wispr Tell automatically in tray upon Windows login</div>
+                  <div class="subtitle">Start Wispr Speak automatically in tray upon Windows login</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="startupToggle">
@@ -1492,7 +1504,7 @@
         <!-- 3. Dictionary View -->
         <div class="view-panel" id="view-dictionary">
           <div class="greeting-title">Personal Dictionary</div>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Train Wispr Tell to write technical terms, names, or brand spellings exactly as intended.</p>
+          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Train Wispr Speak to write technical terms, names, or brand spellings exactly as intended.</p>
 
           <div class="spotlight-card setting-card" style="padding:18px;">
             <div style="display:flex;gap:10px;margin-bottom:14px;">
@@ -2149,6 +2161,9 @@
     const lrn = config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L'];
     const lrnBadge = document.getElementById('learnBadge');
     if (lrnBadge) lrnBadge.innerHTML = lrn.map(k => `<kbd>${k}</kbd>`).join('');
+    const pst = config.shortcuts?.pasteLatest || ['Alt', 'Shift', 'Z'];
+    const pstBadge = document.getElementById('pasteLatestBadge');
+    if (pstBadge) pstBadge.innerHTML = pst.map(k => `<kbd>${k}</kbd>`).join('');
   }
 
   function setupShortcutEditor(btnId, type) {
@@ -2669,7 +2684,12 @@
     }
 
     // Test Key
-    document.getElementById('btnTestKey').onclick = async () => {
+    const btnGetGroqKey = document.getElementById('btnGetGroqKey');
+  if (btnGetGroqKey) {
+    btnGetGroqKey.onclick = () => api.openExternal('https://console.groq.com/keys');
+  }
+
+  document.getElementById('btnTestKey').onclick = async () => {
       const btn = document.getElementById('btnTestKey');
       btn.disabled = true; btn.textContent = 'Testing...';
       const key = document.getElementById('groqKeyInput').value.trim();
