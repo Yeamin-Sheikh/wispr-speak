@@ -2050,6 +2050,10 @@ class HotkeyStateMachine {
         this.logTransition('LISTENING_PTT', 'PROCESSING', 'KEY_UP(ptt)');
         return { action: 'capture-stop' };
       }
+      if (type === 'KEY_DOWN' && key === 'handsfree') {
+        this.logTransition('LISTENING_PTT', 'LISTENING_HANDSFREE', 'KEY_DOWN(handsfree)');
+        return { action: 'mode-switch' };
+      }
     } else if (currentState === 'LISTENING_HANDSFREE') {
       if (type === 'KEY_DOWN' && key === 'handsfree') {
         this.logTransition('LISTENING_HANDSFREE', 'PROCESSING', 'KEY_DOWN(handsfree)');
@@ -2189,6 +2193,8 @@ function enqueueHotkeyEvent(type) {
   } else if (res.action === 'capture-stop') {
     setPill('working');
     executeAudioPipeline();
+  } else if (res.action === 'mode-switch') {
+    setPill('listening');
   }
 }
 
@@ -2870,13 +2876,13 @@ if (!gotSingleLock) {
       }
 
       if (!pttPendingTimer && currentState !== FsmState.LISTENING_PTT) {
-        // Micro-debounce (50ms) to check if Space is landing for hands-free combo
+        // Debounce (140ms) to check if Space is landing for hands-free combo
         pttPendingTimer = setTimeout(() => {
           pttPendingTimer = null;
           if (isComboHeld(pttCombo) && !isComboHeld(handsFreeCombo)) {
             enqueueHotkeyEvent('PTT_DOWN');
           }
-        }, 50);
+        }, 140);
       }
     }
   });
