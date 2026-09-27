@@ -29,21 +29,17 @@
     max-width: 300px;
     border-radius: 999px;
     
-    /* Frosted glass */
-    background: rgba(18, 18, 22, 0.65);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
-    backdrop-filter: blur(32px) saturate(200%);
-    
-    /* Subtle borders */
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    
-    /* Base shadow */
+    background: var(--pill-bg, rgba(18, 18, 22, 0.65));
+    border: 1px solid var(--pill-border, rgba(255, 255, 255, 0.08));
+    border-top: 1px solid var(--pill-border-top, rgba(255, 255, 255, 0.20));
+    color: var(--pill-text, #ffffff);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     
-    cursor: pointer;
+    cursor: grab;
     overflow: hidden;
-    color: #fff;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     
     /* Entrance / Exit styling */
     opacity: 0;
@@ -59,6 +55,20 @@
       opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
       transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
       filter 0.4s ease;
+  }
+
+  #pill:active {
+    cursor: grabbing;
+  }
+
+  [data-material="native"] #pill {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  [data-material="fallback"] #pill {
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
   }
 
   /* Entrance */
@@ -136,11 +146,46 @@
     grid-template-columns: 1fr;
   }
 
+  /* Offline Mode Styling */
+  #pill.offline-mode {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 
+      0 0 14px rgba(245, 158, 11, 0.25),
+      0 8px 24px rgba(0, 0, 0, 0.6);
+  }
+
+  .offline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  .offline-badge svg {
+    width: 10px;
+    height: 10px;
+    stroke-width: 2.5;
+  }
+
+  #pill.offline-mode #offline-wrapper {
+    grid-template-columns: auto;
+  }
+
   /* Specific Elements */
   #wave {
     width: 40px; 
     height: 20px;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.3s;
   }
   #pill.state-listening #wave { opacity: 1; }
@@ -243,6 +288,17 @@
         <canvas id="wave" width="80" height="40"></canvas>
       </div>
     </div>
+
+    <div id="offline-wrapper" class="anim-wrapper">
+      <div class="anim-inner">
+        <div id="offline-badge" class="offline-badge" title="Offline Whisper Fallback">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
+          </svg>
+          <span>OFFLINE</span>
+        </div>
+      </div>
+    </div>
     
     <div id="icon-wrapper" class="anim-wrapper">
       <div class="anim-inner">
@@ -262,81 +318,487 @@
 <script>
   const pill = document.getElementById('pill');
   const canvas = document.getElementById('wave');
-  const ctx = canvas.getContext('2d');
   const iconBox = document.getElementById('icon-box');
   const textBox = document.getElementById('text');
 
-  // HDPI Canvas Setup
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = 80 * dpr;
-  canvas.height = 40 * dpr;
-  ctx.scale(dpr, dpr);
+  // ---------- WebGL Audio-Reactive Visualizer Shaders ----------
+  const VERTEX_SHADER_SRC = `
+    attribute vec2 aPosition;
+    varying vec2 vUv;
+    void main() {
+      vUv = (aPosition + 1.0) * 0.5;
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+    }
+  `;
 
-  let rafId = null;
+  const FRAGMENT_SHADER_SRC = `
+    precision mediump float;
+    varying vec2 vUv;
+    uniform float uTime;
+    uniform float uFrequencies[16];
+    uniform vec3 uColor;
+    uniform vec3 uColorSecondary;
+    uniform float uVocalEnergy;
+
+    float sampleFrequency(float x) {
+      float clampedX = clamp(x, 0.0, 0.999);
+      float indexFloat = clampedX * 15.0;
+      int idx = int(floor(indexFloat));
+      float f = fract(indexFloat);
+      float smoothF = f * f * (3.0 - 2.0 * f);
+
+      float v0 = 0.0;
+      float v1 = 0.0;
+      for (int i = 0; i < 16; i++) {
+        if (i == idx) v0 = uFrequencies[i];
+        if (i == idx + 1) v1 = uFrequencies[i];
+      }
+      return mix(v0, v1, smoothF);
+    }
+
+    void main() {
+      float x = vUv.x;
+      float y = vUv.y;
+
+      float freq = sampleFrequency(x);
+      float idlePulse = 0.08 + sin(uTime * 2.0) * 0.04;
+      float energy = max(idlePulse, uVocalEnergy);
+
+      float borderEnvelope = sin(x * 3.14159265);
+
+      float harmonic1 = sin(x * 12.0 + uTime * 3.2) * 0.14 * (0.3 + 0.7 * freq);
+      float harmonic2 = cos(x * 24.0 - uTime * 4.0) * 0.07 * (0.2 + 0.8 * freq);
+      float harmonic3 = sin(x * 6.0 + uTime * 1.5) * 0.04 * (uFrequencies[1] + uFrequencies[2]);
+
+      float waveCenter = 0.5 + (harmonic1 + harmonic2 + harmonic3) * borderEnvelope * (0.4 + energy * 0.8);
+      float dist = abs(y - waveCenter);
+
+      float core = smoothstep(0.045, 0.005, dist);
+      float glow = exp(-dist * 20.0) * (0.45 + 0.55 * freq);
+      float alpha = clamp(core + glow * 0.85, 0.0, 1.0);
+
+      vec3 waveColor = mix(uColorSecondary, uColor, clamp(core + freq * 0.5, 0.0, 1.0));
+      vec3 finalColor = waveColor * (1.0 + freq * 0.7);
+
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `;
+
+  class PillAudioVisualizer {
+    constructor(canvasElement) {
+      this.canvas = canvasElement;
+      this.gl = null;
+      this.ctx2d = null;
+      this.program = null;
+      this.uniforms = {};
+      this.frequencies = new Float32Array(16);
+      this.smoothedFrequencies = new Float32Array(16);
+      this.vocalEnergy = 0.0;
+      this.isRunning = false;
+      this.rafId = null;
+      this.startTime = performance.now();
+      this.isContextLost = false;
+
+      this.primaryColor = [0.369, 0.918, 0.831];   // #5eead4
+      this.secondaryColor = [0.051, 0.580, 0.533]; // #0d9488
+
+      this.init();
+    }
+
+    init() {
+      this.setupContext();
+      this.setupListeners();
+      this.resize();
+    }
+
+    setupContext() {
+      try {
+        this.gl = this.canvas.getContext('webgl', {
+          alpha: true,
+          antialias: true,
+          depth: false,
+          stencil: false,
+          premultipliedAlpha: false,
+          preserveDrawingBuffer: false,
+        }) || this.canvas.getContext('experimental-webgl');
+
+        if (this.gl && this.initShaders()) {
+          this.ctx2d = null;
+          return;
+        }
+      } catch (err) {
+        console.warn('WebGL init failed, using Canvas2D fallback:', err);
+      }
+
+      this.gl = null;
+      this.ctx2d = this.canvas.getContext('2d');
+    }
+
+    initShaders() {
+      const gl = this.gl;
+      const vShader = this.compileShader(gl.VERTEX_SHADER, VERTEX_SHADER_SRC);
+      const fShader = this.compileShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER_SRC);
+      if (!vShader || !fShader) return false;
+
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vShader);
+      gl.attachShader(prog, fShader);
+      gl.linkProgram(prog);
+
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error('Program link error:', gl.getProgramInfoLog(prog));
+        return false;
+      }
+
+      this.program = prog;
+      gl.useProgram(prog);
+
+      const quadVertices = new Float32Array([
+        -1.0, -1.0,
+         1.0, -1.0,
+        -1.0,  1.0,
+        -1.0,  1.0,
+         1.0, -1.0,
+         1.0,  1.0,
+      ]);
+
+      const vbo = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
+
+      const posAttr = gl.getAttribLocation(prog, 'aPosition');
+      gl.enableVertexAttribArray(posAttr);
+      gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+
+      this.uniforms = {
+        uTime: gl.getUniformLocation(prog, 'uTime'),
+        uFrequencies: gl.getUniformLocation(prog, 'uFrequencies'),
+        uColor: gl.getUniformLocation(prog, 'uColor'),
+        uColorSecondary: gl.getUniformLocation(prog, 'uColorSecondary'),
+        uVocalEnergy: gl.getUniformLocation(prog, 'uVocalEnergy'),
+      };
+
+      return true;
+    }
+
+    compileShader(type, src) {
+      const gl = this.gl;
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error:', gl.getShaderInfoLog(s));
+        gl.deleteShader(s);
+        return null;
+      }
+      return s;
+    }
+
+    setupListeners() {
+      this.canvas.addEventListener('webglcontextlost', e => {
+        e.preventDefault();
+        this.isContextLost = true;
+        this.stop();
+      }, false);
+
+      this.canvas.addEventListener('webglcontextrestored', () => {
+        this.isContextLost = false;
+        this.initShaders();
+        this.resize();
+        this.start();
+      }, false);
+
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const cssWidth = this.canvas.clientWidth || 40;
+      const cssHeight = this.canvas.clientHeight || 20;
+
+      const pixelWidth = Math.round(cssWidth * dpr);
+      const pixelHeight = Math.round(cssHeight * dpr);
+
+      if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+        this.canvas.width = pixelWidth;
+        this.canvas.height = pixelHeight;
+      }
+
+      if (this.gl && !this.isContextLost) {
+        this.gl.viewport(0, 0, pixelWidth, pixelHeight);
+      }
+    }
+
+    setThemeColors(hexPrimary, hexSecondary) {
+      if (hexPrimary) this.primaryColor = this.parseHexColor(hexPrimary);
+      if (hexSecondary) this.secondaryColor = this.parseHexColor(hexSecondary);
+    }
+
+    parseHexColor(hex) {
+      if (!hex || typeof hex !== 'string') return [0.369, 0.918, 0.831];
+      const clean = hex.replace('#', '').trim();
+      if (clean.length === 6) {
+        return [
+          parseInt(clean.slice(0, 2), 16) / 255,
+          parseInt(clean.slice(2, 4), 16) / 255,
+          parseInt(clean.slice(4, 6), 16) / 255,
+        ];
+      }
+      return [0.369, 0.918, 0.831];
+    }
+
+    updateFrequencies(incomingFft) {
+      if (!incomingFft || incomingFft.length !== 16) return;
+
+      let speechSum = 0;
+      for (let i = 0; i < 16; i++) {
+        const val = Math.max(0.0, Math.min(1.0, incomingFft[i]));
+        this.frequencies[i] = val;
+        this.smoothedFrequencies[i] += (val - this.smoothedFrequencies[i]) * 0.35;
+        if (i >= 2 && i <= 7) speechSum += this.smoothedFrequencies[i];
+      }
+      this.vocalEnergy = speechSum / 6.0;
+    }
+
+    start() {
+      if (this.isRunning || this.isContextLost) return;
+      this.isRunning = true;
+      this.resize();
+      const loop = (timestamp) => {
+        if (!this.isRunning) return;
+        this.render(timestamp);
+        this.rafId = requestAnimationFrame(loop);
+      };
+      this.rafId = requestAnimationFrame(loop);
+    }
+
+    stop() {
+      this.isRunning = false;
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.frequencies.fill(0);
+      this.smoothedFrequencies.fill(0);
+      this.vocalEnergy = 0;
+      if (this.gl && !this.isContextLost) {
+        this.gl.clearColor(0, 0, 0, 0);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      } else if (this.ctx2d) {
+        this.ctx2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+    }
+
+    render(timestamp) {
+      const timeSec = (timestamp - this.startTime) * 0.001;
+
+      for (let i = 0; i < 16; i++) {
+        this.smoothedFrequencies[i] *= 0.92;
+      }
+
+      if (this.gl && !this.isContextLost) {
+        this.renderWebGL(timeSec);
+      } else if (this.ctx2d) {
+        this.renderCanvas2D(timeSec);
+      }
+    }
+
+    renderWebGL(timeSec) {
+      const gl = this.gl;
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(this.program);
+      gl.uniform1f(this.uniforms.uTime, timeSec);
+      gl.uniform1fv(this.uniforms.uFrequencies, this.smoothedFrequencies);
+      gl.uniform3fv(this.uniforms.uColor, this.primaryColor);
+      gl.uniform3fv(this.uniforms.uColorSecondary, this.secondaryColor);
+      gl.uniform1f(this.uniforms.uVocalEnergy, this.vocalEnergy);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    renderCanvas2D(timeSec) {
+      const ctx = this.ctx2d;
+      const w = this.canvas.width;
+      const h = this.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const idlePulse = 0.08 + Math.sin(timeSec * 2.0) * 0.04;
+      const energy = Math.max(idlePulse, this.vocalEnergy);
+
+      ctx.beginPath();
+      const points = 16;
+      const step = w / (points - 1);
+      const centerY = h * 0.5;
+
+      for (let i = 0; i < points; i++) {
+        const x = i * step;
+        const freq = this.smoothedFrequencies[i];
+        const envelope = Math.sin((i / (points - 1)) * Math.PI);
+        const wave = Math.sin(timeSec * 3.5 + i * 0.6) * h * 0.28 * (0.3 + 0.7 * freq);
+        const y = centerY + wave * envelope * (0.4 + energy * 0.8);
+
+        if (i === 0) ctx.moveTo(x, y);
+        else {
+          const prevX = (i - 1) * step;
+          const cpX = (prevX + x) * 0.5;
+          ctx.bezierCurveTo(cpX, centerY, cpX, y, x, y);
+        }
+      }
+
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, '#0d9488');
+      grad.addColorStop(0.5, '#5eead4');
+      grad.addColorStop(1, '#0d9488');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = Math.max(2, Math.round(2 * (window.devicePixelRatio || 1)));
+      ctx.lineCap = 'round';
+      ctx.shadowColor = '#5eead4';
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+    }
+  }
+
+  const visualizer = new PillAudioVisualizer(canvas);
+
   let hideTimer = null;
   let micLevel = 0;
-  let smoothedMic = 0;
-  
-  // Waveform logic
-  const BARS = 5;
-  let barHeights = new Array(BARS).fill(0);
-  let time = 0;
 
-  function drawWaveform() {
-    time += 0.04;
-    smoothedMic += (micLevel - smoothedMic) * 0.15;
-    
-    document.documentElement.style.setProperty('--mic-level', smoothedMic.toFixed(3));
-    ctx.clearRect(0, 0, 80, 40);
+  // ---------- Spring Physics & Pointer Drag State Machine ----------
+  let isDragging = false;
+  let dragMoved = false;
+  let startX = 0, startY = 0;
+  let lastX = 0, lastY = 0;
+  let lastTime = 0;
+  let vx = 0, vy = 0;
+  let animRaf = null;
 
-    const barWidth = 4;
-    const gap = 3;
-    const totalWidth = BARS * barWidth + (BARS - 1) * gap;
-    const startX = (80 - totalWidth) / 2;
-    const centerY = 20;
-
-    for (let i = 0; i < BARS; i++) {
-      // Organic noise via combined sine waves for natural, breathing movement
-      const phase1 = Math.sin(time + i * 0.4);
-      const phase2 = Math.cos(time * 0.7 - i * 0.3);
-      const phase3 = Math.sin(time * 1.1 + i * 0.5);
-      
-      const organic = (phase1 * 0.5 + phase2 * 0.3 + phase3 * 0.2 + 1) / 2;
-      const targetHeight = 4 + (organic * 6) + (smoothedMic * 18 * (organic + 0.5));
-      
-      barHeights[i] += (targetHeight - barHeights[i]) * 0.3;
-      const h = Math.max(3, Math.min(36, barHeights[i]));
-      
-      const x = startX + i * (barWidth + gap);
-      const y = centerY - h / 2;
-      
-      const grad = ctx.createLinearGradient(0, y, 0, y + h);
-      grad.addColorStop(0, '#5eead4');
-      grad.addColorStop(1, '#0d9488');
-      
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(x, y, barWidth, h, barWidth / 2);
-      else ctx.rect(x, y, barWidth, h);
-      ctx.fill();
+  pill.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    try { pill.setPointerCapture(e.pointerId); } catch {}
+    isDragging = true;
+    dragMoved = false;
+    startX = e.screenX;
+    startY = e.screenY;
+    lastX = e.screenX;
+    lastY = e.screenY;
+    lastTime = performance.now();
+    vx = 0;
+    vy = 0;
+    if (animRaf) {
+      cancelAnimationFrame(animRaf);
+      animRaf = null;
     }
-    rafId = requestAnimationFrame(drawWaveform);
-  }
+    pill.style.transition = 'none';
+  });
 
-  function startListening() {
-    if (!rafId) drawWaveform();
-  }
+  pill.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - lastTime) / 1000;
+    const dx = e.screenX - lastX;
+    const dy = e.screenY - lastY;
 
-  function stopListening() {
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+    if (Math.hypot(e.screenX - startX, e.screenY - startY) > 5) {
+      dragMoved = true;
     }
-    barHeights.fill(0);
-    smoothedMic = 0;
-    document.documentElement.style.setProperty('--mic-level', 0);
+
+    const instVx = dx / dt;
+    const instVy = dy / dt;
+    vx = vx * 0.4 + instVx * 0.6;
+    vy = vy * 0.4 + instVy * 0.6;
+
+    const speed = Math.hypot(vx, vy);
+    const maxSpeed = 3000;
+    if (speed > maxSpeed) {
+      const ratio = maxSpeed / speed;
+      vx *= ratio;
+      vy *= ratio;
+    }
+
+    lastX = e.screenX;
+    lastY = e.screenY;
+    lastTime = now;
+
+    const stretch = Math.min(0.20, (speed / maxSpeed) * 0.25);
+    const angle = Math.atan2(vy, vx);
+    pill.style.transform = `rotate(${angle}rad) scale(${1 + stretch}, ${1 - stretch * 0.5}) rotate(${-angle}rad)`;
+
+    if (window.wisprtell && window.wisprtell.movePillByDelta) {
+      window.wisprtell.movePillByDelta({ dx, dy });
+    }
+  });
+
+  function settleReleasePhysics() {
+    let stretchRatio = 1.0;
+    let stretchVelocity = 0;
+    const k = 180;
+    const c = 28;
+    const dt = 0.016;
+
+    function stepRelease() {
+      const friction = 0.90;
+      vx *= friction;
+      vy *= friction;
+
+      if (Math.hypot(vx, vy) > 15) {
+        if (window.wisprtell && window.wisprtell.movePillByDelta) {
+          window.wisprtell.movePillByDelta({ dx: vx * dt, dy: vy * dt });
+        }
+      }
+
+      const displacement = stretchRatio - 1.0;
+      const springForce = -k * displacement;
+      const dampingForce = -c * stretchVelocity;
+      const accel = springForce + dampingForce;
+      stretchVelocity += accel * dt;
+      stretchRatio += stretchVelocity * dt;
+
+      if (Math.abs(displacement) > 0.005 || Math.hypot(vx, vy) > 15) {
+        pill.style.transform = `scale(${stretchRatio}, ${2 - stretchRatio})`;
+        animRaf = requestAnimationFrame(stepRelease);
+      } else {
+        pill.style.transform = '';
+        pill.style.transition = '';
+        animRaf = null;
+        if (window.wisprtell && window.wisprtell.savePillPosition) {
+          window.wisprtell.savePillPosition();
+        }
+      }
+    }
+
+    animRaf = requestAnimationFrame(stepRelease);
   }
 
+  pill.addEventListener('pointerup', (e) => {
+    if (!isDragging) return;
+    try { pill.releasePointerCapture(e.pointerId); } catch {}
+    isDragging = false;
+    if (!dragMoved) {
+      pill.style.transform = '';
+      pill.style.transition = '';
+      if (window.wisprtell && window.wisprtell.toggleHandsFree) {
+        window.wisprtell.toggleHandsFree();
+      }
+      return;
+    }
+    settleReleasePhysics();
+  });
+
+  pill.addEventListener('pointercancel', (e) => {
+    if (!isDragging) return;
+    try { pill.releasePointerCapture(e.pointerId); } catch {}
+    isDragging = false;
+    pill.style.transform = '';
+    pill.style.transition = '';
+    if (window.wisprtell && window.wisprtell.savePillPosition) {
+      window.wisprtell.savePillPosition();
+    }
+  });
+
+  // ---------- Pill Visibility & State Transitions ----------
   function showPill() {
     clearTimeout(hideTimer);
     pill.classList.remove('hiding');
@@ -348,54 +810,72 @@
     hideTimer = setTimeout(() => {
       pill.classList.remove('show');
       pill.classList.add('hiding');
-      
+
       setTimeout(() => {
         if (pill.classList.contains('hiding')) {
           pill.className = 'state-hidden hiding';
-          stopListening();
+          visualizer.stop();
         }
       }, 400);
     }, delayMs);
   }
 
-  // Requested to keep the esc function
-  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-
-  // SVG Icons
   const iconCheck = `<div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg></div>`;
   const iconWarn = `<div class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg></div>`;
   const iconSpinner = `<div class="spinner"></div>`;
 
-  window.wisprtell.onPillState(({ state, label, transcript }) => {
+  window.wisprtell.onPillState(({ state, label, transcript, offline }) => {
     if (state === 'hidden') {
       hidePill(0);
+      visualizer.stop();
       return;
     }
-    
+
     showPill();
-    pill.className = 'show state-' + state;
+    pill.className = 'show state-' + state + (offline ? ' offline-mode' : '');
 
     if (state === 'listening') {
-      startListening();
+      visualizer.start();
       iconBox.innerHTML = '';
       textBox.textContent = '';
-      
     } else if (state === 'working') {
-      stopListening();
+      visualizer.stop();
       iconBox.innerHTML = iconSpinner;
       textBox.textContent = '';
-      
     } else if (state === 'done') {
-      stopListening();
+      visualizer.stop();
       iconBox.innerHTML = iconCheck;
       textBox.textContent = (transcript || '').slice(0, 50) || 'Done';
       hidePill(1400);
-      
     } else if (state === 'error') {
-      stopListening();
+      visualizer.stop();
       iconBox.innerHTML = iconWarn;
       textBox.textContent = label || 'Error';
       hidePill(2400);
+    }
+  });
+
+  // ---------- Zero-Copy FFT Frequency IPC ----------
+  let vizPort = null;
+  const spectrumBins = new Float32Array(16);
+  window.spectrumBins = spectrumBins;
+
+  window.addEventListener('message', event => {
+    if (event.data?.type === 'VIZ_PORT_OFFER') {
+      vizPort = event.ports[0];
+      vizPort.onmessage = e => {
+        const data = e.data;
+        if (data && data.length === 16) {
+          spectrumBins.set(data);
+          visualizer.updateFrequencies(data);
+          let sumSq = 0;
+          for (let i = 0; i < 16; i++) sumSq += data[i] * data[i];
+          const rms = Math.min(1, Math.sqrt(sumSq / 16) * 2.2);
+          micLevel = rms;
+          document.documentElement.style.setProperty('--mic-level', micLevel.toFixed(3));
+        }
+      };
+      vizPort.start();
     }
   });
 
@@ -403,11 +883,28 @@
     micLevel = Math.min(1, Math.max(0, l));
   });
 
-  pill.addEventListener('click', () => {
-    if (window.wisprtell && window.wisprtell.toggleHandsFree) {
-      window.wisprtell.toggleHandsFree();
+  // ---------- Theme Synchronization ----------
+  function applyTheme(payload) {
+    if (!payload) return;
+    const { effectiveTheme, variables, hasNativeMaterial } = payload;
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    document.documentElement.dataset.material = hasNativeMaterial ? 'native' : 'fallback';
+    if (variables) {
+      for (const [prop, val] of Object.entries(variables)) {
+        document.documentElement.style.setProperty(prop, val);
+      }
+      const accent = variables['--pill-accent'] || variables['--accent'];
+      const secondary = variables['--accent-hover'] || variables['--accent'];
+      visualizer.setThemeColors(accent, secondary);
     }
-  });
+  }
+
+  if (window.wisprtell && window.wisprtell.onThemeSync) {
+    window.wisprtell.onThemeSync(applyTheme);
+  }
+  if (window.wisprtell && window.wisprtell.getTheme) {
+    window.wisprtell.getTheme().then(applyTheme).catch(() => {});
+  }
 </script>
 </body>
 </html>

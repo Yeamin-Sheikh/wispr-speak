@@ -69,6 +69,31 @@ function build() {
     }
   }
 
+  const VS2022_VCVARS = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat';
+  const VS2019_VCVARS = 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat';
+
+  if (fs.existsSync(VS2022_VCVARS)) {
+    console.log('[build-native] Detected Visual Studio 2022 BuildTools; compiling tell-paste.exe...');
+    try {
+      execSync(`call "${VS2022_VCVARS}" && cl /O2 /Fo:"${OUT_DIR}/" /Fe:"${OUT_EXE}" "${SRC_FILE}" user32.lib`, { stdio: 'inherit' });
+      try { const obj = path.join(OUT_DIR, 'win-paste.obj'); if (fs.existsSync(obj)) fs.unlinkSync(obj); } catch {}
+      console.log('[build-native] Successfully compiled tell-paste.exe with MSVC 2022.');
+      return;
+    } catch (err) {
+      console.error('[build-native] MSVC 2022 build failed:', err.message);
+    }
+  } else if (fs.existsSync(VS2019_VCVARS)) {
+    console.log('[build-native] Detected Visual Studio 2019 BuildTools; compiling tell-paste.exe...');
+    try {
+      execSync(`call "${VS2019_VCVARS}" && cl /O2 /Fo:"${OUT_DIR}/" /Fe:"${OUT_EXE}" "${SRC_FILE}" user32.lib`, { stdio: 'inherit' });
+      try { const obj = path.join(OUT_DIR, 'win-paste.obj'); if (fs.existsSync(obj)) fs.unlinkSync(obj); } catch {}
+      console.log('[build-native] Successfully compiled tell-paste.exe with MSVC 2019.');
+      return;
+    } catch (err) {
+      console.error('[build-native] MSVC 2019 build failed:', err.message);
+    }
+  }
+
   if (fs.existsSync(OUT_EXE)) {
     console.log('[build-native] Pre-compiled bin/native/tell-paste.exe found. Ready to use.');
   } else {

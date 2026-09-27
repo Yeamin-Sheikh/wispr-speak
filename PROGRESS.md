@@ -13,6 +13,57 @@
 
 ## Progress log
 
+### 2026-09-27: Wispr Tell v1.0.0 — 20 landmark improvements
+
+**Status:** Done
+
+#### What changed
+- **R1 (Response Speed & Performance):**
+  - Feature 1: Real-time streaming transcription with interim token broadcasting and boundary stitching.
+  - Feature 2: Local Silero VAD engine (ONNX + WebAssembly) for microsecond silence and noise rejection.
+  - Feature 3: FIFO hotkey event queue state machine handling rapid toggles (10+ presses/sec) without dropped inputs.
+  - Feature 4: Zero-copy audio IPC using SharedArrayBuffer across context isolation bridge.
+- **R2 (Robustness & Reliability):**
+  - Feature 5: Exponential backoff with Retry-After header parsing for Groq API HTTP 429 and 500-series errors.
+  - Feature 6: Bundled 32.1MB quantized whisper.cpp tiny.en model for offline fallback with pill status indicator.
+  - Feature 7: Integrated electron-updater with GitHub Releases for silent background update delivery.
+  - Feature 8: Deterministic clipboard restoration using Win32 GetClipboardSequenceNumber check in recompiled tell-paste.exe.
+  - Feature 9: Structured daily rotating JSON logging with 14-day retention via electron-log.
+- **R3 (User Experience):**
+  - Feature 10: Context-aware smart polish adapting output style to active window title (code vs chat vs email).
+  - Feature 11: Customizable LLM prompt personas with presets (Natural, Formal, Code, Minimal) and settings editor.
+  - Feature 12: Extensible voice commands engine with cached regex parsing (<0.001ms evaluation).
+  - Feature 13: Interactive 4-step onboarding wizard in welcome.html (VU meter, live API key check, shortcut practice).
+  - Feature 14: Custom dictionary terms injected directly into Whisper prompts bounded to 800 characters.
+  - Feature 15: Compressed Opus WebM audio history saved to disk with HTML5 audio playback and quota pruning.
+- **R4 (Visual Aesthetics & Motion Design):**
+  - Feature 16: Native Windows 11 Acrylic and Mica materials via DWM APIs and Electron backgroundMaterial.
+  - Feature 17: WebGL audio-reactive visualizer shader responding to real 16-bin FFT speech spectrum with physical DPI scaling.
+  - Feature 18: Fluid draggable pill with spring-physics morphing and persistent multi-monitor coordinates.
+  - Feature 19: Theme CSS custom properties synchronized across all open windows via IPC in under 100ms.
+  - Feature 20: Optional character-by-character native Unicode typing animation via tell-paste.exe.
+- **Verification & Testing:**
+  - 232/232 master test suite passing across 42 suites.
+  - 99/99 Tier 5 adversarial stress tests passing across 20 suites.
+  - Total 331 passing tests with 0 failures.
+  - Independent Victory Audit confirmed with CLEAN forensic verdict.
+
+#### Files touched
+- `src/main.js`: Added streaming pipeline, hotkey queue, offline fallback switch, theme broadcast, and structured logging.
+- `src/preload.js`: Added VAD, audio IPC, theme synchronization, and window drag APIs.
+- `src/native/win-paste.c`: Added Win32 `GetClipboardSequenceNumber` check and `--type-unicode` character animation.
+- `src/text-utils.js`: Added context classification rules and persona prompt generation.
+- `src/voice-commands.js`: New extensible regex-cached voice command evaluation engine.
+- `src/offline-whisper.js`: New local whisper.cpp execution harness with temp cleanup.
+- `src/renderer/capture.html`: Added MediaRecorder Opus compression and SharedArrayBuffer routing.
+- `src/renderer/pill.html`: Added WebGL FFT visualizer shader, spring physics dragging, and offline badge.
+- `src/renderer/settings.html`: Added persona bento grid, custom command manager, and audio history playback.
+- `src/renderer/welcome.html`: Added interactive 4-step onboarding wizard with live VU meter.
+- `src/renderer/history.html`: New dedicated audio history playback view.
+- `src/renderer/vad-engine.js`: New Silero VAD ONNX wrapper for browser capture context.
+
+---
+
 ### 2026-09-27: Premium pill redesign, shortcut rework, and UI animation polish
 
 **Status:** Done

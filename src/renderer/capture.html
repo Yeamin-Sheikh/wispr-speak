@@ -1,31 +1,131 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Wispr Tell mic</title></head>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Wispr Tell mic</title>
+  <!-- ONNX Runtime Web and local Silero VAD engine -->
+  <script src="../../assets/vad/ort.min.js"></script>
+  <script src="vad-engine.js"></script>
+</head>
 <body>
 <script>
-// Hidden mic owner: captures 16kHz mono PCM via AudioWorklet, returns a WAV.
-// Also streams live mic levels so the pill can animate its waveform.
-let ctx = null, stream = null, node = null, analyser = null, chunks = [];
-let capturing = false, levelTimer = null, analyserData = null;
+// Persistent warm audio capture engine with:
+// 1. Warm persistent AudioContext (16kHz mono)
+// 2. SharedArrayBuffer lock-free ring buffer in AudioWorklet
+// 3. Local Silero VAD (ONNX Runtime Web Wasm + acoustic transient rejection)
+// 4. Zero-copy transferable 16-bin FFT spectrum streaming over direct MessagePort to pill
+// 5. Progressive 1800ms rolling chunk streaming with 350ms overlap
 
-const WORKLET = `
-class Cap extends AudioWorkletProcessor {
+let ctx = null;
+let stream = null;
+let workletNode = null;
+let analyser = null;
+let analyserData = null;
+let audioPort = null;
+let capturing = false;
+let rafId = null;
+let levelTimer = null;
+let mediaRecorder = null;
+let mediaRecorderChunks = [];
+
+// Ring buffer sizing: 65536 samples is ~4.096 seconds of 16kHz mono audio
+const RING_CAPACITY = 65536;
+let controlSAB = null;
+let sampleSAB = null;
+let controlView = null; // [0] = writeIndex, [1] = readIndex, [2] = isCapturing (1 or 0)
+let sampleView = null;
+
+// Audio sample accumulator
+let pcmSamples = [];
+let totalSamplesRecorded = 0;
+let chunkIndex = 0;
+let lastChunkEndSample = 0;
+
+// Streaming chunk parameters
+const SAMPLE_RATE = 16000;
+const CHUNK_DURATION_MS = 1800;
+const CHUNK_SAMPLES = (SAMPLE_RATE * CHUNK_DURATION_MS) / 1000; // 28800 samples
+const OVERLAP_MS = 350;
+const OVERLAP_SAMPLES = (SAMPLE_RATE * OVERLAP_MS) / 1000; // 5600 samples
+const MIN_SAMPLES = 4800; // 300ms minimum threshold
+
+// Silero VAD engine instance
+let vadEngine = null;
+let hasSpeechInSession = false;
+
+// 16 speech bands mapped across 80Hz to 4000Hz (512 fftSize at 16kHz = 31.25Hz per bin)
+const SPEECH_BANDS = [
+  [3, 4],     // 93 - 125 Hz
+  [4, 6],     // 125 - 187 Hz
+  [6, 8],     // 187 - 250 Hz
+  [8, 11],    // 250 - 343 Hz
+  [11, 15],   // 343 - 468 Hz
+  [15, 20],   // 468 - 625 Hz
+  [20, 26],   // 625 - 812 Hz
+  [26, 34],   // 812 - 1062 Hz
+  [34, 44],   // 1062 - 1375 Hz
+  [44, 56],   // 1375 - 1750 Hz
+  [56, 70],   // 1750 - 2187 Hz
+  [70, 86],   // 2187 - 2687 Hz
+  [86, 104],  // 2687 - 3250 Hz
+  [104, 120], // 3250 - 3750 Hz
+  [120, 136], // 3750 - 4250 Hz
+  [136, 150], // 4250 - 4687 Hz
+];
+
+const rawFftData = new Uint8Array(256);
+
+// AudioWorklet processor supporting both SharedArrayBuffer ring buffering and port messaging
+const WORKLET_CODE = `
+class RingBufferCap extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this.control = options.processorOptions && options.processorOptions.control;
+    this.samples = options.processorOptions && options.processorOptions.samples;
+    this.capacity = (options.processorOptions && options.processorOptions.capacity) || 65536;
+    this.hasSAB = !!(this.control && this.samples);
+  }
+
   process(inputs) {
-    const ch = inputs[0] && inputs[0][0];
-    if (ch && ch.length) this.port.postMessage(ch.slice(0));
+    const input = inputs[0] && inputs[0][0];
+    if (!input || input.length === 0) return true;
+
+    if (this.hasSAB) {
+      if (Atomics.load(this.control, 2) === 1) {
+        let write = Atomics.load(this.control, 0);
+        for (let i = 0; i < input.length; i++) {
+          this.samples[write] = input[i];
+          write = (write + 1) % this.capacity;
+        }
+        Atomics.store(this.control, 0, write);
+      }
+    } else {
+      // Fallback postMessage
+      this.port.postMessage(input.slice(0));
+    }
     return true;
   }
 }
-registerProcessor('wisprtell-cap', Cap);`;
+registerProcessor('wisprtell-ring-cap', RingBufferCap);
+`;
 
 function encodeWav(samples, sampleRate) {
   const buf = new ArrayBuffer(44 + samples.length * 2);
   const v = new DataView(buf);
   const wstr = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-  wstr(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); wstr(8, 'WAVE');
-  wstr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true); v.setUint32(24, sampleRate, true);
-  v.setUint32(28, sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  wstr(36, 'data'); v.setUint32(40, samples.length * 2, true);
+  wstr(0, 'RIFF');
+  v.setUint32(4, 36 + samples.length * 2, true);
+  wstr(8, 'WAVE');
+  wstr(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  wstr(36, 'data');
+  v.setUint32(40, samples.length * 2, true);
   for (let i = 0; i < samples.length; i++) {
     const s = Math.max(-1, Math.min(1, samples[i]));
     v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
@@ -33,66 +133,376 @@ function encodeWav(samples, sampleRate) {
   return buf;
 }
 
-function reportLevel() {
-  if (!capturing || !analyser) return;
-  analyser.getFloatTimeDomainData(analyserData);
-  let peak = 0;
-  for (let i = 0; i < analyserData.length; i += 4) {
-    const a = Math.abs(analyserData[i]);
-    if (a > peak) peak = a;
+// Pre-initialize and warm up audio graph and VAD engine on window load
+async function initWarmPipeline() {
+  if (ctx) return;
+
+  try {
+    // 1. Initialize Silero VAD engine
+    if (typeof SileroVadEngine !== 'undefined') {
+      vadEngine = new SileroVadEngine({
+        modelPath: '../../assets/vad/silero_vad.onnx',
+        wasmPath: '../../assets/vad/',
+      });
+      await vadEngine.init();
+    }
+
+    // 2. Query mic config
+    const cfg = await window.wisprtell.getConfig();
+    const audioConstraints = {
+      sampleRate: SAMPLE_RATE,
+      channelCount: 1,
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    };
+    if (cfg.micDeviceId && cfg.micDeviceId !== 'default') {
+      audioConstraints.deviceId = { exact: cfg.micDeviceId };
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+
+    // 3. Allocate SharedArrayBuffer if cross-origin isolated
+    if (window.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined') {
+      controlSAB = new SharedArrayBuffer(16);
+      sampleSAB = new SharedArrayBuffer(RING_CAPACITY * 4);
+      controlView = new Int32Array(controlSAB);
+      sampleView = new Float32Array(sampleSAB);
+      Atomics.store(controlView, 0, 0);
+      Atomics.store(controlView, 1, 0);
+      Atomics.store(controlView, 2, 0);
+    }
+
+    const blob = new Blob([WORKLET_CODE], { type: 'application/javascript' });
+    await ctx.audioWorklet.addModule(URL.createObjectURL(blob));
+
+    const src = ctx.createMediaStreamSource(stream);
+
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.3;
+    src.connect(analyser);
+
+    workletNode = new AudioWorkletNode(ctx, 'wisprtell-ring-cap', {
+      processorOptions: {
+        control: controlView,
+        samples: sampleView,
+        capacity: RING_CAPACITY,
+      },
+    });
+
+    // Fallback message listener if SAB not used
+    workletNode.port.onmessage = e => {
+      if (!capturing) return;
+      handleIncomingAudioBlock(e.data);
+    };
+
+    src.connect(workletNode);
+    console.log('[capture] Persistent warm audio pipeline initialized successfully');
+  } catch (err) {
+    console.error('[capture] initWarmPipeline error:', err);
   }
-  window.wisprtell.sendMicLevel(Math.min(1, peak * 1.6));
+}
+
+// Drain lock-free ring buffer
+function drainRingBuffer() {
+  if (!controlView || !sampleView) return;
+  const write = Atomics.load(controlView, 0);
+  let read = Atomics.load(controlView, 1);
+  if (write === read) return;
+
+  const count = write >= read ? write - read : (RING_CAPACITY - read + write);
+  const block = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    block[i] = sampleView[(read + i) % RING_CAPACITY];
+  }
+  Atomics.store(controlView, 1, write);
+
+  handleIncomingAudioBlock(block);
+}
+
+// Processes newly received audio block: evaluates VAD and accumulates chunks
+function handleIncomingAudioBlock(block) {
+  if (!capturing || !block || block.length === 0) return;
+
+  pcmSamples.push(block);
+  totalSamplesRecorded += block.length;
+
+  // Evaluate VAD in 512-sample frames
+  if (vadEngine) {
+    // Process block in slices of 512
+    for (let offset = 0; offset + 512 <= block.length; offset += 512) {
+      const frame512 = block.subarray(offset, offset + 512);
+      vadEngine.processFrame(frame512).then(res => {
+        if (res.isSpeechActive) {
+          hasSpeechInSession = true;
+        }
+      }).catch(() => {});
+    }
+  } else {
+    hasSpeechInSession = true;
+  }
+
+  // Progressive chunk emission check (only emit intermediate chunks if speech has been detected in session)
+  const currentAudioDuration = totalSamplesRecorded - lastChunkEndSample;
+  if (hasSpeechInSession && currentAudioDuration >= CHUNK_SAMPLES) {
+    checkAndEmitChunk(false);
+  }
+}
+
+// Slices and emits a progressive audio chunk to main process
+function checkAndEmitChunk(isFinal = false) {
+  if (pcmSamples.length === 0 && !isFinal) return;
+  if (vadEngine && !hasSpeechInSession && !isFinal) return;
+
+  const currentAvailable = totalSamplesRecorded;
+  let startSample = lastChunkEndSample > 0 ? lastChunkEndSample - OVERLAP_SAMPLES : 0;
+  if (startSample < 0) startSample = 0;
+
+  const sliceLength = currentAvailable - startSample;
+  if (sliceLength < MIN_SAMPLES && !isFinal) return;
+
+  // Flatten samples in the window
+  const chunkFloats = new Float32Array(Math.max(0, sliceLength));
+  let writeOffset = 0;
+  let readOffset = 0;
+
+  for (let i = 0; i < pcmSamples.length; i++) {
+    const arr = pcmSamples[i];
+    const arrStart = readOffset;
+    const arrEnd = readOffset + arr.length;
+
+    if (arrEnd > startSample && arrStart < currentAvailable) {
+      const from = Math.max(0, startSample - arrStart);
+      const to = Math.min(arr.length, currentAvailable - arrStart);
+      const sub = arr.subarray(from, to);
+      chunkFloats.set(sub, writeOffset);
+      writeOffset += sub.length;
+    }
+    readOffset += arr.length;
+  }
+
+  if (chunkFloats.length < MIN_SAMPLES && isFinal && chunkIndex > 0) {
+    // Tail chunk too tiny, finalize session without extra audio
+    window.wisprtell.sendCaptureChunk({
+      chunkIndex,
+      isFinal: true,
+      wavBuffer: new ArrayBuffer(0),
+      durationMs: 0,
+      overlapSamples: 0,
+    });
+    return;
+  }
+
+  const wav = encodeWav(chunkFloats, SAMPLE_RATE);
+  window.wisprtell.sendCaptureChunk({
+    chunkIndex,
+    isFinal,
+    wavBuffer: wav,
+    durationMs: Math.round((chunkFloats.length / SAMPLE_RATE) * 1000),
+    overlapSamples: lastChunkEndSample > 0 ? OVERLAP_SAMPLES : 0,
+  });
+
+  lastChunkEndSample = currentAvailable;
+  chunkIndex++;
+}
+
+// Stream 16-bin FFT spectrum over direct MessagePort with transferable ArrayBuffer
+function streamFftSpectrum() {
+  if (!capturing) return;
+
+  if (analyser && audioPort) {
+    analyser.getByteFrequencyData(rawFftData);
+    const bins = new Float32Array(16);
+    for (let b = 0; b < 16; b++) {
+      const [start, end] = SPEECH_BANDS[b];
+      let sum = 0;
+      for (let i = start; i < end; i++) {
+        sum += rawFftData[i];
+      }
+      bins[b] = sum / ((end - start) * 255);
+    }
+    // Zero-copy transfer: transfer the backing ArrayBuffer directly to pill
+    audioPort.postMessage(bins, [bins.buffer]);
+  }
+
+  // Drain ring buffer
+  drainRingBuffer();
+
+  rafId = requestAnimationFrame(streamFftSpectrum);
+}
+
+function reportLevelFallback() {
+  if (!capturing || !analyser) return;
+  analyser.getByteFrequencyData(rawFftData);
+  let peak = 0;
+  for (let i = 0; i < rawFftData.length; i += 4) {
+    if (rawFftData[i] > peak) peak = rawFftData[i];
+  }
+  window.wisprtell.sendMicLevel(Math.min(1, (peak / 255) * 1.6));
 }
 
 async function start() {
   if (capturing) return;
-  chunks = [];
-  const cfg = await window.wisprtell.getConfig();
-  const audio = { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-  if (cfg.micDeviceId && cfg.micDeviceId !== 'default') audio.deviceId = { exact: cfg.micDeviceId };
-  stream = await navigator.mediaDevices.getUserMedia({ audio });
-  ctx = new AudioContext({ sampleRate: 16000 });
-  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' })));
-  const src = ctx.createMediaStreamSource(stream);
-  analyser = ctx.createAnalyser();
-  analyser.fftSize = 512;
-  analyserData = new Float32Array(analyser.fftSize);
-  src.connect(analyser);
-  node = new AudioWorkletNode(ctx, 'wisprtell-cap');
-  node.port.onmessage = e => chunks.push(e.data);
-  src.connect(node);
+  if (!ctx) await initWarmPipeline();
+
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
+  }
+
+  pcmSamples = [];
+  mediaRecorderChunks = [];
+  totalSamplesRecorded = 0;
+  chunkIndex = 0;
+  lastChunkEndSample = 0;
+  hasSpeechInSession = false;
+
+  if (vadEngine) {
+    vadEngine.resetStates();
+  }
+
+  // Initialize MediaRecorder for authentic compressed Opus audio
+  if (typeof MediaRecorder !== 'undefined' && stream) {
+    try {
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorder.ondataavailable = e => {
+        if (e.data && e.data.size > 0) mediaRecorderChunks.push(e.data);
+      };
+      mediaRecorder.start(100);
+    } catch (mrErr) {
+      console.warn('[capture] MediaRecorder start error:', mrErr);
+    }
+  }
+
   capturing = true;
-  levelTimer = setInterval(reportLevel, 60);
+
+  if (controlView) {
+    Atomics.store(controlView, 0, 0);
+    Atomics.store(controlView, 1, 0);
+    Atomics.store(controlView, 2, 1);
+  }
+
+  rafId = requestAnimationFrame(streamFftSpectrum);
+  levelTimer = setInterval(reportLevelFallback, 60);
 }
 
-function stop() {
+async function stop() {
   clearInterval(levelTimer);
   window.wisprtell.sendMicLevel(0);
-  if (!capturing) { window.wisprtell.sendCaptureData(new ArrayBuffer(0)); return; }
+
+  if (!capturing) {
+    window.wisprtell.sendCaptureChunk({
+      chunkIndex: 0,
+      isFinal: true,
+      wavBuffer: new ArrayBuffer(0),
+      durationMs: 0,
+      overlapSamples: 0,
+    });
+    window.wisprtell.sendCaptureData(new ArrayBuffer(0), null);
+    return;
+  }
+
   capturing = false;
-  try { node.disconnect(); } catch {}
-  try { stream.getTracks().forEach(t => t.stop()); } catch {}
-  try { ctx.close(); } catch {}
-  analyser = null;
-  const total = chunks.reduce((a, c) => a + c.length, 0);
-  const flat = new Float32Array(total);
-  let o = 0;
-  for (const c of chunks) { flat.set(c, o); o += c.length; }
-  window.wisprtell.sendCaptureData(encodeWav(flat, 16000));
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
+  // Stop MediaRecorder and extract compressed Opus WebM ArrayBuffer
+  let compressedAudioBuffer = null;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try {
+      const mrStopped = new Promise(resolve => {
+        mediaRecorder.onstop = async () => {
+          try {
+            if (mediaRecorderChunks.length > 0) {
+              const blob = new Blob(mediaRecorderChunks, { type: 'audio/webm' });
+              compressedAudioBuffer = await blob.arrayBuffer();
+            }
+          } catch (blobErr) {
+            console.warn('[capture] MediaRecorder blob conversion error:', blobErr);
+          }
+          resolve();
+        };
+      });
+      mediaRecorder.stop();
+      await mrStopped;
+    } catch (mrErr) {
+      console.warn('[capture] MediaRecorder stop error:', mrErr);
+    }
+  }
+
+  if (controlView) {
+    Atomics.store(controlView, 2, 0);
+    drainRingBuffer();
+  }
+
+  // Check VAD determination: if NO speech was detected (silence, cough, noise, click), reject
+  if (vadEngine && !hasSpeechInSession) {
+    console.log('[VAD] Non-speech audio rejected before network dispatch (no speech detected)');
+    window.wisprtell.sendCaptureChunk({
+      chunkIndex: 0,
+      isFinal: true,
+      wavBuffer: new ArrayBuffer(0),
+      durationMs: 0,
+      overlapSamples: 0,
+    });
+    window.wisprtell.sendCaptureData(new ArrayBuffer(0), null);
+    pcmSamples = [];
+    mediaRecorderChunks = [];
+    return;
+  }
+
+  // Speech confirmed: emit final tail chunk
+  checkAndEmitChunk(true);
+
+  // Also build full flattened WAV for backward compatibility / fallback
+  const totalLength = pcmSamples.reduce((sum, chunk) => sum + chunk.length, 0);
+  const fullFlat = new Float32Array(totalLength);
+  let offset = 0;
+  for (const chunk of pcmSamples) {
+    fullFlat.set(chunk, offset);
+    offset += chunk.length;
+  }
+  pcmSamples = [];
+  mediaRecorderChunks = [];
+
+  const fullWav = encodeWav(fullFlat, SAMPLE_RATE);
+  window.wisprtell.sendCaptureData(fullWav, compressedAudioBuffer);
 }
 
 async function listMics() {
   try {
-    const devs = await navigator.mediaDevices.enumerateDevices();
-    return devs.filter(d => d.kind === 'audioinput').map(d => ({ id: d.deviceId, label: d.label || 'Microphone' }));
-  } catch { return []; }
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(d => d.kind === 'audioinput').map(d => ({
+      id: d.deviceId,
+      label: d.label || 'Microphone',
+    }));
+  } catch {
+    return [];
+  }
 }
 
 window.listMics = listMics;
 
-window.wisprtell.onCaptureStart(() => {
-  start().catch(e => window.wisprtell.sendCaptureError(String((e && e.message) || e)));
+// Direct window-to-window MessagePort handshake
+window.addEventListener('message', event => {
+  if (event.data?.type === 'AUDIO_PORT_OFFER') {
+    audioPort = event.ports[0];
+    audioPort.start();
+    console.log('[capture] audioPort connected for direct zero-copy spectrum transfer');
+  }
 });
+
+window.wisprtell.onCaptureStart(() => {
+  start().catch(err => window.wisprtell.sendCaptureError(String((err && err.message) || err)));
+});
+
 window.wisprtell.onCaptureStop(stop);
+
+// Initialize warm audio pipeline immediately on page load
+initWarmPipeline().catch(err => console.error('[capture] warm pipeline pre-init error:', err));
 </script>
-</body></html>
+</body>
+</html>

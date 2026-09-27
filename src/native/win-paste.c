@@ -232,10 +232,109 @@ static int SendCopyTerminal(void) {
     return (SendInput(6, inputs, sizeof(INPUT)) == 6) ? 0 : 1;
 }
 
+static void SendUnicodeChar(WCHAR ch) {
+    INPUT inputs[2];
+    ZeroMemory(inputs, sizeof(inputs));
+
+    inputs[0].type = INPUT_KEYBOARD;
+    inputs[0].ki.wVk = 0;
+    inputs[0].ki.wScan = ch;
+    inputs[0].ki.dwFlags = KEYEVENTF_UNICODE;
+
+    inputs[1].type = INPUT_KEYBOARD;
+    inputs[1].ki.wVk = 0;
+    inputs[1].ki.wScan = ch;
+    inputs[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+
+    SendInput(2, inputs, sizeof(INPUT));
+}
+
+static void SendEnterKey(void) {
+    INPUT inputs[2];
+    ZeroMemory(inputs, sizeof(inputs));
+    SetKey(&inputs[0], VK_RETURN, 0);
+    SetKey(&inputs[1], VK_RETURN, KEYEVENTF_KEYUP);
+    SendInput(2, inputs, sizeof(INPUT));
+}
+
+static int StreamTypeFromStdin(void) {
+    size_t capacity = 16384;
+    size_t totalRead = 0;
+    char* utf8Buf = (char*)malloc(capacity);
+    if (!utf8Buf) return 1;
+
+    size_t n;
+    while ((n = fread(utf8Buf + totalRead, 1, capacity - totalRead - 1, stdin)) > 0) {
+        totalRead += n;
+        if (totalRead + 1024 >= capacity) {
+            capacity *= 2;
+            char* resized = (char*)realloc(utf8Buf, capacity);
+            if (!resized) {
+                free(utf8Buf);
+                return 1;
+            }
+            utf8Buf = resized;
+        }
+    }
+    utf8Buf[totalRead] = '\0';
+
+    if (totalRead == 0) {
+        free(utf8Buf);
+        return 0;
+    }
+
+    int wideLen = MultiByteToWideChar(CP_UTF8, 0, utf8Buf, -1, NULL, 0);
+    if (wideLen <= 1) {
+        free(utf8Buf);
+        return 0;
+    }
+
+    WCHAR* wideBuf = (WCHAR*)malloc(wideLen * sizeof(WCHAR));
+    if (!wideBuf) {
+        free(utf8Buf);
+        return 1;
+    }
+    MultiByteToWideChar(CP_UTF8, 0, utf8Buf, -1, wideBuf, wideLen);
+    free(utf8Buf);
+
+    srand((unsigned int)GetTickCount());
+
+    for (int i = 0; i < wideLen - 1; i++) {
+        if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) {
+            free(wideBuf);
+            return 0;
+        }
+
+        WCHAR ch = wideBuf[i];
+        if (ch == L'\r' && wideBuf[i + 1] == L'\n') {
+            continue;
+        }
+
+        if (ch == L'\n') {
+            SendEnterKey();
+        } else {
+            SendUnicodeChar(ch);
+        }
+
+        int delay = 12 + (rand() % 17);
+        if (ch == L'.' || ch == L',' || ch == L'!' || ch == L'?' || ch == L';') {
+            delay += 45;
+        } else if (ch == L' ') {
+            delay += 15;
+        }
+        Sleep(delay);
+    }
+
+    free(wideBuf);
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     BOOL detectOnly = FALSE;
     BOOL copyMode = FALSE;
     BOOL capabilitiesOnly = FALSE;
+    BOOL getSeqOnly = FALSE;
+    BOOL typeStdinMode = FALSE;
     HWND restoreWindow = NULL;
 
     for (int i = 1; i < argc; i++) {
@@ -245,6 +344,10 @@ int main(int argc, char* argv[]) {
             copyMode = TRUE;
         } else if (strcmp(argv[i], "--capabilities") == 0) {
             capabilitiesOnly = TRUE;
+        } else if (strcmp(argv[i], "--get-seq") == 0) {
+            getSeqOnly = TRUE;
+        } else if (strcmp(argv[i], "--type-stdin") == 0) {
+            typeStdinMode = TRUE;
         } else if (strcmp(argv[i], "--restore-window") == 0 && i + 1 < argc) {
             /* Base 16: the handle comes back exactly as --detect-only printed
                it with "TARGET %p" (hex, with or without an 0x prefix). */
@@ -253,8 +356,40 @@ int main(int argc, char* argv[]) {
     }
 
     if (capabilitiesOnly) {
-        printf("paste-v1 selection-copy-v1 target-identity-v1 focus-restore-v1\n");
+        printf("paste-v1 selection-copy-v1 target-identity-v1 focus-restore-v1 clipboard-seq-v1 type-unicode-v1\n");
         return 0;
+    }
+
+    if (getSeqOnly) {
+        DWORD seq = GetClipboardSequenceNumber();
+        printf("CLIPBOARD_SEQ %lu\n", seq);
+        fflush(stdout);
+        return 0;
+    }
+
+    if (typeStdinMode) {
+        if (restoreWindow && GetForegroundWindow() != restoreWindow &&
+            RestoreForegroundWindow(restoreWindow)) {
+            Sleep(20);
+        }
+
+        INPUT releasedInputs[NUM_MODIFIERS];
+        WORD releasedVKs[NUM_MODIFIERS];
+        ZeroMemory(releasedInputs, sizeof(releasedInputs));
+        int releasedCount = ReleaseModifiers(releasedInputs, releasedVKs);
+
+        int res = StreamTypeFromStdin();
+
+        RestoreModifiers(releasedVKs, releasedCount);
+
+        if (res == 0) {
+            printf("TYPING_OK\n");
+            fflush(stdout);
+            return 0;
+        } else {
+            fprintf(stderr, "ERROR: Stream typing failed\n");
+            return 1;
+        }
     }
 
     /* Restore the captured target to the foreground before pasting. If it is
@@ -289,12 +424,23 @@ int main(int argc, char* argv[]) {
         isTerminal = IsTerminalExe(exeName);
     }
 
+    char windowTitle[512] = {0};
+    int titleLen = GetWindowTextA(hwnd, windowTitle, sizeof(windowTitle));
+    if (titleLen > 0) {
+        for (int j = 0; j < titleLen; j++) {
+            if (windowTitle[j] == '\r' || windowTitle[j] == '\n') {
+                windowTitle[j] = ' ';
+            }
+        }
+    }
+
     if (detectOnly) {
         printf("TARGET %p\n", (void*)hwnd);
         printf("WINDOW_CLASS %s\n", className);
         if (gotExeName) {
             printf("EXE_NAME %s\n", exeName);
         }
+        printf("WINDOW_TITLE %s\n", windowTitle);
         printf("IS_TERMINAL %s\n", isTerminal ? "true" : "false");
         fflush(stdout);
         return 0;

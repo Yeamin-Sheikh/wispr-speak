@@ -1050,6 +1050,155 @@
     .sidebar-user {
       transition: border-color 0.18s, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s;
     }
+
+    /* Audio player inside dictation cards */
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 12px;
+      margin-top: 6px;
+    }
+    .btn-play {
+      background: var(--accent);
+      color: #0c0e14;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.1s, background 0.12s;
+    }
+    .btn-play:hover {
+      transform: scale(1.08);
+      background: var(--accent-hover);
+    }
+    .audio-scrubber {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--border-subtle);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .audio-scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    .audio-time {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-muted);
+      min-width: 68px;
+      text-align: right;
+    }
+
+    /* Persona presets grid */
+    .persona-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: 9px;
+      padding: 12px;
+      background: var(--card-bg);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.15s, transform 0.15s, background 0.15s;
+    }
+    .persona-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .persona-card.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .persona-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .persona-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .persona-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .persona-badge.active {
+      background: var(--accent);
+      color: #0c0e14;
+    }
+    .persona-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Voice Commands table styling */
+    .cmd-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      gap: 12px;
+    }
+    .cmd-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .cmd-trigger {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .cmd-action-pill {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+    .cmd-replacement {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
 <body>
@@ -1105,6 +1254,14 @@
           <div class="nav-item" data-tab="dictionary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             <span>Dictionary</span>
+          </div>
+          <div class="nav-item" data-tab="personas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg>
+            <span>Personas</span>
+          </div>
+          <div class="nav-item" data-tab="commands">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+            <span>Voice Commands</span>
           </div>
           <div class="nav-item" data-tab="profile">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1284,6 +1441,17 @@
                   <span class="switch-track"></span>
                 </label>
               </div>
+
+              <div class="setting-row" id="rowTypingAnimation">
+                <div class="setting-text">
+                  <div class="title">Character-by-character typing animation</div>
+                  <div class="subtitle">Animate short dictations with natural typing cadence instead of instant pasting</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="typingAnimationToggle">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -1339,6 +1507,150 @@
               </div>
             </div>
             <div id="importExportStatus" style="font-size:12px;color:var(--accent);display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Personas View -->
+        <div class="view-panel" id="view-personas">
+          <div class="greeting-title">Prompt Personas & Context Polish</div>
+
+          <!-- Context Polish Automation Setting -->
+          <div class="settings-section">
+            <div class="section-title">Context Detection</div>
+            <div class="spotlight-card setting-card">
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Context-Aware Smart Polish</div>
+                  <div class="subtitle">Automatically adapt formality, tone, and formatting based on active window (VS Code, Slack, Word, Browser)</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="chkContextPolish" checked>
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Persona Presets Grid -->
+          <div class="settings-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <div class="section-title" style="margin-bottom:0;">Persona Presets</div>
+              <button class="btn-outline" id="btnNewPersona" style="padding:3px 10px;font-size:11px;">+ New Persona</button>
+            </div>
+            <div id="personasGridContainer" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:10px;"></div>
+          </div>
+
+          <!-- Persona Editor -->
+          <div class="settings-section">
+            <div class="section-title">Persona Configuration</div>
+            <div class="spotlight-card setting-card" style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;gap:12px;">
+                <div style="flex:1;">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">PERSONA NAME</label>
+                  <input type="text" class="input-text" id="personaNameInput" style="width:100%;" placeholder="e.g. Technical Documentation">
+                </div>
+                <div style="width:140px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">TEMPERATURE: <span id="personaTempVal" style="color:var(--accent);">0.3</span></label>
+                  <input type="range" id="personaTempSlider" min="0" max="1" step="0.05" value="0.3" style="width:100%;">
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">SYSTEM PROMPT / INSTRUCTIONS</label>
+                <textarea class="edit-textarea" id="personaPromptInput" style="min-height:90px;width:100%;" placeholder="Enter custom persona prompt..."></textarea>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                <div style="display:flex;gap:8px;">
+                  <button class="btn-primary" id="btnSavePersona">Save Persona</button>
+                  <button class="btn-outline" id="btnSetActivePersona">Set as Active</button>
+                </div>
+                <button class="btn-outline" id="btnDeletePersona" style="color:var(--danger);border-color:var(--danger);">Delete Persona</button>
+              </div>
+              <div id="personaStatusMsg" style="font-size:12px;color:var(--accent);display:none;"></div>
+            </div>
+          </div>
+
+          <!-- Live Polish Playground -->
+          <div class="settings-section">
+            <div class="section-title">Live Polish Playground</div>
+            <div class="spotlight-card setting-card" style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">SAMPLE SPOKEN INPUT</label>
+                <textarea class="edit-textarea" id="previewTextInput" style="min-height:60px;width:100%;" placeholder="Type or paste sample transcript to preview polish..."></textarea>
+              </div>
+
+              <div style="display:flex;gap:12px;">
+                <div style="flex:1;">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">SIMULATED CONTEXT</label>
+                  <select class="input-text" id="previewContextSelect" style="width:100%;">
+                    <option value="code">Code Editor / IDE (VS Code)</option>
+                    <option value="chat">Chat / Messaging (Slack)</option>
+                    <option value="document">Formal Document / Mail (Word/Outlook)</option>
+                    <option value="browser">Web Browser / Form (Chrome)</option>
+                    <option value="general" selected>General Application</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">TEST PERSONA</label>
+                  <select class="input-text" id="previewPersonaSelect" style="width:100%;"></select>
+                </div>
+              </div>
+
+              <div>
+                <button class="btn-primary" id="btnTestPolish">Preview Smart Polish</button>
+              </div>
+
+              <div id="previewOutputBox" style="display:none;padding:12px;background:var(--input-bg);border:1px solid var(--border-subtle);border-radius:8px;font-size:13px;line-height:1.55;color:var(--text);white-space:pre-wrap;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice Commands View -->
+        <div class="view-panel" id="view-commands">
+          <div class="greeting-title">Voice Commands Engine</div>
+
+          <!-- Add Command Form -->
+          <div class="settings-section">
+            <div class="section-title">Add Custom Command</div>
+            <div class="spotlight-card setting-card" style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div>
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">SPOKEN TRIGGER</label>
+                  <input type="text" class="input-text" id="cmdTriggerInput" style="width:100%;" placeholder="e.g. open brackets">
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">ACTION</label>
+                  <select class="input-text" id="cmdActionSelect" style="width:100%;">
+                    <option value="replace">Text Replacement</option>
+                    <option value="new-line">Insert Line Break</option>
+                    <option value="new-paragraph">Insert Paragraph Break</option>
+                    <option value="undo">Undo / Scratch That</option>
+                    <option value="delete-word">Delete Word</option>
+                    <option value="delete-sentence">Delete Sentence</option>
+                    <option value="select-all">Select All</option>
+                    <option value="copy">Copy</option>
+                    <option value="paste">Paste</option>
+                  </select>
+                </div>
+                <div id="cmdTextCol">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">REPLACEMENT TEXT</label>
+                  <input type="text" class="input-text" id="cmdTextInput" style="width:100%;" placeholder="e.g. []">
+                </div>
+              </div>
+
+              <div>
+                <button class="btn-primary" id="btnAddCommand">Add Voice Command</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Command List -->
+          <div class="settings-section">
+            <div class="section-title">Configured Voice Commands</div>
+            <div class="spotlight-card setting-card" style="padding:16px;">
+              <div id="commandsTableContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
           </div>
         </div>
 
@@ -1470,6 +1782,40 @@
     api.setConfig({ theme: themeId });
   }
 
+  if (api.onThemeSync) {
+    api.onThemeSync(payload => {
+      if (!payload) return;
+      const { theme, effectiveTheme, variables, hasNativeMaterial } = payload;
+      document.documentElement.setAttribute('data-theme', effectiveTheme || theme);
+      document.documentElement.dataset.material = hasNativeMaterial ? 'native' : 'fallback';
+      if (variables) {
+        for (const [prop, val] of Object.entries(variables)) {
+          document.documentElement.style.setProperty(prop, val);
+        }
+      }
+      document.querySelectorAll('.theme-card').forEach(c => {
+        c.classList.toggle('active', c.dataset.themeId === theme || c.dataset.themeId === effectiveTheme);
+      });
+    });
+  }
+
+  if (api.getTheme) {
+    api.getTheme().then(payload => {
+      if (!payload) return;
+      const { theme, effectiveTheme, variables, hasNativeMaterial } = payload;
+      document.documentElement.setAttribute('data-theme', effectiveTheme || theme);
+      document.documentElement.dataset.material = hasNativeMaterial ? 'native' : 'fallback';
+      if (variables) {
+        for (const [prop, val] of Object.entries(variables)) {
+          document.documentElement.style.setProperty(prop, val);
+        }
+      }
+      document.querySelectorAll('.theme-card').forEach(c => {
+        c.classList.toggle('active', c.dataset.themeId === theme || c.dataset.themeId === effectiveTheme);
+      });
+    }).catch(() => {});
+  }
+
   document.querySelectorAll('.theme-card').forEach(card => {
     card.onclick = () => applyTheme(card.dataset.themeId);
   });
@@ -1531,6 +1877,78 @@
     return null;
   }
 
+  let activeAudio = null;
+  let activePlayBtn = null;
+
+  function formatSec(s) {
+    if (!s || isNaN(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  async function togglePlayAudio(id, btn) {
+    const playerDiv = document.getElementById(`player_${id}`);
+    const scrubber = playerDiv ? playerDiv.querySelector('.audio-scrubber') : null;
+    const timeDisplay = document.getElementById(`time_${id}`);
+
+    if (activeAudio && activePlayBtn === btn) {
+      if (!activeAudio.paused) {
+        activeAudio.pause();
+        if (btn) btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        return;
+      } else {
+        activeAudio.play();
+        if (btn) btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+        return;
+      }
+    }
+
+    if (activeAudio) {
+      activeAudio.pause();
+      if (activePlayBtn) {
+        activePlayBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+      }
+    }
+
+    try {
+      const audioData = await api.getHistoryAudio(id);
+      if (!audioData || !audioData.dataUrl) {
+        if (timeDisplay) timeDisplay.textContent = 'Expired';
+        return;
+      }
+
+      const audio = new Audio(audioData.dataUrl);
+      activeAudio = audio;
+      activePlayBtn = btn;
+      if (btn) btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+
+      audio.ontimeupdate = () => {
+        if (!audio.duration) return;
+        const pct = (audio.currentTime / audio.duration) * 100;
+        if (scrubber) scrubber.value = pct;
+        if (timeDisplay) timeDisplay.textContent = `${formatSec(audio.currentTime)} / ${formatSec(audio.duration)}`;
+      };
+
+      audio.onended = () => {
+        if (btn) btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        if (scrubber) scrubber.value = 0;
+      };
+
+      if (scrubber) {
+        scrubber.oninput = () => {
+          if (audio.duration) {
+            audio.currentTime = (scrubber.value / 100) * audio.duration;
+          }
+        };
+      }
+
+      await audio.play();
+    } catch (err) {
+      console.error('Audio playback error:', err);
+    }
+  }
+
   // Render Dictation Cards Feed (cleans out single punctuation test artifacts)
   function renderHistory(items) {
     const cleanItems = (Array.isArray(items) ? items : []).filter(h => {
@@ -1560,6 +1978,18 @@
           </div>
 
           <div class="card-text" id="text_${item.id}">${escapeHtml(item.text)}</div>
+
+          ${item.audioFile ? `
+            <div class="audio-player" id="player_${item.id}">
+              <button class="btn-play" data-id="${item.id}" title="Play Recording">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+              </button>
+              <input type="range" class="audio-scrubber" min="0" max="100" value="0" data-id="${item.id}">
+              <span class="audio-time" id="time_${item.id}">0:00 / ${formatSec((item.durationMs || 0)/1000)}</span>
+            </div>
+          ` : ''}
 
           <!-- Inline Edit Box -->
           <div class="edit-box" id="editBox_${item.id}">
@@ -1605,6 +2035,10 @@
     initSpotlightCards();
 
     // Attach Event Listeners to feed buttons
+    historyTimeline.querySelectorAll('.btn-play').forEach(btn => {
+      btn.onclick = () => togglePlayAudio(btn.dataset.id, btn);
+    });
+
     historyTimeline.querySelectorAll('.btn-copy').forEach(btn => {
       btn.onclick = async () => {
         await api.copyText(btn.dataset.text);
@@ -1618,6 +2052,14 @@
 
     historyTimeline.querySelectorAll('.btn-speak').forEach(btn => {
       btn.onclick = () => {
+        const card = btn.closest('.dictation-card');
+        const id = card ? card.dataset.id : null;
+        const item = historyData.find(h => h.id === id);
+        if (item && item.audioFile) {
+          const playBtn = card.querySelector('.btn-play');
+          togglePlayAudio(id, playBtn || btn);
+          return;
+        }
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           const ut = new SpeechSynthesisUtterance(btn.dataset.text);
@@ -1628,6 +2070,11 @@
 
     historyTimeline.querySelectorAll('.btn-delete').forEach(btn => {
       btn.onclick = async () => {
+        if (activeAudio) {
+          activeAudio.pause();
+          activeAudio = null;
+          activePlayBtn = null;
+        }
         const res = await api.deleteHistory(btn.dataset.id);
         historyData = res.history;
         renderHistory(historyData);
@@ -1851,6 +2298,282 @@
     setTimeout(() => { el.style.display = 'none'; }, 4000);
   }
 
+  // Personas and Context Polish
+  let personasList = [];
+  let selectedPersonaId = 'natural';
+
+  async function loadPersonas() {
+    try {
+      const data = await api.getPersonas();
+      personasList = data.personas || [];
+      selectedPersonaId = data.activePersonaId || 'natural';
+      const chk = document.getElementById('chkContextPolish');
+      if (chk) chk.checked = data.contextPolishEnabled !== false;
+      renderPersonasGrid();
+      renderPersonaEditor(selectedPersonaId);
+      renderPreviewPersonaDropdown();
+    } catch (err) {
+      console.error('Error loading personas:', err);
+    }
+  }
+
+  function renderPersonasGrid() {
+    const container = document.getElementById('personasGridContainer');
+    if (!container) return;
+    container.innerHTML = personasList.map(p => {
+      const isActive = p.id === (config.activePersonaId || selectedPersonaId);
+      return `
+        <div class="persona-card ${isActive ? 'active' : ''}" data-id="${p.id}">
+          <div class="persona-title-row">
+            <span class="persona-name">${escapeHtml(p.name)}</span>
+            ${isActive ? '<span class="persona-badge active">Active</span>' : (p.isDefault ? '<span class="persona-badge" style="background:var(--input-bg);color:var(--text-muted);">Default</span>' : '<span class="persona-badge" style="background:var(--input-bg);color:var(--accent);">Custom</span>')}
+          </div>
+          <div class="persona-desc">${escapeHtml(p.systemPrompt || '')}</div>
+          <div style="font-size:10.5px;color:var(--text-dim);margin-top:auto;">Temp: ${p.temperature ?? 0.3}</div>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.persona-card').forEach(card => {
+      card.onclick = () => {
+        selectedPersonaId = card.dataset.id;
+        renderPersonasGrid();
+        renderPersonaEditor(selectedPersonaId);
+      };
+    });
+  }
+
+  function renderPersonaEditor(id) {
+    const p = personasList.find(item => item.id === id) || personasList[0];
+    if (!p) return;
+    const nameEl = document.getElementById('personaNameInput');
+    const tempSlider = document.getElementById('personaTempSlider');
+    const tempVal = document.getElementById('personaTempVal');
+    const promptEl = document.getElementById('personaPromptInput');
+    const delBtn = document.getElementById('btnDeletePersona');
+
+    if (nameEl) nameEl.value = p.name;
+    if (tempSlider) tempSlider.value = p.temperature ?? 0.3;
+    if (tempVal) tempVal.textContent = p.temperature ?? 0.3;
+    if (promptEl) promptEl.value = p.systemPrompt;
+    if (delBtn) delBtn.style.display = p.isDefault ? 'none' : 'inline-block';
+  }
+
+  function renderPreviewPersonaDropdown() {
+    const sel = document.getElementById('previewPersonaSelect');
+    if (!sel) return;
+    sel.innerHTML = personasList.map(p => `
+      <option value="${p.id}" ${p.id === selectedPersonaId ? 'selected' : ''}>${escapeHtml(p.name)}</option>
+    `).join('');
+  }
+
+  const pTempSlider = document.getElementById('personaTempSlider');
+  if (pTempSlider) {
+    pTempSlider.oninput = e => {
+      const valEl = document.getElementById('personaTempVal');
+      if (valEl) valEl.textContent = e.target.value;
+    };
+  }
+
+  const chkContextPol = document.getElementById('chkContextPolish');
+  if (chkContextPol) {
+    chkContextPol.onchange = async e => {
+      await api.setContextPolish(e.target.checked);
+    };
+  }
+
+  const btnSetActiveP = document.getElementById('btnSetActivePersona');
+  if (btnSetActiveP) {
+    btnSetActiveP.onclick = async () => {
+      await api.setActivePersona(selectedPersonaId);
+      config.activePersonaId = selectedPersonaId;
+      renderPersonasGrid();
+      showPersonaStatus(`"${selectedPersonaId}" is now the active persona.`);
+    };
+  }
+
+  const btnSaveP = document.getElementById('btnSavePersona');
+  if (btnSaveP) {
+    btnSaveP.onclick = async () => {
+      const name = document.getElementById('personaNameInput').value.trim();
+      const systemPrompt = document.getElementById('personaPromptInput').value.trim();
+      const temperature = parseFloat(document.getElementById('personaTempSlider').value);
+      if (!name || !systemPrompt) {
+        showPersonaStatus('Name and prompt instructions are required.');
+        return;
+      }
+      try {
+        const updated = await api.savePersona({
+          id: selectedPersonaId,
+          name,
+          systemPrompt,
+          temperature,
+        });
+        personasList = updated;
+        renderPersonasGrid();
+        renderPreviewPersonaDropdown();
+        showPersonaStatus('Persona saved successfully.');
+      } catch (err) {
+        showPersonaStatus('Save error: ' + err.message);
+      }
+    };
+  }
+
+  const btnNewP = document.getElementById('btnNewPersona');
+  if (btnNewP) {
+    btnNewP.onclick = () => {
+      const newId = 'custom_' + Date.now();
+      const newP = {
+        id: newId,
+        name: 'Custom Persona',
+        systemPrompt: 'You are an intelligent editing assistant.',
+        temperature: 0.3,
+        isDefault: false,
+      };
+      personasList.push(newP);
+      selectedPersonaId = newId;
+      renderPersonasGrid();
+      renderPersonaEditor(newId);
+      renderPreviewPersonaDropdown();
+    };
+  }
+
+  const btnDelP = document.getElementById('btnDeletePersona');
+  if (btnDelP) {
+    btnDelP.onclick = async () => {
+      try {
+        const updated = await api.deletePersona(selectedPersonaId);
+        personasList = updated;
+        selectedPersonaId = 'natural';
+        renderPersonasGrid();
+        renderPersonaEditor(selectedPersonaId);
+        renderPreviewPersonaDropdown();
+        showPersonaStatus('Persona deleted.');
+      } catch (err) {
+        showPersonaStatus(err.message);
+      }
+    };
+  }
+
+  function showPersonaStatus(msg) {
+    const el = document.getElementById('personaStatusMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
+
+  const btnTestPol = document.getElementById('btnTestPolish');
+  if (btnTestPol) {
+    btnTestPol.onclick = async () => {
+      const outBox = document.getElementById('previewOutputBox');
+      const text = document.getElementById('previewTextInput').value.trim();
+      const targetContext = document.getElementById('previewContextSelect').value;
+      const personaId = document.getElementById('previewPersonaSelect').value;
+
+      btnTestPol.disabled = true;
+      btnTestPol.textContent = 'Polishing...';
+      try {
+        const res = await api.previewPolish({ text, personaId, targetContext });
+        if (outBox) {
+          outBox.style.display = 'block';
+          outBox.textContent = res.polishedText || '(No output)';
+        }
+      } catch (err) {
+        if (outBox) {
+          outBox.style.display = 'block';
+          outBox.textContent = 'Error: ' + err.message;
+        }
+      } finally {
+        btnTestPol.disabled = false;
+        btnTestPol.textContent = 'Preview Smart Polish';
+      }
+    };
+  }
+
+  // Voice Commands Engine
+  function renderVoiceCommands() {
+    const commands = config.voiceCommands || [];
+    const container = document.getElementById('commandsTableContainer');
+    if (!container) return;
+    if (!commands.length) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:8px 0;">No voice commands configured. Add a custom command above.</div>';
+      return;
+    }
+
+    container.innerHTML = commands.map((c, idx) => `
+      <div class="cmd-row">
+        <div class="cmd-left">
+          <span class="cmd-trigger">"${escapeHtml(c.trigger)}"</span>
+          <span class="cmd-action-pill">${escapeHtml(c.action)}</span>
+          ${(c.replacement || c.text) ? `<span class="cmd-replacement">→ "${escapeHtml(c.replacement || c.text)}"</span>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <label class="switch">
+            <input type="checkbox" class="cmd-toggle" data-idx="${idx}" ${c.enabled !== false ? 'checked' : ''}>
+            <span class="switch-track"></span>
+          </label>
+          <button class="act-btn btn-del-cmd" data-idx="${idx}" style="color:var(--danger);" title="Remove">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.cmd-toggle').forEach(chk => {
+      chk.onchange = async () => {
+        const idx = Number(chk.dataset.idx);
+        commands[idx].enabled = chk.checked;
+        await api.setConfig({ voiceCommands: commands });
+        config.voiceCommands = commands;
+      };
+    });
+
+    container.querySelectorAll('.btn-del-cmd').forEach(btn => {
+      btn.onclick = async () => {
+        const idx = Number(btn.dataset.idx);
+        commands.splice(idx, 1);
+        await api.setConfig({ voiceCommands: commands });
+        config.voiceCommands = commands;
+        renderVoiceCommands();
+      };
+    });
+  }
+
+  const cmdActionSel = document.getElementById('cmdActionSelect');
+  if (cmdActionSel) {
+    cmdActionSel.onchange = e => {
+      const isReplace = e.target.value === 'replace' || e.target.value === 'replace-text';
+      const col = document.getElementById('cmdTextCol');
+      const inp = document.getElementById('cmdTextInput');
+      if (col) col.style.opacity = isReplace ? '1' : '0.4';
+      if (inp) inp.disabled = !isReplace;
+    };
+  }
+
+  const btnAddCmd = document.getElementById('btnAddCommand');
+  if (btnAddCmd) {
+    btnAddCmd.onclick = async () => {
+      const trigger = document.getElementById('cmdTriggerInput').value.trim();
+      const action = document.getElementById('cmdActionSelect').value;
+      const replacement = document.getElementById('cmdTextInput').value.trim();
+
+      if (!trigger) return;
+      config.voiceCommands = config.voiceCommands || [];
+      const normalizedAction = action.replace(/_/g, '-');
+      const isRepl = normalizedAction === 'replace' || normalizedAction === 'replace-text';
+      config.voiceCommands.push({
+        trigger,
+        action: normalizedAction,
+        text: isRepl ? replacement : (normalizedAction === 'new-line' ? '\n' : (normalizedAction === 'new-paragraph' ? '\n\n' : '')),
+        replacement: isRepl ? replacement : undefined,
+        enabled: true,
+      });
+      await api.setConfig({ voiceCommands: config.voiceCommands });
+      document.getElementById('cmdTriggerInput').value = '';
+      document.getElementById('cmdTextInput').value = '';
+      renderVoiceCommands();
+    };
+  }
+
   // Right Click Context Menu
   const contextMenu = document.getElementById('contextMenu');
   window.addEventListener('contextmenu', e => {
@@ -1876,10 +2599,16 @@
     if (config.theme) applyTheme(config.theme);
     renderShortcuts();
     renderDictionary();
+    renderVoiceCommands();
+    await loadPersonas();
 
     document.getElementById('groqKeyInput').value = config.groqKey || '';
     document.getElementById('smartFixToggle').checked = config.smartFix !== false;
     document.getElementById('startupToggle').checked = !!config.launchAtLogin;
+    const typingAnimToggle = document.getElementById('typingAnimationToggle');
+    if (typingAnimToggle) {
+      typingAnimToggle.checked = !!config.typingAnimation;
+    }
 
     if (config.groqKey) {
       document.getElementById('keyStatusText').textContent = 'Groq STT key configured and ready.';
@@ -1916,6 +2645,13 @@
       const updated = await api.setConfig({ launchAtLogin: val });
       document.getElementById('startupToggle').checked = !!updated.launchAtLogin;
     };
+
+    if (typingAnimToggle) {
+      typingAnimToggle.onchange = async e => {
+        config.typingAnimation = e.target.checked;
+        await api.setConfig({ typingAnimation: e.target.checked });
+      };
+    }
 
     // Test Key
     document.getElementById('btnTestKey').onclick = async () => {

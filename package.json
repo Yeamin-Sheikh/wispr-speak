@@ -1,21 +1,35 @@
 {
   "name": "wispr-tell",
   "productName": "Wispr Tell",
-  "version": "0.5.5",
+  "version": "1.0.0",
   "description": "Voice typing application for Windows with Push-to-Talk, Hands-free toggle mode, history timeline, and Groq cloud STT.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
+    "test": "node tests/run-all-tests.js",
     "build-native": "node scripts/build-native.js",
     "pack": "electron-packager . \"Wispr Tell\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9",
     "uiohook-napi": "^1.5.5"
   },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.sheikh.wisprtell",
+    "productName": "Wispr Tell",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Yeamin-Sheikh",
+        "repo": "wispr-tell"
+      }
+    ]
   },
   "author": "Sheikh Technologies Inc.",
   "license": "MIT",

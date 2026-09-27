@@ -1,62 +1,653 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Welcome to Wispr Tell</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:"Segoe UI Variable", "Segoe UI", system-ui, sans-serif; background:#0c0e14; color:#eef1f6;
-    display:flex; align-items:center; justify-content:center; height:100vh; -webkit-user-select:none; }
-  .card { text-align:center; max-width:440px; padding:36px; }
-  .logo-box { width:88px; height:88px; margin:0 auto 20px; border-radius:24px; background:#161a23;
-    border:1px solid rgba(255,255,255,0.18);
-    display:flex; align-items:center; justify-content:center;
-    box-shadow:0 16px 48px rgba(0,0,0,0.6), 0 0 32px rgba(13,148,136,0.15); animation:float 3.5s ease-in-out infinite; }
-  @keyframes float { 50% { transform:translateY(-6px); } }
-  .logo-icon { width:52px; height:52px; color:#ffffff; }
-  h1 { font-size:26px; font-weight:700; margin-bottom:8px; letter-spacing:-0.4px; }
-  h1 span { font-weight:300; color:#94a3b8; }
-  p { color:#94a3b8; font-size:14px; line-height:1.55; margin-bottom:24px; }
-  .shortcuts-list { display:flex; flex-direction:column; gap:8px; margin-bottom:28px; text-align:left; background:#12151d; padding:14px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
-  .shortcut-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#cbd5e1; }
-  .kbd-group { display:inline-flex; gap:4px; }
-  .kbd-group span { background:#1e2430; border:1px solid rgba(255,255,255,0.14); border-bottom-width:2px;
-    border-radius:6px; padding:3px 8px; font-size:12px; font-weight:600; color:#fff; }
-  button { background:#0f766e; color:#fff; border:none; border-radius:10px; padding:12px 36px;
-    font-size:14.5px; font-weight:600; cursor:pointer; transition:.15s; font-family:inherit; }
-  button:hover { background:#14b8a6; transform:translateY(-1px); }
-  .tiny { margin-top:16px; font-size:12px; color:#64748b; }
-</style></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Welcome to Wispr Tell — Setup Wizard</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+      background: #0c0e14;
+      color: #eef1f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-user-select: none;
+    }
+    .wizard-container {
+      width: 480px;
+      padding: 28px 32px;
+      background: #12151d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .step-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .step-dot {
+      width: 24px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.12);
+      transition: background 0.3s;
+    }
+    .step-dot.active {
+      background: #14b8a6;
+    }
+    .step-dot.done {
+      background: #0f766e;
+    }
+    .step-num {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .step-card {
+      display: none;
+      flex-direction: column;
+      min-height: 340px;
+    }
+    .step-card.active {
+      display: flex;
+    }
+    .logo-box {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 14px;
+      border-radius: 18px;
+      background: #161a23;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(20, 184, 166, 0.15);
+    }
+    .logo-icon { width: 34px; height: 34px; color: #ffffff; }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    h1 span { font-weight: 300; color: #94a3b8; }
+    p.desc {
+      color: #94a3b8;
+      font-size: 13.5px;
+      line-height: 1.5;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .feature-list {
+      background: #181d28;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feature-bullet {
+      color: #14b8a6;
+      font-weight: bold;
+    }
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 14px;
+    }
+    .btn-primary {
+      background: #0f766e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #14b8a6;
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+    .input-field {
+      width: 100%;
+      background: #181d28;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #f1f5f9;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 10px;
+    }
+    .input-field:focus {
+      border-color: #14b8a6;
+      box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+    }
+    .status-msg {
+      font-size: 12.5px;
+      min-height: 20px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .status-msg.error { color: #f87171; }
+    .status-msg.success { color: #34d399; }
+    .status-msg.info { color: #94a3b8; }
+
+    /* VU Meter */
+    .vu-meter-box {
+      background: #181d28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    canvas#vuCanvas {
+      width: 100%;
+      height: 28px;
+      background: #0f131a;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .vu-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .vu-badge.active {
+      background: rgba(20, 184, 166, 0.15);
+      color: #2dd4bf;
+      border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+
+    /* Shortcut Practice */
+    .shortcut-tester {
+      background: #181d28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .key-tiles {
+      display: flex;
+      gap: 8px;
+    }
+    .key-tile {
+      background: #1f2633;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-bottom-width: 3px;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #cbd5e1;
+      transition: all 0.15s ease;
+      min-width: 64px;
+      text-align: center;
+    }
+    .key-tile.active {
+      background: #0f766e;
+      border-color: #2dd4bf;
+      color: #ffffff;
+      transform: translateY(2px);
+      border-bottom-width: 1px;
+      box-shadow: 0 0 16px rgba(45, 212, 191, 0.4);
+    }
+    .practice-instruction {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+    }
+  </style>
+</head>
 <body>
-<div class="card">
-  <div class="logo-box">
-    <svg viewBox="0 0 40 40" fill="none" class="logo-icon">
-      <rect x="7" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
-      <rect x="13" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
-      <rect x="19" y="13" width="3" height="14" rx="1.5" fill="currentColor" opacity="0.9"/>
-      <rect x="25" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
-      <rect x="31" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
-    </svg>
-  </div>
-  <h1>Wispr <span>Tell</span></h1>
-  <p>Intelligent voice typing and sentence polishing for Windows. Dictate anywhere, or polish selected text instantly.</p>
-  
-  <div class="shortcuts-list">
-    <div class="shortcut-row">
-      <span>Push to talk</span>
-      <div class="kbd-group"><span>Ctrl</span><span>Win</span></div>
-    </div>
-    <div class="shortcut-row">
-      <span>Hands-free toggle</span>
-      <div class="kbd-group"><span>Ctrl</span><span>Win</span><span>Space</span></div>
-    </div>
-    <div class="shortcut-row">
-      <span>Polish selection</span>
-      <div class="kbd-group"><span>Win</span><span>Alt</span><span>Q</span></div>
+<div class="wizard-container">
+  <div class="step-header">
+    <div class="step-num" id="stepIndicator">Step 1 of 4</div>
+    <div class="step-dots">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+      <div class="step-dot" id="dot4"></div>
     </div>
   </div>
 
-  <button id="go">Get started</button>
-  <div class="tiny">Free Groq cloud engine · configure your API key in Settings</div>
+  <!-- STEP 1: Welcome -->
+  <div class="step-card active" id="step1">
+    <div class="logo-box">
+      <svg viewBox="0 0 40 40" fill="none" class="logo-icon">
+        <rect x="7" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
+        <rect x="13" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
+        <rect x="19" y="13" width="3" height="14" rx="1.5" fill="currentColor" opacity="0.9"/>
+        <rect x="25" y="9" width="3" height="22" rx="1.5" fill="currentColor"/>
+        <rect x="31" y="15" width="3" height="10" rx="1.5" fill="currentColor" opacity="0.75"/>
+      </svg>
+    </div>
+    <h1>Wispr <span>Tell</span></h1>
+    <p class="desc">High-speed, intelligent voice typing and sentence polishing for Windows. Dictate in any app with sub-400ms speed.</p>
+    
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-bullet">✓</span> Push-to-Talk and Hands-Free Toggle</div>
+      <div class="feature-item"><span class="feature-bullet">✓</span> Context-Aware Polish (Code, Chat, Email)</div>
+      <div class="feature-item"><span class="feature-bullet">✓</span> Offline whisper.cpp Fallback When Unplugged</div>
+      <div class="feature-item"><span class="feature-bullet">✓</span> Real-Time Audio Reactive Pill & Visualizer</div>
+    </div>
+
+    <div class="btn-row">
+      <span></span>
+      <button class="btn-primary" id="btnNext1">Get Started →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Mic VU Meter Test -->
+  <div class="step-card" id="step2">
+    <h1>Test Your <span>Microphone</span></h1>
+    <p class="desc">Select your recording device and speak into it. The meter must register voice activity to proceed.</p>
+
+    <select class="input-field" id="micSelect" style="cursor:pointer;"></select>
+
+    <div class="vu-meter-box">
+      <canvas id="vuCanvas" width="400" height="28"></canvas>
+      <div class="vu-badge" id="vuBadge">
+        <span id="vuDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
+        <span id="vuText">Waiting for voice input...</span>
+      </div>
+    </div>
+
+    <div class="status-msg info" id="micStatusMsg">Speak a short sentence to verify audio input level.</div>
+
+    <div class="btn-row">
+      <button class="btn-outline" id="btnBack2">← Back</button>
+      <button class="btn-primary" id="btnNext2" disabled>Next Step →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Groq Key Setup -->
+  <div class="step-card" id="step3">
+    <h1>Groq API <span>Key</span></h1>
+    <p class="desc">Enter your free Groq API key for cloud Whisper STT and LLM smart polishing. Free keys can be created at console.groq.com.</p>
+
+    <input type="password" class="input-field" id="apiKeyInput" placeholder="gsk_..." autocomplete="off">
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <button class="btn-outline" id="btnPasteKey" style="flex:1;">Paste Key</button>
+      <button class="btn-primary" id="btnValidateKey" style="flex:1.5;">Verify Key</button>
+    </div>
+
+    <div class="status-msg info" id="keyStatusMsg">Groq API keys begin with "gsk_"</div>
+
+    <div class="btn-row">
+      <button class="btn-outline" id="btnBack3">← Back</button>
+      <button class="btn-primary" id="btnNext3" disabled>Next Step →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Shortcut Tutorial -->
+  <div class="step-card" id="step4">
+    <h1>Try the <span>Shortcut</span></h1>
+    <p class="desc">Wispr Tell uses a global hotkey to start voice typing anywhere in Windows. Try holding down the keys below together.</p>
+
+    <div class="shortcut-tester">
+      <div class="key-tiles">
+        <div class="key-tile" id="tileCtrl">Ctrl</div>
+        <div class="key-tile" id="tileWin">Win</div>
+      </div>
+      <div class="practice-instruction" id="practiceText">Press and hold both Ctrl and Windows keys</div>
+    </div>
+
+    <div class="status-msg info" id="shortcutStatusMsg">Hold both modifier keys to verify hotkey hook</div>
+
+    <div class="btn-row">
+      <button class="btn-outline" id="btnBack4">← Back</button>
+      <button class="btn-primary" id="btnComplete" disabled>Finish Setup ✓</button>
+    </div>
+  </div>
 </div>
+
 <script>
-  document.getElementById('go').onclick = () => window.wisprtell.welcomeDone();
+  let currentStep = 1;
+  let micTested = false;
+  let apiKeyValid = false;
+  let shortcutPracticed = false;
+
+  let audioCtx = null;
+  let micStream = null;
+  let analyser = null;
+  let vuAnimId = null;
+
+  // DOM elements
+  const stepIndicator = document.getElementById('stepIndicator');
+  const dots = [
+    document.getElementById('dot1'),
+    document.getElementById('dot2'),
+    document.getElementById('dot3'),
+    document.getElementById('dot4')
+  ];
+
+  function showStep(step) {
+    currentStep = step;
+    stepIndicator.textContent = `Step ${step} of 4`;
+    for (let i = 1; i <= 4; i++) {
+      const card = document.getElementById(`step${i}`);
+      const dot = dots[i - 1];
+      if (i === step) {
+        card.classList.add('active');
+        dot.className = 'step-dot active';
+      } else if (i < step) {
+        card.classList.remove('active');
+        dot.className = 'step-dot done';
+      } else {
+        card.classList.remove('active');
+        dot.className = 'step-dot';
+      }
+    }
+
+    if (step === 2) {
+      initMicTest();
+    } else {
+      stopMicTest();
+    }
+  }
+
+  // --- Step 1 ---
+  document.getElementById('btnNext1').onclick = () => showStep(2);
+
+  // --- Step 2: Mic Test ---
+  document.getElementById('btnBack2').onclick = () => showStep(1);
+  const btnNext2 = document.getElementById('btnNext2');
+  btnNext2.onclick = () => {
+    if (micTested) showStep(3);
+  };
+
+  const micSelect = document.getElementById('micSelect');
+  const vuCanvas = document.getElementById('vuCanvas');
+  const vuCtx = vuCanvas.getContext('2d');
+  const vuBadge = document.getElementById('vuBadge');
+  const vuDot = document.getElementById('vuDot');
+  const vuText = document.getElementById('vuText');
+  const micStatusMsg = document.getElementById('micStatusMsg');
+
+  async function initMicTest() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+      if (audioInputs.length === 0) {
+        micStatusMsg.className = 'status-msg error';
+        micStatusMsg.textContent = 'No microphone input devices detected';
+        return;
+      }
+
+      micSelect.innerHTML = audioInputs.map(d => `<option value="${d.deviceId}">${d.label || 'Microphone ' + (d.deviceId.slice(0, 5))}</option>`).join('');
+
+      await startAudioAnalysis(micSelect.value);
+      micSelect.onchange = () => startAudioAnalysis(micSelect.value);
+    } catch (err) {
+      micStatusMsg.className = 'status-msg error';
+      if (err.name === 'NotAllowedError' || err.message?.includes('denied')) {
+        micStatusMsg.textContent = 'Microphone permission denied by Windows system settings';
+      } else {
+        micStatusMsg.textContent = 'Error accessing microphone: ' + err.message;
+      }
+    }
+  }
+
+  async function startAudioAnalysis(deviceId) {
+    stopMicTest();
+    try {
+      const constraints = { audio: deviceId && deviceId !== 'default' ? { deviceId: { exact: deviceId } } : true };
+      micStream = await navigator.mediaDevices.getUserMedia(constraints);
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function renderVU() {
+        vuAnimId = requestAnimationFrame(renderVU);
+        analyser.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / bufferLength;
+        const normalized = avg / 255;
+
+        // Draw meter
+        vuCtx.clearRect(0, 0, vuCanvas.width, vuCanvas.height);
+        const barWidth = Math.round(normalized * vuCanvas.width);
+
+        const grad = vuCtx.createLinearGradient(0, 0, vuCanvas.width, 0);
+        grad.addColorStop(0, '#0f766e');
+        grad.addColorStop(0.7, '#14b8a6');
+        grad.addColorStop(1.0, '#38bdf8');
+
+        vuCtx.fillStyle = grad;
+        vuCtx.fillRect(0, 0, barWidth, vuCanvas.height);
+
+        // Verification condition: level > 0.05
+        if (normalized > 0.05 && !micTested) {
+          micTested = true;
+          vuBadge.className = 'vu-badge active';
+          vuDot.style.background = '#2dd4bf';
+          vuText.textContent = 'Audio input verified!';
+          micStatusMsg.className = 'status-msg success';
+          micStatusMsg.textContent = 'Microphone detected clear audio signal. Ready to proceed.';
+          btnNext2.disabled = false;
+        }
+      }
+      renderVU();
+    } catch (err) {
+      micStatusMsg.className = 'status-msg error';
+      micStatusMsg.textContent = 'Could not open microphone: ' + err.message;
+    }
+  }
+
+  function stopMicTest() {
+    if (vuAnimId) { cancelAnimationFrame(vuAnimId); vuAnimId = null; }
+    if (micStream) {
+      micStream.getTracks().forEach(t => t.stop());
+      micStream = null;
+    }
+    if (audioCtx) {
+      audioCtx.close().catch(() => {});
+      audioCtx = null;
+    }
+  }
+
+  // --- Step 3: API Key ---
+  document.getElementById('btnBack3').onclick = () => showStep(2);
+  const btnNext3 = document.getElementById('btnNext3');
+  btnNext3.onclick = () => {
+    if (apiKeyValid) showStep(4);
+  };
+
+  const apiKeyInput = document.getElementById('apiKeyInput');
+  const btnPasteKey = document.getElementById('btnPasteKey');
+  const btnValidateKey = document.getElementById('btnValidateKey');
+  const keyStatusMsg = document.getElementById('keyStatusMsg');
+
+  btnPasteKey.onclick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      apiKeyInput.value = text.trim();
+      btnValidateKey.click();
+    } catch {}
+  };
+
+  btnValidateKey.onclick = async () => {
+    const raw = apiKeyInput.value || '';
+    const cleanKey = raw.trim().replace(/[\r\n\t]/g, '');
+
+    if (!cleanKey || !cleanKey.startsWith('gsk_')) {
+      keyStatusMsg.className = 'status-msg error';
+      keyStatusMsg.textContent = 'Invalid Groq key format (must start with gsk_)';
+      apiKeyValid = false;
+      btnNext3.disabled = true;
+      return;
+    }
+
+    keyStatusMsg.className = 'status-msg info';
+    keyStatusMsg.textContent = 'Verifying with Groq Cloud...';
+    btnValidateKey.disabled = true;
+
+    try {
+      const res = await window.wisprtell.validateKey(cleanKey);
+      if (res && (res.valid || res.ok)) {
+        apiKeyValid = true;
+        keyStatusMsg.className = 'status-msg success';
+        keyStatusMsg.textContent = 'Groq API Key verified successfully!';
+        btnNext3.disabled = false;
+        await window.wisprtell.setConfig({ groqKey: cleanKey });
+      } else {
+        apiKeyValid = false;
+        btnNext3.disabled = true;
+        keyStatusMsg.className = 'status-msg error';
+        keyStatusMsg.textContent = res?.error || 'Authentication failed. Check your API key.';
+      }
+    } catch (err) {
+      keyStatusMsg.className = 'status-msg error';
+      keyStatusMsg.textContent = 'Validation error: ' + err.message;
+    } finally {
+      btnValidateKey.disabled = false;
+    }
+  };
+
+  // --- Step 4: Shortcut Practice ---
+  document.getElementById('btnBack4').onclick = () => showStep(3);
+  const btnComplete = document.getElementById('btnComplete');
+  const tileCtrl = document.getElementById('tileCtrl');
+  const tileWin = document.getElementById('tileWin');
+  const practiceText = document.getElementById('practiceText');
+  const shortcutStatusMsg = document.getElementById('shortcutStatusMsg');
+
+  let ctrlPressed = false;
+  let winPressed = false;
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Control' || e.code.includes('Control')) {
+      ctrlPressed = true;
+      tileCtrl.classList.add('active');
+    }
+    if (e.key === 'Meta' || e.code.includes('Meta') || e.code.includes('Win')) {
+      winPressed = true;
+      tileWin.classList.add('active');
+    }
+
+    if (ctrlPressed && winPressed) {
+      shortcutPracticed = true;
+      practiceText.textContent = 'Shortcut detected! Release to finish.';
+      practiceText.style.color = '#2dd4bf';
+      shortcutStatusMsg.className = 'status-msg success';
+      shortcutStatusMsg.textContent = 'Hotkey combination verified. You are ready to start voice typing!';
+      btnComplete.disabled = false;
+    }
+  });
+
+  window.addEventListener('keyup', e => {
+    if (e.key === 'Control' || e.code.includes('Control')) {
+      ctrlPressed = false;
+      tileCtrl.classList.remove('active');
+    }
+    if (e.key === 'Meta' || e.code.includes('Meta') || e.code.includes('Win')) {
+      winPressed = false;
+      tileWin.classList.remove('active');
+    }
+  });
+
+  btnComplete.onclick = async () => {
+    stopMicTest();
+    await window.wisprtell.setConfig({ firstRun: false });
+    window.wisprtell.welcomeDone();
+  };
+
+  // Theme synchronization
+  function applyTheme(payload) {
+    if (!payload) return;
+    const { theme, effectiveTheme, variables, hasNativeMaterial } = payload;
+    document.documentElement.setAttribute('data-theme', effectiveTheme || theme);
+    document.documentElement.dataset.material = hasNativeMaterial ? 'native' : 'fallback';
+    if (variables) {
+      for (const [prop, val] of Object.entries(variables)) {
+        document.documentElement.style.setProperty(prop, val);
+      }
+    }
+  }
+
+  if (window.wisprtell && window.wisprtell.onThemeSync) {
+    window.wisprtell.onThemeSync(applyTheme);
+  }
+  if (window.wisprtell && window.wisprtell.getTheme) {
+    window.wisprtell.getTheme().then(applyTheme).catch(() => {});
+  }
 </script>
-</body></html>
+</body>
+</html>

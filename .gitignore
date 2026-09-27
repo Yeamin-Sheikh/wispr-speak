@@ -8,8 +8,10 @@ build/
 
 # Local configuration and debug logs
 wispr-tell-config.json
+wispr-tell-history.json
 wispr-tell-debug.log
 *.log
+logs/
 
 # Environment variables
 .env
@@ -20,3 +22,4 @@ Thumbs.db
 .DS_Store
 .vscode/
 .idea/
+.agents/

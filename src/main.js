@@ -1,20 +1,187 @@
 // Wispr Tell v0.5.5 — desktop voice typing application.
 // Supports both Push-to-talk (hold-to-talk) and Hands-free toggle mode (Control+Windows+Spacebar).
 // Powered by Groq Cloud STT (whisper-large-v3-turbo) and smart language model cleanup (gpt-oss-20b).
-const { app, BrowserWindow, Tray, Menu, ipcMain, clipboard, screen, shell, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, clipboard, screen, shell, globalShortcut, session, MessageChannelMain, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { spawn } = require('child_process');
 const { uIOhook, UiohookKey } = require('uiohook-napi');
-const { formatText, applyVoiceCommands, applyDictionary, buildMultipart } = require('./text-utils');
+const {
+  formatText,
+  applyVoiceCommands,
+  applyDictionary,
+  buildMultipart,
+  classifyTargetWindow,
+  DEFAULT_PERSONAS,
+  buildPolishingPrompt,
+  formatWhisperPromptFromDict,
+  buildWhisperPromptBounded,
+  VoiceCommandEngine,
+  DEFAULT_COMMANDS,
+} = require('./text-utils');
 
-// ---------- debug logging ----------
-let LOG_PATH = null;
-function log(...args) {
-  const line = new Date().toISOString() + ' ' + args.map(a => String(a)).join(' ');
-  try { if (LOG_PATH) fs.appendFileSync(LOG_PATH, line + '\n'); } catch {}
-  console.log('[wispr-tell]', ...args);
+let voiceEngine = new VoiceCommandEngine(DEFAULT_COMMANDS);
+
+// ---------- Structured JSON Logging with Daily Rotation via electron-log ----------
+let electronLog = null;
+try {
+  electronLog = require('electron-log');
+} catch (e) {
+  // Graceful fallback if electron-log package is not available
 }
+
+// Directory for daily rotated log files
+let LOGS_DIR = null;
+let LOG_PATH = null;
+
+function initLogPaths() {
+  if (!LOGS_DIR) {
+    try {
+      LOGS_DIR = path.join(app.getPath('userData'), 'logs');
+      if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+    } catch {
+      LOGS_DIR = path.join(process.cwd(), 'logs');
+    }
+  }
+}
+
+// Formats log date to YYYY-MM-DD
+function getLogDateString(date = new Date()) {
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Generates log filename for a given date
+function getLogFileName(date = new Date()) {
+  return `wispr-tell-${getLogDateString(date)}.log`;
+}
+
+// Safely serializes objects handling circular references
+function safeStringifyLog(entry) {
+  const seen = new WeakSet();
+  return JSON.stringify(entry, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  });
+}
+
+// Prunes log files older than retention policy, default 14 days
+function pruneOldLogs(logsDir, retentionDays = 14, currentDate = new Date()) {
+  if (!logsDir || !fs.existsSync(logsDir)) return [];
+  const cutoffTime = currentDate.getTime() - (retentionDays * 24 * 60 * 60 * 1000);
+  const deletedFiles = [];
+  try {
+    const files = fs.readdirSync(logsDir);
+    for (const file of files) {
+      const match = file.match(/^wispr-tell-(\d{4})-(\d{2})-(\d{2})(?:\.json)?\.log$/);
+      if (match) {
+        const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+        if (fileDate.getTime() < cutoffTime) {
+          try {
+            fs.unlinkSync(path.join(logsDir, file));
+            deletedFiles.push(file);
+          } catch {}
+        }
+      }
+    }
+  } catch {}
+  return deletedFiles;
+}
+
+// Configure electron-log transport when available
+if (electronLog && electronLog.transports && electronLog.transports.file) {
+  electronLog.transports.file.resolvePathFn = (variables, message) => {
+    initLogPaths();
+    const d = (message && message.date) ? message.date : new Date();
+    return path.join(LOGS_DIR, getLogFileName(d));
+  };
+  electronLog.transports.file.format = ({ message }) => {
+    return [safeStringifyLog(message)];
+  };
+}
+
+// Core structured logging function emitting single-line NDJSON
+function logStructured(level, category, message, metadata = {}) {
+  initLogPaths();
+  const normalizedLevel = (level || 'info').toLowerCase();
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level: normalizedLevel,
+    category: category || 'system',
+    message: typeof message === 'string' ? message : String(message),
+    metadata: metadata && typeof metadata === 'object' ? metadata : {},
+  };
+
+  const line = safeStringifyLog(entry) + '\n';
+  const filePath = path.join(LOGS_DIR, getLogFileName());
+  LOG_PATH = filePath;
+
+  try {
+    fs.appendFileSync(filePath, line, 'utf8');
+  } catch (fsErr) {
+    console.error('[wispr-tell] file write error:', fsErr.message);
+  }
+
+  if (normalizedLevel === 'error') {
+    console.error('[wispr-tell]', category ? `[${category}]` : '', message, metadata);
+  } else if (normalizedLevel === 'warn') {
+    console.warn('[wispr-tell]', category ? `[${category}]` : '', message, metadata);
+  } else {
+    console.log('[wispr-tell]', category ? `[${category}]` : '', message, metadata);
+  }
+
+  return entry;
+}
+
+// Backward-compatible log function parsing legacy call patterns
+function log(...args) {
+  if (args.length === 0) return;
+  const first = String(args[0]);
+  let category = 'system';
+  let message = '';
+  let metadata = {};
+  let level = 'info';
+
+  if (first.includes(':')) {
+    const colonIdx = first.indexOf(':');
+    category = first.slice(0, colonIdx).trim().toLowerCase();
+    const restFirst = first.slice(colonIdx + 1).trim();
+    const restArgs = args.slice(1);
+    message = [restFirst, ...restArgs.filter(a => typeof a !== 'object')].filter(Boolean).join(' ');
+  } else {
+    message = args.filter(a => typeof a !== 'object').map(a => String(a)).join(' ');
+  }
+
+  const objects = args.filter(a => typeof a === 'object' && a !== null);
+  if (objects.length === 1) {
+    metadata = objects[0];
+  } else if (objects.length > 1) {
+    metadata = Object.assign({}, ...objects);
+  }
+
+  const lowerMsg = (first + ' ' + message).toLowerCase();
+  if (lowerMsg.includes('error') || lowerMsg.includes('failed') || lowerMsg.includes('rejected')) {
+    level = 'error';
+  } else if (lowerMsg.includes('warning') || lowerMsg.includes('warn') || lowerMsg.includes('notice')) {
+    level = 'warn';
+  }
+
+  return logStructured(level, category, message, metadata);
+}
+
+// Offline whisper engine & state
+const { WhisperLocalEngine } = require('./offline-whisper');
+const localWhisper = new WhisperLocalEngine();
+let isOfflineMode = false;
+let targetInfo = null;
 
 const PASTE_HELPER = path.join(__dirname, '..', 'bin', 'native', 'tell-paste.exe');
 
@@ -23,16 +190,61 @@ let captureWin = null;    // hidden audio worklet window
 let settingsWin = null;   // main dashboard & settings window
 let welcomeWin = null;
 let tray = null;
-let recording = false;
-let busy = false;         // transcribing / injecting
-let isHandsFree = false;  // active hands-free toggle recording
-let handsFreeCooldown = 0;
-let polishCooldown = 0;
 let targetHwnd = null;    // foreground window handle before hotkey down
 const heldKeys = new Set();
 
+// ---------- 5-State Machine & FIFO Hotkey Event Queue ----------
+const FsmState = {
+  IDLE: 'IDLE',
+  LISTENING_PTT: 'LISTENING_PTT',
+  LISTENING_HANDSFREE: 'LISTENING_HANDSFREE',
+  PROCESSING: 'PROCESSING',
+  QUEUED: 'QUEUED',
+};
+
+let currentState = FsmState.IDLE;
+const eventQueue = [];
+let nextEventId = 1;
+
+// Legacy state flags maintained in sync with currentState
+let recording = false;
+let busy = false;
+let isHandsFree = false;
+let handsFreeCooldown = 0;
+let polishCooldown = 0;
+
+function syncLegacyState() {
+  recording = (currentState === FsmState.LISTENING_PTT || currentState === FsmState.LISTENING_HANDSFREE);
+  isHandsFree = (currentState === FsmState.LISTENING_HANDSFREE);
+  busy = (currentState === FsmState.PROCESSING || currentState === FsmState.QUEUED);
+}
+
+// Window readiness tracking for direct MessageChannelMain linking
+let captureReady = false;
+let pillReady = false;
+
+function setupAudioVizChannel() {
+  if (!captureReady || !pillReady) return;
+  if (!captureWin || captureWin.isDestroyed() || !pill || pill.isDestroyed()) return;
+
+  try {
+    const { port1, port2 } = new MessageChannelMain();
+    captureWin.webContents.postMessage('audio-port-setup', null, [port1]);
+    pill.webContents.postMessage('viz-port-setup', null, [port2]);
+    log('Direct MessageChannelMain linked between captureWin and pillWin');
+  } catch (err) {
+    log('setupAudioVizChannel error:', err.message);
+  }
+}
+
+
 // ---------- config ----------
 const CONFIG_PATH = path.join(app.getPath('userData'), 'wispr-tell-config.json');
+const AUDIO_HISTORY_DIR = path.join(app.getPath('userData'), 'audio-history');
+try {
+  if (!fs.existsSync(AUDIO_HISTORY_DIR)) fs.mkdirSync(AUDIO_HISTORY_DIR, { recursive: true });
+} catch {}
+
 const DEFAULTS = {
   userName: 'Yeamin',
   micDeviceId: 'default',
@@ -40,6 +252,9 @@ const DEFAULTS = {
   firstRun: true,
   groqKey: '',
   smartFix: true,
+  contextPolishEnabled: true,
+  activePersonaId: 'natural',
+  personas: DEFAULT_PERSONAS,
   shortcuts: {
     pushToTalk: ['Ctrl', 'Win'],
     handsFree: ['Ctrl', 'Win', 'Space'],
@@ -49,6 +264,11 @@ const DEFAULTS = {
     { from: 'whisper flow', to: 'Wispr Flow' },
     { from: 'wispr tell', to: 'Wispr Tell' },
   ],
+  theme: 'cyber-teal',
+  typingAnimation: false,
+  maxAnimatedLength: 200,
+  pillPosition: null,
+  voiceCommands: DEFAULT_COMMANDS,
 };
 
 let config = { ...DEFAULTS };
@@ -57,12 +277,48 @@ try {
   config = {
     ...DEFAULTS,
     ...loaded,
+    personas: loaded.personas && Array.isArray(loaded.personas) ? loaded.personas : DEFAULT_PERSONAS,
+    voiceCommands: loaded.voiceCommands && Array.isArray(loaded.voiceCommands) ? loaded.voiceCommands : DEFAULT_COMMANDS,
     shortcuts: { ...DEFAULTS.shortcuts, ...(loaded.shortcuts || {}) },
   };
 } catch {}
 
 function saveConfig() {
   try { fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2)); } catch {}
+}
+
+function pruneAudioRecordings() {
+  if (!fs.existsSync(AUDIO_HISTORY_DIR)) return;
+  const cutoff = Date.now() - (14 * 24 * 60 * 60 * 1000);
+  const maxTotalSizeBytes = 500 * 1024 * 1024;
+  try {
+    const files = fs.readdirSync(AUDIO_HISTORY_DIR);
+    let recordings = [];
+    for (const f of files) {
+      if (!f.endsWith('.webm')) continue;
+      const fullPath = path.join(AUDIO_HISTORY_DIR, f);
+      try {
+        const stat = fs.statSync(fullPath);
+        if (stat.mtimeMs < cutoff) {
+          fs.unlinkSync(fullPath);
+          continue;
+        }
+        recordings.push({ file: f, path: fullPath, sizeBytes: stat.size, timestamp: stat.mtimeMs });
+      } catch {}
+    }
+
+    recordings.sort((a, b) => a.timestamp - b.timestamp);
+    let totalSize = recordings.reduce((acc, r) => acc + r.sizeBytes, 0);
+    while ((totalSize > maxTotalSizeBytes || recordings.length > 50) && recordings.length > 0) {
+      const oldest = recordings.shift();
+      try {
+        if (fs.existsSync(oldest.path)) fs.unlinkSync(oldest.path);
+        totalSize -= oldest.sizeBytes;
+      } catch {}
+    }
+  } catch (err) {
+    log('error during audio retention pruning:', err.message);
+  }
 }
 
 // ---------- dictation history & stats ----------
@@ -173,7 +429,7 @@ function getStats() {
   };
 }
 
-function addHistoryItem(text, durationMs = 0) {
+function addHistoryItem(text, durationMs = 0, opts = {}) {
   if (!text || !text.trim()) return;
   const cleaned = text.trim();
   // Filter out single-punctuation or empty noises (like "." or "?")
@@ -182,21 +438,40 @@ function addHistoryItem(text, durationMs = 0) {
     return;
   }
   const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
+  const id = 'entry_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  let audioFileName = null;
+
+  const audioBuf = opts.compressedAudioBuffer || opts.audioBuffer;
+  if (audioBuf && audioBuf.length > 0) {
+    audioFileName = `${id}.webm`;
+    const audioPath = path.join(AUDIO_HISTORY_DIR, audioFileName);
+    try {
+      fs.writeFileSync(audioPath, Buffer.from(audioBuf));
+    } catch (err) {
+      log('error saving audio recording:', err.message);
+      audioFileName = null;
+    }
+  }
+
   const item = {
-    id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    id,
     text: cleaned,
     timestamp: Date.now(),
     wordCount,
     durationMs: durationMs || 2500,
+    audioFile: audioFileName,
     starred: false,
+    offline: opts.offline !== undefined ? !!opts.offline : isOfflineMode,
   };
   history.unshift(item);
   if (history.length > 1000) history.pop();
+  pruneAudioRecordings();
   saveHistory();
 
   if (settingsWin && !settingsWin.isDestroyed()) {
     settingsWin.webContents.send('history-updated', { item, stats: getStats() });
   }
+  return item;
 }
 
 // ---------- customizable shortcuts matcher ----------
@@ -277,7 +552,7 @@ function registerGlobalShortcuts() {
 
 // ---------- Groq cloud engine ----------
 const GROQ_STT_MODEL = 'whisper-large-v3-turbo';
-const GROQ_POLISH_MODEL = 'openai/gpt-oss-20b';
+const GROQ_POLISH_MODEL = 'llama-3.1-8b-instant';
 
 const POLISH_SYSTEM = 'You are an intelligent voice dictation assistant. Your job is to transform raw spoken audio into what the speaker meant to write: ' +
   'Convert spoken punctuation and symbols (such as "exclamation mark" to "!", "question mark" to "?", "comma" to ",", "colon" to ":") into actual punctuation. ' +
@@ -314,18 +589,27 @@ function groqError(what, status, errMsg) {
 const httpsAgent = new (require('https').Agent)({ keepAlive: true, maxSockets: 4 });
 const httpAgent = new (require('http').Agent)({ keepAlive: true, maxSockets: 4 });
 
+// HTTP client returning status code, response headers, and body text
 function httpRequest({ url, method = 'GET', headers = {}, body = null, timeoutMs = 30000 }) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const lib = u.protocol === 'https:' ? require('https') : require('http');
     const req = lib.request({
-      hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80),
-      path: u.pathname + u.search, method, headers, timeout: timeoutMs,
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search,
+      method,
+      headers,
+      timeout: timeoutMs,
       agent: u.protocol === 'https:' ? httpsAgent : httpAgent,
     }, res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
+      res.on('end', () => resolve({
+        status: res.statusCode,
+        headers: res.headers,
+        body: Buffer.concat(chunks).toString('utf8'),
+      }));
     });
     req.on('error', reject);
     req.on('timeout', () => req.destroy(new Error('request timeout')));
@@ -334,30 +618,86 @@ function httpRequest({ url, method = 'GET', headers = {}, body = null, timeoutMs
   });
 }
 
+// Computes backoff delay parsing Retry-After header or jittered exponential formula
+function computeBackoffDelay(attempt, retryAfterHeader) {
+  if (retryAfterHeader !== null && retryAfterHeader !== undefined) {
+    const parsedSec = Number(retryAfterHeader);
+    if (!isNaN(parsedSec) && parsedSec >= 0) {
+      return parsedSec * 1000;
+    }
+    const parsedDate = Date.parse(retryAfterHeader);
+    if (!isNaN(parsedDate) && parsedDate > Date.now()) {
+      return Math.min(8000, parsedDate - Date.now());
+    }
+  }
+  return Math.min(8000, 500 * Math.pow(2, attempt) + Math.random() * 300);
+}
+
+// Sends POST requests to Groq with up to 4 attempts on HTTP 429 or 50x server errors
 async function groqPost(pathname, { body, contentType, timeoutMs = 30000 }) {
   const headers = {
     'Authorization': 'Bearer ' + config.groqKey,
     'Content-Type': contentType,
     'Content-Length': Buffer.byteLength(body),
   };
+  const MAX_ATTEMPTS = 4;
   let lastErr = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let lastRes = null;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
-      return await httpRequest({
-        url: 'https://api.groq.com' + pathname, method: 'POST', headers, body, timeoutMs,
+      const res = await httpRequest({
+        url: 'https://api.groq.com' + pathname,
+        method: 'POST',
+        headers,
+        body,
+        timeoutMs,
       });
+
+      lastRes = res;
+
+      if (res.status === 200) {
+        return res;
+      }
+
+      const isRetriable = res.status === 429 || (res.status >= 500 && res.status <= 599);
+      if (isRetriable && attempt < MAX_ATTEMPTS - 1) {
+        const retryHeader = res.headers ? (res.headers['retry-after'] || res.headers['Retry-After']) : null;
+        const delayMs = computeBackoffDelay(attempt, retryHeader);
+        log('groq: HTTP ' + res.status + ' received, retrying in ' + Math.round(delayMs) + 'ms, attempt ' + (attempt + 1) + ' of ' + MAX_ATTEMPTS);
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+
+      return res;
     } catch (e) {
       lastErr = e;
-      log('groq: attempt', attempt + 1, 'network error:', e.message);
-      if (attempt < 2) await new Promise(r => setTimeout(r, 800));
+      log('groq: attempt ' + (attempt + 1) + ' of ' + MAX_ATTEMPTS + ' network error: ' + e.message);
+      if (attempt < MAX_ATTEMPTS - 1) {
+        const delayMs = Math.min(8000, 500 * Math.pow(2, attempt) + Math.random() * 300);
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
     }
   }
-  throw lastErr;
+
+  if (lastErr) throw lastErr;
+  return lastRes;
 }
 
-async function transcribeGroq(wavBuffer) {
-  const mp = buildMultipart({ model: GROQ_STT_MODEL, response_format: 'json', language: 'en' },
-    'file', 'audio.wav', wavBuffer, 'audio/wav');
+async function transcribeGroq(wavBuffer, customPrompt = null) {
+  const formFields = {
+    model: GROQ_STT_MODEL,
+    response_format: 'json',
+    language: 'en',
+  };
+
+  const dictPrompt = customPrompt !== null ? customPrompt : buildWhisperPromptBounded(config.dictionary, 800);
+  if (dictPrompt) {
+    formFields.prompt = dictPrompt;
+  }
+
+  const mp = buildMultipart(formFields, 'file', 'audio.wav', wavBuffer, 'audio/wav');
   let r;
   try {
     r = await groqPost('/openai/v1/audio/transcriptions', {
@@ -371,10 +711,23 @@ async function transcribeGroq(wavBuffer) {
 }
 
 async function polishGroq(text) {
+  const promptSpec = buildPolishingPrompt({
+    text,
+    targetInfo,
+    personas: config.personas || DEFAULT_PERSONAS,
+    activePersonaId: config.activePersonaId || 'natural',
+    contextPolishEnabled: config.contextPolishEnabled !== false,
+    dictionary: config.dictionary || [],
+  });
+
   const body = JSON.stringify({
     model: GROQ_POLISH_MODEL,
-    messages: [{ role: 'system', content: polishSystemPrompt() }, { role: 'user', content: text }],
-    temperature: 0.1, max_tokens: 1024,
+    messages: [
+      { role: 'system', content: promptSpec.systemPrompt },
+      { role: 'user', content: text },
+    ],
+    temperature: promptSpec.temperature,
+    max_tokens: 1024,
   });
   let r;
   try {
@@ -411,9 +764,39 @@ async function polishSelectedText(text) {
   return out || text;
 }
 
+async function transcribeLocal(wavBuffer) {
+  const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
+  return localWhisper.transcribeLocal(wavBuffer, { prompt: dictPrompt });
+}
+
+let lastOfflineTime = 0;
+const OFFLINE_RETRY_COOLDOWN_MS = 60000;
+
 async function transcribe(wavBuffer) {
-  if (!config.groqKey) throw new Error(NEEDS_KEY);
-  return transcribeGroq(wavBuffer);
+  const now = Date.now();
+  const inOfflineCooldown = isOfflineMode && (now - lastOfflineTime < OFFLINE_RETRY_COOLDOWN_MS);
+
+  if (!config.groqKey || inOfflineCooldown) {
+    if (localWhisper.isAvailable()) {
+      isOfflineMode = true;
+      return transcribeLocal(wavBuffer);
+    }
+    if (!config.groqKey) throw new Error(NEEDS_KEY);
+  }
+  try {
+    const text = await transcribeGroq(wavBuffer);
+    isOfflineMode = false;
+    lastOfflineTime = 0;
+    return text;
+  } catch (groqErr) {
+    if (localWhisper.isAvailable()) {
+      log('transcribe: Groq failed (' + groqErr.message + '), falling back to local whisper');
+      isOfflineMode = true;
+      lastOfflineTime = Date.now();
+      return await transcribeLocal(wavBuffer);
+    }
+    throw groqErr;
+  }
 }
 
 async function smartPolish(text) {
@@ -423,19 +806,19 @@ async function smartPolish(text) {
 }
 
 async function validateGroqKey(key) {
-  const k = String(key || '').trim();
-  if (!k) return { ok: false, error: 'Paste a key first.' };
-  if (!k.startsWith('gsk_')) return { ok: false, error: 'Groq keys begin with gsk_' };
+  const k = String(key || '').trim().replace(/[\r\n\t]/g, '');
+  if (!k) return { ok: false, valid: false, error: 'Paste a key first.' };
+  if (!k.startsWith('gsk_')) return { ok: false, valid: false, error: 'Invalid Groq key format (must start with gsk_)' };
   try {
     const r = await httpRequest({
       url: 'https://api.groq.com/openai/v1/models', method: 'GET',
       headers: { 'Authorization': 'Bearer ' + k }, timeoutMs: 15000,
     });
-    if (r.status === 200) return { ok: true };
-    if (r.status === 401) return { ok: false, error: 'Key rejected by Groq.' };
-    return { ok: false, error: 'Groq status code ' + r.status };
+    if (r.status === 200) return { ok: true, valid: true };
+    if (r.status === 401) return { ok: false, valid: false, error: 'Key rejected by Groq.' };
+    return { ok: false, valid: false, error: 'Groq status code ' + r.status };
   } catch (e) {
-    return { ok: false, error: groqError('Key test', 0, e.message) };
+    return { ok: false, valid: false, error: groqError('Key test', 0, e.message) };
   }
 }
 
@@ -488,13 +871,464 @@ async function deleteWord() {
   }
 }
 
+async function deleteSentence() {
+  try {
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 2;
+    await keyboard.pressKey(Key.LeftShift, Key.Home);
+    await keyboard.releaseKey(Key.LeftShift, Key.Home);
+    await keyboard.pressKey(Key.Backspace);
+    await keyboard.releaseKey(Key.Backspace);
+    setPill('done', null, 'Deleted sentence ✓');
+  } catch (e) {
+    log('delete-sentence failed:', e.message);
+    setPill('error', 'Could not delete sentence');
+  }
+}
+
+async function selectAllText() {
+  try {
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 2;
+    await keyboard.pressKey(Key.LeftControl, Key.A);
+    await keyboard.releaseKey(Key.LeftControl, Key.A);
+    setPill('done', null, 'Selected all ✓');
+  } catch (e) {
+    log('select-all failed:', e.message);
+    setPill('error', 'Could not select all');
+  }
+}
+
+async function copyTextAction() {
+  try {
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 2;
+    await keyboard.pressKey(Key.LeftControl, Key.C);
+    await keyboard.releaseKey(Key.LeftControl, Key.C);
+    setPill('done', null, 'Copied ✓');
+  } catch (e) {
+    log('copy failed:', e.message);
+    setPill('error', 'Could not copy');
+  }
+}
+
+async function pasteTextAction() {
+  try {
+    const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+    keyboard.config.autoDelayMs = 2;
+    await keyboard.pressKey(Key.LeftControl, Key.V);
+    await keyboard.releaseKey(Key.LeftControl, Key.V);
+    setPill('done', null, 'Pasted ✓');
+  } catch (e) {
+    log('paste failed:', e.message);
+    setPill('error', 'Could not paste');
+  }
+}
+
+async function quoteLastText() {
+  if (!lastInject || !lastInject.text) {
+    setPill('error', 'Nothing recent to quote');
+    return;
+  }
+  const quoted = `"${lastInject.text}"`;
+  await injectText(quoted);
+  lastInject.text = quoted;
+  setPill('done', null, 'Quoted that ✓');
+}
+
+
+// ---------- Window Materials, Theming & Multi-Monitor Physics ----------
+class WindowMaterialConfigurator {
+  static isWindows11OrHigher(releaseString = os.release()) {
+    if (process.platform !== 'win32') return false;
+    const parts = String(releaseString || '').split('.').map(Number);
+    if (parts[0] > 10) return true;
+    if (parts[0] === 10 && parts[1] >= 0 && parts[2] >= 22000) return true;
+    return false;
+  }
+
+  static shouldUseNativeMaterials(releaseString = os.release()) {
+    if (!this.isWindows11OrHigher(releaseString)) return false;
+    if (typeof nativeTheme !== 'undefined' && nativeTheme) {
+      if (nativeTheme.shouldUseHighContrastColors || nativeTheme.shouldUseInvertedColorScheme) return false;
+    }
+    if (typeof app !== 'undefined' && app && app.commandLine) {
+      if (app.commandLine.hasSwitch('disable-gpu') || app.commandLine.hasSwitch('disable-software-rasterizer')) return false;
+    }
+    return true;
+  }
+
+  static getPillWindowOptions(isWin11 = this.shouldUseNativeMaterials()) {
+    const baseOptions = {
+      width: 320,
+      height: 44,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      resizable: false,
+      focusable: false,
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    };
+
+    if (isWin11) {
+      baseOptions.backgroundMaterial = 'acrylic';
+      baseOptions.backgroundColor = '#00000000';
+    } else {
+      baseOptions.backgroundColor = '#121216E6';
+    }
+
+    return baseOptions;
+  }
+
+  static getSettingsWindowOptions(themeOrIsWin11 = this.shouldUseNativeMaterials()) {
+    let isWin11 = false;
+    let themeName = 'cyber-teal';
+    if (typeof themeOrIsWin11 === 'boolean') {
+      isWin11 = themeOrIsWin11;
+      themeName = (typeof config !== 'undefined' && config.theme) || 'cyber-teal';
+    } else if (typeof themeOrIsWin11 === 'string') {
+      themeName = themeOrIsWin11;
+      isWin11 = this.shouldUseNativeMaterials();
+    } else {
+      isWin11 = this.shouldUseNativeMaterials();
+      themeName = (typeof config !== 'undefined' && config.theme) || 'cyber-teal';
+    }
+
+    const isDark = themeName === 'dark-obsidian' || themeName === 'cyber-teal' || themeName === 'dark';
+    const baseOptions = {
+      width: 1140,
+      height: 760,
+      minWidth: 960,
+      minHeight: 640,
+      title: 'Wispr Tell',
+      titleBarStyle: 'hidden',
+      frame: false,
+      show: false,
+      titleBarOverlay: {
+        color: isWin11 ? '#00000000' : (isDark ? '#060d13' : '#f8f7f4'),
+        symbolColor: isDark ? '#e6f2f8' : '#1c1917',
+        height: 38,
+      },
+      icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    };
+
+    if (isWin11) {
+      baseOptions.backgroundMaterial = 'mica';
+      baseOptions.backgroundColor = '#00000000';
+    } else {
+      baseOptions.backgroundColor = isDark ? '#060d13' : '#1e1e24';
+    }
+
+    return baseOptions;
+  }
+
+  static getWelcomeWindowOptions() {
+    const isWin11 = this.shouldUseNativeMaterials();
+    const options = {
+      width: 520,
+      height: 560,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      title: 'Welcome to Wispr Tell',
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    };
+
+    if (isWin11) {
+      options.backgroundMaterial = 'mica';
+      options.backgroundColor = '#00000000';
+    }
+
+    return options;
+  }
+}
+
+class MaterialBoundaryManager {
+  static resolveMaterialSettings(platform, win11Build, isHighContrast = false, isGpuDisabled = false) {
+    if (platform !== 'win32') {
+      return { material: 'none', note: 'non-windows-platform' };
+    }
+    if (isHighContrast) {
+      return { material: 'none', highContrastActive: true, note: 'high-contrast-fallback' };
+    }
+    if (isGpuDisabled) {
+      return { material: 'none', note: 'software-compositing' };
+    }
+    if (win11Build >= 22000) {
+      return { pill: 'acrylic', settings: 'mica' };
+    }
+    return { material: 'none', note: 'windows-10-or-lower' };
+  }
+}
+
+const THEMES = {
+  'cyber-teal': {
+    '--bg-primary': '#060d13',
+    '--text-primary': '#e6f2f8',
+    '--accent-color': '#14b8a6',
+    '--border-subtle': '#142738',
+    '--bg': '#060d13',
+    '--sidebar': '#0a141d',
+    '--card-bg': '#0f1d29',
+    '--card-border': '#162c3d',
+    '--card-hover-border': '#234763',
+    '--text': '#e6f2f8',
+    '--text-muted': '#82a3b8',
+    '--text-dim': '#4d7185',
+    '--nav-active': '#132737',
+    '--accent': '#14b8a6',
+    '--accent-hover': '#0d9488',
+    '--accent-light': 'rgba(20, 184, 166, 0.12)',
+    '--pill-bg': 'rgba(18, 18, 22, 0.65)',
+    '--pill-border': 'rgba(255, 255, 255, 0.08)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.20)',
+    '--pill-text': '#ffffff',
+    '--pill-accent': '#14b8a6',
+  },
+  'dark-obsidian': {
+    '--bg-primary': '#080a0f',
+    '--text-primary': '#f1f5f9',
+    '--accent-color': '#38bdf8',
+    '--border-subtle': '#1a2234',
+    '--bg': '#080a0f',
+    '--sidebar': '#0e121a',
+    '--card-bg': '#131824',
+    '--card-border': '#1e2638',
+    '--card-hover-border': '#2c3852',
+    '--text': '#f1f5f9',
+    '--text-muted': '#94a3b8',
+    '--text-dim': '#64748b',
+    '--nav-active': '#1a2232',
+    '--accent': '#38bdf8',
+    '--accent-hover': '#0ea5e9',
+    '--accent-light': 'rgba(56, 189, 248, 0.12)',
+    '--pill-bg': 'rgba(12, 14, 20, 0.70)',
+    '--pill-border': 'rgba(255, 255, 255, 0.08)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.22)',
+    '--pill-text': '#ffffff',
+    '--pill-accent': '#38bdf8',
+  },
+  'warm-light': {
+    '--bg-primary': '#f8f7f4',
+    '--text-primary': '#1c1917',
+    '--accent-color': '#0f766e',
+    '--border-subtle': '#eae6dd',
+    '--bg': '#f8f7f4',
+    '--sidebar': '#f1eee7',
+    '--card-bg': '#ffffff',
+    '--card-border': '#e6e2d8',
+    '--card-hover-border': '#cbd5e1',
+    '--text': '#1c1917',
+    '--text-muted': '#78716c',
+    '--text-dim': '#a8a29e',
+    '--nav-active': '#e6e1d6',
+    '--accent': '#0f766e',
+    '--accent-hover': '#115e59',
+    '--accent-light': 'rgba(15, 118, 110, 0.10)',
+    '--pill-bg': 'rgba(255, 255, 255, 0.85)',
+    '--pill-border': 'rgba(0, 0, 0, 0.10)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.95)',
+    '--pill-text': '#1c1917',
+    '--pill-accent': '#0f766e',
+  },
+  'slate-clean': {
+    '--bg-primary': '#f8fafc',
+    '--text-primary': '#0f172a',
+    '--accent-color': '#2563eb',
+    '--border-subtle': '#e2e8f0',
+    '--bg': '#f8fafc',
+    '--sidebar': '#f1f5f9',
+    '--card-bg': '#ffffff',
+    '--card-border': '#e2e8f0',
+    '--card-hover-border': '#cbd5e1',
+    '--text': '#0f172a',
+    '--text-muted': '#64748b',
+    '--text-dim': '#94a3b8',
+    '--nav-active': '#e2e8f0',
+    '--accent': '#2563eb',
+    '--accent-hover': '#1d4ed8',
+    '--accent-light': 'rgba(37, 99, 235, 0.10)',
+    '--pill-bg': 'rgba(255, 255, 255, 0.88)',
+    '--pill-border': 'rgba(0, 0, 0, 0.10)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.95)',
+    '--pill-text': '#0f172a',
+    '--pill-accent': '#2563eb',
+  },
+  'dark': {
+    '--bg-primary': '#121216',
+    '--text-primary': '#f0f0f5',
+    '--accent-color': '#6366f1',
+    '--border-subtle': '#272730',
+    '--bg': '#121216',
+    '--sidebar': '#0e0e12',
+    '--card-bg': '#19191f',
+    '--card-border': '#272730',
+    '--card-hover-border': '#393946',
+    '--text': '#f0f0f5',
+    '--text-muted': '#9ca3af',
+    '--text-dim': '#6b7280',
+    '--nav-active': '#22222a',
+    '--accent': '#6366f1',
+    '--accent-hover': '#4f46e5',
+    '--accent-light': 'rgba(99, 102, 241, 0.12)',
+    '--pill-bg': 'rgba(18, 18, 22, 0.65)',
+    '--pill-border': 'rgba(255, 255, 255, 0.08)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.20)',
+    '--pill-text': '#ffffff',
+    '--pill-accent': '#6366f1',
+  },
+  'light': {
+    '--bg-primary': '#f8f9fa',
+    '--text-primary': '#111827',
+    '--accent-color': '#4f46e5',
+    '--border-subtle': '#e5e7eb',
+    '--bg': '#f8f9fa',
+    '--sidebar': '#f1f3f5',
+    '--card-bg': '#ffffff',
+    '--card-border': '#e5e7eb',
+    '--card-hover-border': '#d1d5db',
+    '--text': '#111827',
+    '--text-muted': '#6b7280',
+    '--text-dim': '#9ca3af',
+    '--nav-active': '#e9ecef',
+    '--accent': '#4f46e5',
+    '--accent-hover': '#4338ca',
+    '--accent-light': 'rgba(79, 70, 229, 0.10)',
+    '--pill-bg': 'rgba(255, 255, 255, 0.88)',
+    '--pill-border': 'rgba(0, 0, 0, 0.10)',
+    '--pill-border-top': 'rgba(255, 255, 255, 0.95)',
+    '--pill-text': '#111827',
+    '--pill-accent': '#4f46e5',
+  },
+};
+
+function resolveEffectiveTheme(themeName) {
+  if (themeName === 'system') {
+    const isDark = (typeof nativeTheme !== 'undefined' && nativeTheme.shouldUseDarkColors);
+    return isDark ? 'cyber-teal' : 'slate-clean';
+  }
+  if (THEMES[themeName]) {
+    return themeName;
+  }
+  return 'dark-obsidian';
+}
+
+function broadcastTheme(themeName) {
+  const effectiveTheme = resolveEffectiveTheme(themeName);
+  const variables = THEMES[effectiveTheme] || THEMES['dark-obsidian'];
+  const isDark = effectiveTheme === 'cyber-teal' || effectiveTheme === 'dark-obsidian' || effectiveTheme === 'dark';
+
+  if (typeof nativeTheme !== 'undefined' && nativeTheme) {
+    try { nativeTheme.themeSource = isDark ? 'dark' : 'light'; } catch {}
+  }
+  updateTitleBarTheme(effectiveTheme);
+
+  const payload = {
+    theme: themeName,
+    effectiveTheme,
+    isDark,
+    variables,
+    hasNativeMaterial: WindowMaterialConfigurator.shouldUseNativeMaterials(),
+    timestamp: Date.now(),
+  };
+
+  const windows = BrowserWindow.getAllWindows();
+  for (const win of windows) {
+    if (!win.isDestroyed() && win.webContents) {
+      try {
+        win.webContents.send('theme-sync', payload);
+      } catch {}
+    }
+  }
+
+  return payload;
+}
+
+class MultiMonitorPhysicsBounds {
+  static clampToDisplays(targetX, targetY, displays = [], pillSize = { width: 320, height: 44 }) {
+    for (const d of displays) {
+      const bounds = d.workArea;
+      if (!bounds) continue;
+      if (
+        targetX >= bounds.x - 100 && targetX <= bounds.x + bounds.width &&
+        targetY >= bounds.y - 100 && targetY <= bounds.y + bounds.height
+      ) {
+        const clampedX = Math.max(bounds.x + 10, Math.min(bounds.x + bounds.width - pillSize.width - 10, targetX));
+        const clampedY = Math.max(bounds.y + 10, Math.min(bounds.y + bounds.height - pillSize.height - 10, targetY));
+        return { x: clampedX, y: clampedY, displayId: d.id, reset: false };
+      }
+    }
+
+    const primary = (displays && displays.find(d => d.isPrimary)) || (displays && displays[0]) || { workArea: { x: 0, y: 0, width: 1920, height: 1080 }, id: 1 };
+    return {
+      x: primary.workArea.x + Math.floor((primary.workArea.width - pillSize.width) / 2),
+      y: primary.workArea.y + primary.workArea.height - pillSize.height - 85,
+      displayId: primary.id,
+      reset: true
+    };
+  }
+
+  static capVelocity(vx, vy, maxSpeed = 3000) {
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    if (speed > maxSpeed) {
+      const ratio = maxSpeed / speed;
+      return { vx: vx * ratio, vy: vy * ratio, capped: true };
+    }
+    return { vx, vy, capped: false };
+  }
+}
+
+let savePosTimer = null;
+function debouncedSavePillPosition(x, y) {
+  clearTimeout(savePosTimer);
+  savePosTimer = setTimeout(() => {
+    config.pillPosition = { x, y };
+    saveConfig();
+    log('pill position persisted:', config.pillPosition);
+  }, 400);
+}
+
 // ---------- pill window ----------
 function repositionPill() {
   if (!pill || pill.isDestroyed()) return;
   try {
-    const cursor = screen.getCursorScreenPoint();
-    const currentDisplay = screen.getDisplayNearestPoint(cursor);
-    const { x, y, width, height } = currentDisplay.workArea;
+    if (config.pillPosition && typeof config.pillPosition.x === 'number' && typeof config.pillPosition.y === 'number') {
+      const displays = (typeof screen !== 'undefined' && typeof screen.getAllDisplays === 'function')
+        ? screen.getAllDisplays()
+        : ((typeof screen !== 'undefined' && typeof screen.getPrimaryDisplay === 'function') ? [screen.getPrimaryDisplay()] : []);
+      const clamped = MultiMonitorPhysicsBounds.clampToDisplays(
+        config.pillPosition.x,
+        config.pillPosition.y,
+        displays
+      );
+      pill.setPosition(clamped.x, clamped.y);
+      return;
+    }
+    const cursor = (typeof screen !== 'undefined' && typeof screen.getCursorScreenPoint === 'function')
+      ? screen.getCursorScreenPoint()
+      : { x: 0, y: 0 };
+    const currentDisplay = (typeof screen !== 'undefined' && typeof screen.getDisplayNearestPoint === 'function')
+      ? screen.getDisplayNearestPoint(cursor)
+      : ((typeof screen !== 'undefined' && typeof screen.getPrimaryDisplay === 'function')
+        ? screen.getPrimaryDisplay()
+        : { workArea: { x: 0, y: 0, width: 1920, height: 1080 } });
+    const { x, y, width, height } = (currentDisplay && currentDisplay.workArea) || { x: 0, y: 0, width: 1920, height: 1080 };
     const pillWidth = 320;
     const posX = Math.round(x + (width - pillWidth) / 2);
     const posY = Math.round(y + height - 85);
@@ -505,21 +1339,22 @@ function repositionPill() {
 }
 
 function createPill() {
-  pill = new BrowserWindow({
-    width: 320, height: 44, frame: false, transparent: true,
-    alwaysOnTop: true, skipTaskbar: true, resizable: false,
-    focusable: false, show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
+  const options = WindowMaterialConfigurator.getPillWindowOptions();
+  pill = new BrowserWindow(options);
+  pill.webContents.on('did-finish-load', () => {
+    pillReady = true;
+    setupAudioVizChannel();
   });
   pill.loadFile(path.join(__dirname, 'renderer', 'pill.html'));
   repositionPill();
 }
 
-function setPill(state, label, transcript) {
+function setPill(state, label, transcript, opts = {}) {
   if (!pill) return;
   if (state === 'hidden') { pill.hide(); return; }
   repositionPill();
-  pill.webContents.send('pill-state', { state, label, transcript });
+  const offline = opts.offline !== undefined ? opts.offline : isOfflineMode;
+  pill.webContents.send('pill-state', { state, label, transcript, offline });
   if (!pill.isVisible()) pill.showInactive();
 }
 
@@ -527,9 +1362,10 @@ function setPill(state, label, transcript) {
 function updateTitleBarTheme(themeName) {
   if (!settingsWin || settingsWin.isDestroyed()) return;
   try {
-    const isDark = themeName === 'dark-obsidian' || themeName === 'cyber-teal';
+    const useNative = WindowMaterialConfigurator.shouldUseNativeMaterials();
+    const isDark = themeName === 'dark-obsidian' || themeName === 'cyber-teal' || themeName === 'dark';
     settingsWin.setTitleBarOverlay({
-      color: isDark ? '#060d13' : '#f8f7f4',
+      color: useNative ? '#00000000' : (isDark ? '#060d13' : '#f8f7f4'),
       symbolColor: isDark ? '#e6f2f8' : '#1c1917',
       height: 38,
     });
@@ -543,28 +1379,8 @@ function openSettings() {
     settingsWin.focus();
     return;
   }
-  const isDark = config.theme === 'dark-obsidian' || config.theme === 'cyber-teal';
-  settingsWin = new BrowserWindow({
-    width: 1140,
-    height: 760,
-    minWidth: 960,
-    minHeight: 640,
-    title: 'Wispr Tell',
-    backgroundColor: isDark ? '#060d13' : '#f8f7f4',
-    show: false,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: isDark ? '#060d13' : '#f8f7f4',
-      symbolColor: isDark ? '#e6f2f8' : '#1c1917',
-      height: 38,
-    },
-    icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
+  const options = WindowMaterialConfigurator.getSettingsWindowOptions(config.theme);
+  settingsWin = new BrowserWindow(options);
 
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
 
@@ -575,11 +1391,8 @@ function openSettings() {
 }
 
 function showWelcome() {
-  welcomeWin = new BrowserWindow({
-    width: 520, height: 560, resizable: false, minimizable: false, maximizable: false,
-    title: 'Welcome to Wispr Tell', autoHideMenuBar: true,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
-  });
+  const options = WindowMaterialConfigurator.getWelcomeWindowOptions();
+  welcomeWin = new BrowserWindow(options);
   welcomeWin.loadFile(path.join(__dirname, 'renderer', 'welcome.html'));
 }
 
@@ -591,6 +1404,10 @@ function createCaptureWin() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, nodeIntegration: false,
     },
+  });
+  captureWin.webContents.on('did-finish-load', () => {
+    captureReady = true;
+    setupAudioVizChannel();
   });
   captureWin.loadFile(path.join(__dirname, 'renderer', 'capture.html'));
 }
@@ -644,14 +1461,92 @@ function detectTargetWindow() {
     p.stdout.on('data', d => (out += d));
     p.on('close', () => {
       clearTimeout(to);
-      const m = out.match(/TARGET\s+(0x[0-9a-fA-F]+|[0-9a-fA-F]+)/);
-      resolve(m ? m[1] : null);
+      const hwndMatch = out.match(/TARGET\s+(0x[0-9a-fA-F]+|[0-9a-fA-F]+)/);
+      const classMatch = out.match(/WINDOW_CLASS\s+([^\r\n]+)/);
+      const exeMatch = out.match(/EXE_NAME\s+([^\r\n]+)/);
+      const titleMatch = out.match(/WINDOW_TITLE\s+([^\r\n]*)/);
+      const termMatch = out.match(/IS_TERMINAL\s+(true|false)/i);
+
+      targetInfo = {
+        hwnd: hwndMatch ? hwndMatch[1] : null,
+        windowClass: classMatch ? classMatch[1].trim() : '',
+        exeName: exeMatch ? exeMatch[1].trim() : '',
+        windowTitle: titleMatch ? titleMatch[1].trim() : '',
+        isTerminal: termMatch ? termMatch[1].toLowerCase() === 'true' : false,
+      };
+      targetHwnd = targetInfo.hwnd;
+      resolve(targetInfo.hwnd);
     });
     p.on('error', () => { clearTimeout(to); resolve(null); });
   });
 }
 
+function getClipboardSequenceNumber() {
+  if (typeof clipboard.getClipboardSequenceNumber === 'function') {
+    return Promise.resolve(clipboard.getClipboardSequenceNumber());
+  }
+  return new Promise(resolve => {
+    if (!fs.existsSync(PASTE_HELPER)) return resolve(null);
+    const p = spawn(PASTE_HELPER, ['--get-seq'], { windowsHide: true });
+    let out = '';
+    const to = setTimeout(() => { try { p.kill(); } catch {} resolve(null); }, 1500);
+    p.stdout.on('data', d => (out += d));
+    p.on('close', code => {
+      clearTimeout(to);
+      if (code === 0) {
+        const m = out.match(/CLIPBOARD_SEQ\s+(\d+)/);
+        if (m) return resolve(parseInt(m[1], 10));
+      }
+      resolve(null);
+    });
+    p.on('error', () => {
+      clearTimeout(to);
+      resolve(null);
+    });
+  });
+}
+
+function typeViaHelper(text) {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(PASTE_HELPER)) return reject(new Error('helper not built'));
+    const args = targetHwnd ? ['--type-stdin', '--restore-window', targetHwnd] : ['--type-stdin'];
+    const p = spawn(PASTE_HELPER, args, { windowsHide: true });
+
+    let err = '';
+    const to = setTimeout(() => {
+      try { p.kill(); } catch {}
+      reject(new Error('typing helper timeout'));
+    }, 15000);
+
+    p.stderr.on('data', d => (err += d));
+    p.on('error', e => { clearTimeout(to); reject(e); });
+    p.on('close', code => {
+      clearTimeout(to);
+      if (code === 0) resolve();
+      else reject(new Error('typing helper failed: ' + err.trim()));
+    });
+
+    p.stdin.write(text, 'utf8');
+    p.stdin.end();
+  });
+}
+
 async function injectText(text) {
+  const animEnabled = (typeof config !== 'undefined' && config && config.typingAnimation === true);
+  const maxLen = (typeof config !== 'undefined' && config && config.maxAnimatedLength) || 200;
+  const isShortText = text.length > 0 && text.length <= maxLen;
+  const useAnimation = animEnabled && isShortText;
+
+  if (useAnimation) {
+    try {
+      await typeViaHelper(text);
+      log('inject: animated typing successful');
+      return;
+    } catch (err) {
+      log('animated typing failed, falling back to clipboard paste:', err.message);
+    }
+  }
+
   const formats = clipboard.availableFormats();
   let prevImage = null;
   let prevHtml = null;
@@ -671,6 +1566,8 @@ async function injectText(text) {
   }
 
   clipboard.writeText(text);
+  const seqAfter = await getClipboardSequenceNumber();
+
   await new Promise(r => setTimeout(r, 60));
 
   try {
@@ -681,8 +1578,14 @@ async function injectText(text) {
     await pasteViaNut();
   }
 
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
+      const currentSeq = await getClipboardSequenceNumber();
+      if (seqAfter !== null && currentSeq !== null && currentSeq !== seqAfter) {
+        log('inject: clipboard sequence changed (' + currentSeq + ' !== ' + seqAfter + '), preserving user copy, aborting restore');
+        return;
+      }
+
       if (prevImage) {
         clipboard.writeImage(prevImage);
       } else if (prevHtml || prevRtf) {
@@ -696,83 +1599,576 @@ async function injectText(text) {
       } else {
         clipboard.clear();
       }
+      log('inject: clipboard restored');
     } catch (restoreErr) {
       log('warning: clipboard restore failed:', restoreErr.message);
     }
   }, 600);
 }
 
-// ---------- hold-to-talk & hands-free flow ----------
-async function onHotkeyDown(handsFreeMode = false) {
-  if (recording || busy || !captureWin) return;
-  recording = true;
-  isHandsFree = handsFreeMode;
-  targetHwnd = await detectTargetWindow();
-  log('hotkey down, target=' + targetHwnd + ', handsFree=' + handsFreeMode);
+// ---------- Streaming Transcription Pipeline & Boundary Stitching ----------
 
-  // Pill is now a pure visual indicator during listening, no text needed.
-  // The user already pressed a shortcut, they know what's happening.
-  setPill('listening');
-
-  captureWin.webContents.send('capture-start');
+/**
+ * Normalizes a word token for acoustic boundary alignment.
+ */
+function normalizeToken(token) {
+  return String(token || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-async function onHotkeyUp() {
-  if (!recording) return;
-  recording = false;
-  isHandsFree = false;
-  busy = true;
-  setPill('working');
+/**
+ * Computes normalized Levenshtein similarity between two single words [0.0 - 1.0].
+ */
+function wordSimilarity(a, b) {
+  if (a === b) return 1.0;
+  if (!a || !b) return 0.0;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > 2) return 0.0;
+
+  const dp = Array.from({ length: la + 1 }, () => new Array(lb + 1).fill(0));
+  for (let i = 0; i <= la; i++) dp[i][0] = i;
+  for (let j = 0; j <= lb; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= la; i++) {
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  const dist = dp[la][lb];
+  const maxLen = Math.max(la, lb);
+  return 1.0 - dist / maxLen;
+}
+
+/**
+ * Stitches two overlapping transcripts without repeating or dropping boundary words.
+ * Prefers nextText in the overlap zone to utilize forward acoustic context.
+ */
+function stitchTranscripts(prevText, nextText) {
+  const p = String(prevText || '').trim();
+  const n = String(nextText || '').trim();
+  if (!p) return n;
+  if (!n) return p;
+
+  const wordsA = p.split(/\s+/);
+  const wordsB = n.split(/\s+/);
+  const normA = wordsA.map(normalizeToken);
+  const normB = wordsB.map(normalizeToken);
+
+  const maxCheck = Math.min(wordsA.length, wordsB.length, 6);
+  let bestOverlap = 0;
+  let bestMatchScore = 0;
+
+  // Search for the longest matching overlap window from maxCheck down to 1
+  for (let len = maxCheck; len >= 1; len--) {
+    const subA = normA.slice(normA.length - len);
+    const subB = normB.slice(0, len);
+
+    let matchWeight = 0;
+    for (let i = 0; i < len; i++) {
+      if (subA[i] === subB[i]) {
+        matchWeight += 1.0;
+      } else if (wordSimilarity(subA[i], subB[i]) >= 0.75) {
+        matchWeight += 0.8;
+      }
+    }
+
+    const score = matchWeight / len;
+    if (score >= 0.75 && score > bestMatchScore) {
+      bestOverlap = len;
+      bestMatchScore = score;
+      break;
+    }
+  }
+
+  // Handle case where Chunk 0's final word was cut off mid-speech
+  if (bestOverlap === 0 && wordsA.length >= 2 && wordsB.length >= 2) {
+    for (let len = Math.min(wordsA.length - 1, wordsB.length, 4); len >= 1; len--) {
+      const subA = normA.slice(normA.length - 1 - len, normA.length - 1);
+      const subB = normB.slice(0, len);
+
+      let matchWeight = 0;
+      for (let i = 0; i < len; i++) {
+        if (subA[i] === subB[i]) matchWeight += 1.0;
+      }
+      if (matchWeight / len >= 0.8) {
+        // Discard truncated trailing word from wordsA
+        return wordsA.slice(0, wordsA.length - 1 - len).concat(wordsB).join(' ');
+      }
+    }
+  }
+
+  if (bestOverlap > 0) {
+    // Keep wordsA up to the overlap point, then append wordsB
+    const retainedA = wordsA.slice(0, wordsA.length - bestOverlap);
+    return retainedA.concat(wordsB).join(' ');
+  }
+
+  // Fallback: clean boundary concatenation
+  return p + ' ' + n;
+}
+
+// Active streaming session state
+let activeStreamSession = null;
+
+function createStreamSession() {
+  const sessionId = Date.now().toString(36);
+  activeStreamSession = {
+    id: sessionId,
+    chunkPromises: [],
+    transcripts: [],
+    error: null,
+    finalResolve: null,
+    finalReject: null,
+    fullTranscriptPromise: null,
+    startTime: Date.now(),
+  };
+  activeStreamSession.fullTranscriptPromise = new Promise((resolve, reject) => {
+    activeStreamSession.finalResolve = resolve;
+    activeStreamSession.finalReject = reject;
+  });
+  return activeStreamSession;
+}
+
+/**
+ * Transcribes a single audio chunk with Groq Whisper, conditioning on prior text.
+ */
+async function transcribeChunk(wavBuffer, promptText = '') {
+  if (!wavBuffer || wavBuffer.byteLength < 44) return '';
+  if (!config.groqKey) throw new Error(NEEDS_KEY);
+
+  const formFields = {
+    model: GROQ_STT_MODEL,
+    response_format: 'json',
+    language: 'en',
+  };
+
+  let promptStr = '';
+  if (promptText) {
+    promptStr = promptText.slice(-200);
+  } else {
+    promptStr = 'Clean, properly punctuated spoken English dictation.';
+  }
+  formFields.prompt = promptStr;
+
+  const mp = buildMultipart(formFields, 'file', 'chunk.wav', wavBuffer, 'audio/wav');
+  const response = await groqPost('/openai/v1/audio/transcriptions', {
+    body: mp.body,
+    contentType: mp.contentType,
+    timeoutMs: 15000,
+  });
+
+  if (response.status !== 200) {
+    throw new Error(groqError('Transcription chunk', response.status));
+  }
+
+  const result = JSON.parse(response.body);
+  return (result.text || '').trim();
+}
+
+// IPC listener for incoming progressive chunks
+ipcMain.on('capture-chunk', async (_event, payload) => {
+  const { chunkIndex, isFinal, wavBuffer, durationMs } = payload;
+  if (!activeStreamSession || chunkIndex === 0) {
+    createStreamSession();
+  }
+  const session = activeStreamSession;
+  if (!session) return;
+
+  log(`streaming: received chunk ${chunkIndex}, isFinal=${isFinal}, duration=${durationMs}ms`);
+
+  if (wavBuffer && wavBuffer.byteLength > 44) {
+    const priorContext = session.transcripts[chunkIndex - 1] || '';
+    const chunkPromise = transcribeChunk(Buffer.from(wavBuffer), priorContext)
+      .then(text => {
+        session.transcripts[chunkIndex] = text;
+        log(`streaming: chunk ${chunkIndex} transcript: "${text}"`);
+        return text;
+      })
+      .catch(err => {
+        log(`streaming: chunk ${chunkIndex} failed: ${err.message}`);
+        if (!session.error) session.error = err;
+        session.transcripts[chunkIndex] = '';
+        return '';
+      });
+
+    session.chunkPromises[chunkIndex] = chunkPromise;
+  } else {
+    session.chunkPromises[chunkIndex] = Promise.resolve('');
+  }
+
+  if (isFinal) {
+    try {
+      await Promise.all(session.chunkPromises);
+      let combined = '';
+      for (let i = 0; i < session.transcripts.length; i++) {
+        const piece = session.transcripts[i] || '';
+        combined = stitchTranscripts(combined, piece);
+      }
+      if (!combined && session.error) {
+        session.finalReject(session.error);
+      } else {
+        session.finalResolve(combined);
+      }
+    } catch (err) {
+      session.finalReject(err);
+    }
+  }
+});
+
+// ---------- Audio Pipeline Execution ----------
+async function executeAudioPipeline() {
+  const releaseTimestamp = Date.now();
+  const session = activeStreamSession;
 
   try {
-    const wavBuffer = await new Promise((resolve, reject) => {
-      const to = setTimeout(() => reject(new Error('capture timeout')), 20000);
-      ipcMain.once('capture-data', (_e, buf) => { clearTimeout(to); resolve(Buffer.from(buf)); });
-      captureWin.webContents.send('capture-stop');
+    let raw = '';
+    let usedOffline = false;
+
+    let capturedCompressedAudio = null;
+    // Start listening for full WAV buffer concurrently from capture window
+    const wavBufferPromise = new Promise((resolve) => {
+      const to = setTimeout(() => resolve(null), 20000);
+      ipcMain.once('capture-data', (_e, buf, compressedBuf) => {
+        clearTimeout(to);
+        if (compressedBuf && (compressedBuf.byteLength > 0 || (compressedBuf.length && compressedBuf.length > 0))) {
+          capturedCompressedAudio = Buffer.from(compressedBuf);
+        }
+        resolve(buf && buf.byteLength > 0 ? Buffer.from(buf) : null);
+      });
     });
 
-    log('capture: got', wavBuffer.length, 'bytes');
-    if (wavBuffer.length < 5000) {
-      log('capture: too short, ignoring');
+    if (captureWin && !captureWin.isDestroyed()) {
+      captureWin.webContents.send('capture-stop');
+    } else if (session) {
+      session.finalResolve('');
+    }
+
+    const now = Date.now();
+    const inOfflineCooldown = isOfflineMode && (now - lastOfflineTime < OFFLINE_RETRY_COOLDOWN_MS);
+
+    if (session && !inOfflineCooldown && config.groqKey) {
+      try {
+        raw = await Promise.race([
+          session.fullTranscriptPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Streaming transcription timeout')), 25000))
+        ]);
+        isOfflineMode = false;
+        lastOfflineTime = 0;
+      } catch (streamErr) {
+        log('streaming transcription failed:', streamErr.message);
+        const fullWav = await wavBufferPromise;
+        if (fullWav && fullWav.length >= 5000 && localWhisper.isAvailable()) {
+          log('falling back to local whisper.cpp after streaming failure');
+          isOfflineMode = true;
+          lastOfflineTime = Date.now();
+          usedOffline = true;
+          setPill('working', 'Offline mode', null, { offline: true });
+          const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
+          raw = await localWhisper.transcribeLocal(fullWav, { prompt: dictPrompt });
+        } else {
+          throw streamErr;
+        }
+      }
+    } else {
+      const wavBuffer = await wavBufferPromise;
+      if (!wavBuffer || wavBuffer.length < 5000) {
+        log('capture: too short or rejected by VAD, ignoring');
+        setPill('hidden');
+        return;
+      }
+      try {
+        if (!config.groqKey || inOfflineCooldown) {
+          if (localWhisper.isAvailable()) {
+            isOfflineMode = true;
+            usedOffline = true;
+            setPill('working', 'Offline mode', null, { offline: true });
+            const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
+            raw = await localWhisper.transcribeLocal(wavBuffer, { prompt: dictPrompt });
+          } else {
+            throw new Error(NEEDS_KEY);
+          }
+        } else {
+          raw = await transcribe(wavBuffer);
+          usedOffline = isOfflineMode;
+        }
+      } catch (sttErr) {
+        if (localWhisper.isAvailable()) {
+          log('falling back to local whisper.cpp after batch failure:', sttErr.message);
+          isOfflineMode = true;
+          lastOfflineTime = Date.now();
+          usedOffline = true;
+          setPill('working', 'Offline mode', null, { offline: true });
+          const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
+          raw = await localWhisper.transcribeLocal(wavBuffer, { prompt: dictPrompt });
+        } else {
+          throw sttErr;
+        }
+      }
+    }
+
+    const latencyMs = Date.now() - releaseTimestamp;
+    log(`pipeline: transcript assembled in ${latencyMs}ms (offline=${usedOffline}): "${raw}"`);
+
+    if (!raw || raw.trim().length === 0) {
+      log('pipeline: transcript empty (non-speech rejected), hiding pill');
       setPill('hidden');
       return;
     }
 
-    const t0 = Date.now();
-    setPill('working');
-    const raw = await transcribe(wavBuffer);
-    const durationMs = Date.now() - t0;
-    log('transcribe took', durationMs, 'ms');
-
-    const cmd = applyVoiceCommands(raw);
+    voiceEngine.setCommands(config.voiceCommands || DEFAULT_COMMANDS);
+    const cmd = voiceEngine.evaluate(raw);
     if (cmd.scratch) { await scratchLast(); return; }
     if (cmd.action === 'undo') { await undoLast(); return; }
     if (cmd.action === 'delete-word') { await deleteWord(); return; }
+    if (cmd.action === 'delete-sentence') { await deleteSentence(); return; }
+    if (cmd.action === 'select-all') { await selectAllText(); return; }
+    if (cmd.action === 'copy') { await copyTextAction(); return; }
+    if (cmd.action === 'paste') { await pasteTextAction(); return; }
+    if (cmd.action === 'quote-that') { await quoteLastText(); return; }
 
     const formattedRaw = cmd.command ? cmd.text : formatText(cmd.text);
-    setPill('working');
-    let clean = cmd.command ? cmd.text : await smartPolish(formattedRaw);
+    let clean = formattedRaw;
+
+    if (!cmd.command && !isOfflineMode && !usedOffline) {
+      try {
+        clean = await smartPolish(formattedRaw);
+      } catch (polishErr) {
+        log('smartPolish failed, falling back to formatted text:', polishErr.message);
+        clean = formattedRaw;
+      }
+    }
     clean = applyDictionary(clean, config.dictionary);
-    log('final: "' + clean.slice(0, 80) + '"');
 
     if (clean) {
       await injectText(clean);
       lastInject = { text: clean, time: Date.now() };
-      addHistoryItem(clean, durationMs);
-      setPill('done', null, clean);
+      addHistoryItem(clean, latencyMs, {
+        offline: isOfflineMode || usedOffline,
+        compressedAudioBuffer: capturedCompressedAudio,
+      });
+      setPill('done', null, clean, { offline: isOfflineMode || usedOffline });
+      log(`pipeline: injected text, total post-release latency: ${Date.now() - releaseTimestamp}ms`);
     } else {
       setPill('hidden');
     }
-  } catch (e) {
-    log('ERROR:', e.message);
-    if (e.message === NEEDS_KEY) {
-      setPill('error', 'Add your Groq key in Settings — click the tray icon');
+  } catch (err) {
+    log('pipeline error:', err.message);
+    if (err.message === NEEDS_KEY) {
+      setPill('error', 'Add your Groq key in Settings');
       openSettings();
     } else {
-      setPill('error', 'Oops — ' + String(e.message).slice(0, 60));
+      setPill('error', 'Oops: ' + String(err.message).slice(0, 50));
     }
   } finally {
-    busy = false;
+    activeStreamSession = null;
+    enqueueHotkeyEvent('PROCESSING_DONE');
+  }
+}
+
+async function executePolishSelectionPipeline() {
+  try {
+    await onPolishSelection();
+  } finally {
+    enqueueHotkeyEvent('PROCESSING_DONE');
+  }
+}
+
+// ---------- Rapid Hotkey Event Queue & State Machine ----------
+
+class HotkeyStateMachine {
+  constructor(options = {}) {
+    this.state = 'IDLE';
+    this.queue = [];
+    this.history = [];
+    this.droppedEvents = 0;
+    this.maxQueueSize = options.maxQueueSize || 100;
+    this.isKeyHeld = options.isKeyHeld || (options.heldKeys ? () => options.heldKeys.size > 0 : null);
+  }
+
+  logTransition(from, to, trigger) {
+    this.history.push({ from, to, trigger, timestamp: Date.now() });
+    this.state = to;
+    currentState = to;
+    syncLegacyState();
+  }
+
+  handleEvent(type, key) {
+    const currentState = this.state;
+
+    if (currentState === 'IDLE') {
+      if (type === 'KEY_DOWN' && key === 'ptt') {
+        this.logTransition('IDLE', 'LISTENING_PTT', 'KEY_DOWN(ptt)');
+        return { action: 'capture-start' };
+      }
+      if (type === 'KEY_DOWN' && key === 'handsfree') {
+        this.logTransition('IDLE', 'LISTENING_HANDSFREE', 'KEY_DOWN(handsfree)');
+        return { action: 'capture-start' };
+      }
+    } else if (currentState === 'LISTENING_PTT') {
+      if (type === 'KEY_UP' && key === 'ptt') {
+        this.logTransition('LISTENING_PTT', 'PROCESSING', 'KEY_UP(ptt)');
+        return { action: 'capture-stop' };
+      }
+    } else if (currentState === 'LISTENING_HANDSFREE') {
+      if (type === 'KEY_DOWN' && key === 'handsfree') {
+        this.logTransition('LISTENING_HANDSFREE', 'PROCESSING', 'KEY_DOWN(handsfree)');
+        return { action: 'capture-stop' };
+      }
+      if (type === 'KEY_DOWN' && key === 'ptt') {
+        this.logTransition('LISTENING_HANDSFREE', 'PROCESSING', 'KEY_DOWN(ptt)');
+        return { action: 'capture-stop' };
+      }
+    } else if (currentState === 'PROCESSING' || currentState === 'QUEUED') {
+      if (this.queue.length >= this.maxQueueSize) {
+        this.droppedEvents++;
+        return { action: 'dropped', queueLength: this.queue.length };
+      }
+      this.queue.push({ type, key, timestamp: Date.now() });
+      if (this.state !== 'QUEUED') {
+        this.logTransition('PROCESSING', 'QUEUED', `ENQUEUE(${type},${key})`);
+      }
+      return { action: 'enqueued', depth: this.queue.length };
+    }
+
+    return { action: 'ignored' };
+  }
+
+  completeProcessing(isKeyHeld = this.isKeyHeld) {
+    this.drainCompletedMicroTaps();
+
+    while (this.queue.length > 0) {
+      // Discard orphaned KEY_UP events so they never trigger capture-start
+      if (this.queue[0].type === 'KEY_UP') {
+        const orphan = this.queue.shift();
+        log('discarding orphaned KEY_UP event:', orphan);
+        continue;
+      }
+
+      const nextEvent = this.queue[0];
+      // Only KEY_DOWN should initiate a capture state
+      if (nextEvent.type !== 'KEY_DOWN') {
+        this.queue.shift();
+        continue;
+      }
+
+      // For push-to-talk (ptt), verify whether the key is currently held down.
+      // If the key was already released before dequeue, discard the press
+      // rather than entering a phantom recording state.
+      if (nextEvent.key === 'ptt' && typeof isKeyHeld === 'function') {
+        const held = isKeyHeld('ptt');
+        if (!held) {
+          log('discarding stale PTT event because key is no longer held');
+          this.queue.shift();
+          // Also discard paired KEY_UP if queued
+          if (this.queue.length > 0 && this.queue[0].type === 'KEY_UP' && this.queue[0].key === 'ptt') {
+            this.queue.shift();
+          }
+          continue;
+        }
+      }
+
+      // Valid KEY_DOWN to initiate capture
+      this.queue.shift();
+      const targetState = nextEvent.key === 'ptt' ? 'LISTENING_PTT' : 'LISTENING_HANDSFREE';
+      this.logTransition(this.state, targetState, `DEQUEUE(${nextEvent.type},${nextEvent.key})`);
+      return { action: 'capture-start', nextEvent };
+    }
+
+    this.logTransition(this.state, 'IDLE', 'PROCESSING_COMPLETE');
+    return { action: 'idle' };
+  }
+
+  drainCompletedMicroTaps() {
+    while (this.queue.length > 0 && this.queue[0].type === 'KEY_UP') {
+      this.queue.shift();
+    }
+    while (this.queue.length >= 2) {
+      const first = this.queue[0];
+      const second = this.queue[1];
+      if (first.type === 'KEY_DOWN' && second.type === 'KEY_UP' && first.key === second.key) {
+        const duration = second.timestamp - first.timestamp;
+        if (duration < 80) {
+          log('coalescing micro-tap', duration + 'ms');
+          this.queue.shift();
+          this.queue.shift();
+          continue;
+        }
+      }
+      break;
+    }
+  }
+}
+
+const hotkeyFsm = new HotkeyStateMachine({
+  isKeyHeld: (key) => {
+    if (key === 'ptt') {
+      const pttCombo = (typeof config !== 'undefined' && config.shortcuts?.pushToTalk) || ['Ctrl', 'Win'];
+      return isComboHeld(pttCombo) || heldKeys.size > 0;
+    }
+    return true;
+  },
+});
+
+function enqueueHotkeyEvent(type) {
+  let fsmType = type;
+  let fsmKey = 'ptt';
+
+  if (type === 'PTT_DOWN') {
+    fsmType = 'KEY_DOWN'; fsmKey = 'ptt';
+  } else if (type === 'PTT_UP') {
+    fsmType = 'KEY_UP'; fsmKey = 'ptt';
+  } else if (type === 'HANDSFREE_TOGGLE') {
+    fsmType = 'KEY_DOWN'; fsmKey = 'handsfree';
+  } else if (type === 'PROCESSING_DONE') {
+    const next = hotkeyFsm.completeProcessing();
+    if (next.action === 'capture-start') {
+      createStreamSession();
+      setPill('listening');
+      if (captureWin && !captureWin.isDestroyed()) captureWin.webContents.send('capture-start');
+    }
+    return;
+  } else if (type === 'POLISH_SELECTION') {
+    if (hotkeyFsm.state === 'IDLE') {
+      hotkeyFsm.logTransition('IDLE', 'PROCESSING', 'POLISH_SELECTION');
+      executePolishSelectionPipeline();
+    }
+    return;
+  }
+
+  const res = hotkeyFsm.handleEvent(fsmType, fsmKey);
+  log('fsm event:', type, '->', res.action, 'state:', hotkeyFsm.state, 'queue:', hotkeyFsm.queue.length);
+
+  if (res.action === 'capture-start') {
+    detectTargetWindow().then(h => { targetHwnd = h; }).catch(() => {});
+    createStreamSession();
+    setPill('listening');
+    if (captureWin && !captureWin.isDestroyed()) {
+      captureWin.webContents.send('capture-start');
+    }
+  } else if (res.action === 'capture-stop') {
+    setPill('working');
+    executeAudioPipeline();
+  }
+}
+
+// Global hotkey API adapters
+async function onHotkeyDown(handsFreeMode = false) {
+  if (handsFreeMode) {
+    enqueueHotkeyEvent('HANDSFREE_TOGGLE');
+  } else {
+    enqueueHotkeyEvent('PTT_DOWN');
+  }
+}
+
+async function onHotkeyUp() {
+  if (hotkeyFsm.state === 'LISTENING_HANDSFREE') {
+    enqueueHotkeyEvent('HANDSFREE_TOGGLE');
+  } else {
+    enqueueHotkeyEvent('PTT_UP');
   }
 }
 
@@ -856,6 +2252,64 @@ async function onPolishSelection() {
   }
 }
 
+// ---------- auto updater ----------
+function initAutoUpdater() {
+  try {
+    const { autoUpdater } = require('electron-updater');
+
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.allowPrerelease = false;
+
+    try {
+      autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'Yeamin-Sheikh',
+        repo: 'wispr-tell'
+      });
+    } catch (feedErr) {
+      log('autoUpdater: feed configuration note:', feedErr.message);
+    }
+
+    autoUpdater.on('checking-for-update', () => {
+      log('autoUpdater: checking for update');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      log('autoUpdater: update available, version', info && info.version);
+    });
+
+    autoUpdater.on('update-not-available', (info) => {
+      log('autoUpdater: app up to date, version', info && info.version);
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+      log('autoUpdater: download progress', Math.round(progress.percent) + '%', (progress.bytesPerSecond / 1024).toFixed(1) + ' KB/s');
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      log('autoUpdater: update downloaded, version', info && info.version, '- will install on quit');
+    });
+
+    autoUpdater.on('error', (err) => {
+      // Silent error handler: ignore offline and rate limit errors without crashing
+      log('autoUpdater: update check error (ignored):', err && err.message);
+    });
+
+    setTimeout(() => {
+      if (app.isPackaged || process.env.WISPR_CHECK_UPDATES === '1') {
+        autoUpdater.checkForUpdates().catch(err => {
+          log('autoUpdater: check error (ignored):', err.message);
+        });
+      } else {
+        log('autoUpdater: skipping check in unpackaged dev environment');
+      }
+    }, 5000);
+  } catch (err) {
+    log('autoUpdater: initialization skipped:', err.message);
+  }
+}
+
 // ---------- app lifecycle ----------
 const gotSingleLock = app.requestSingleInstanceLock();
 if (!gotSingleLock) {
@@ -866,8 +2320,30 @@ if (!gotSingleLock) {
   });
 
   app.whenReady().then(() => {
-    LOG_PATH = path.join(app.getPath('userData'), 'wispr-tell-debug.log');
+    // Cross-origin isolation for SharedArrayBuffer support in audio worklets
+    try {
+      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Cross-Origin-Opener-Policy': ['same-origin'],
+            'Cross-Origin-Embedder-Policy': ['require-corp'],
+          },
+        });
+      });
+    } catch (e) {
+      log('cross-origin header setup notice:', e.message);
+    }
+
+    initLogPaths();
+    LOG_PATH = path.join(LOGS_DIR, getLogFileName());
+    const pruned = pruneOldLogs(LOGS_DIR, 14);
+    if (pruned.length > 0) {
+      log('system: pruned old log files count: ' + pruned.length);
+    }
+
     log('=== Wispr Tell v' + app.getVersion() + ' starting ===');
+    initAutoUpdater();
   for (const [name, p] of [['paste-helper', PASTE_HELPER]])
     log('self-check', name, fs.existsSync(p) ? 'OK' : 'MISSING: ' + p);
   log('self-check groq-key', config.groqKey ? 'configured' : 'NOT SET');
@@ -884,8 +2360,12 @@ if (!gotSingleLock) {
       config.shortcuts = { ...config.shortcuts, ...patch.shortcuts };
       registerGlobalShortcuts();
     }
+    if (patch.voiceCommands) {
+      voiceEngine.setCommands(config.voiceCommands);
+    }
     if (patch.theme) {
-      updateTitleBarTheme(patch.theme);
+      config.theme = patch.theme;
+      broadcastTheme(patch.theme);
     }
     saveConfig();
     if (patch.launchAtLogin !== undefined && process.platform === 'win32') {
@@ -912,6 +2392,56 @@ if (!gotSingleLock) {
     return { ...config };
   });
 
+  // theme synchronization IPC & listeners
+  ipcMain.handle('get-theme', () => {
+    const effective = resolveEffectiveTheme(config.theme || 'cyber-teal');
+    return {
+      theme: config.theme || 'cyber-teal',
+      effectiveTheme: effective,
+      isDark: effective === 'cyber-teal' || effective === 'dark-obsidian' || effective === 'dark',
+      variables: THEMES[effective] || THEMES['dark-obsidian'],
+      hasNativeMaterial: WindowMaterialConfigurator.shouldUseNativeMaterials(),
+      timestamp: Date.now(),
+    };
+  });
+
+  if (typeof nativeTheme !== 'undefined' && typeof nativeTheme.on === 'function') {
+    nativeTheme.on('updated', () => {
+      if (config.theme === 'system') {
+        broadcastTheme('system');
+      }
+    });
+  }
+
+  // pill drag physics & persistence IPC
+  ipcMain.on('pill-move-delta', (_event, { dx, dy }) => {
+    if (!pill || pill.isDestroyed()) return;
+    const [curX, curY] = pill.getPosition();
+    const nextX = Math.round(curX + dx);
+    const nextY = Math.round(curY + dy);
+    const displays = (typeof screen !== 'undefined' && typeof screen.getAllDisplays === 'function')
+      ? screen.getAllDisplays()
+      : ((typeof screen !== 'undefined' && typeof screen.getPrimaryDisplay === 'function') ? [screen.getPrimaryDisplay()] : []);
+    const clamped = MultiMonitorPhysicsBounds.clampToDisplays(nextX, nextY, displays);
+    pill.setPosition(clamped.x, clamped.y);
+  });
+
+  ipcMain.handle('save-pill-position', () => {
+    if (!pill || pill.isDestroyed()) return null;
+    const [curX, curY] = pill.getPosition();
+    const displays = (typeof screen !== 'undefined' && typeof screen.getAllDisplays === 'function')
+      ? screen.getAllDisplays()
+      : ((typeof screen !== 'undefined' && typeof screen.getPrimaryDisplay === 'function') ? [screen.getPrimaryDisplay()] : []);
+    const clamped = MultiMonitorPhysicsBounds.clampToDisplays(curX, curY, displays);
+    debouncedSavePillPosition(clamped.x, clamped.y);
+    return clamped;
+  });
+
+  if (typeof screen !== 'undefined' && typeof screen.on === 'function') {
+    screen.on('display-metrics-changed', () => repositionPill());
+    screen.on('display-removed', () => repositionPill());
+  }
+
   // history IPC
   ipcMain.handle('get-history', () => history);
   ipcMain.handle('get-stats', () => getStats());
@@ -925,15 +2455,193 @@ if (!gotSingleLock) {
     return { history, stats: getStats() };
   });
   ipcMain.handle('delete-history', (_e, id) => {
+    const item = history.find(h => h.id === id);
+    if (item && item.audioFile) {
+      const audioPath = path.join(AUDIO_HISTORY_DIR, item.audioFile);
+      if (fs.existsSync(audioPath)) {
+        try { fs.unlinkSync(audioPath); } catch {}
+      }
+    }
     history = history.filter(h => h.id !== id);
     saveHistory();
     return { history, stats: getStats() };
   });
   ipcMain.handle('clear-history', () => {
+    try {
+      if (fs.existsSync(AUDIO_HISTORY_DIR)) {
+        const files = fs.readdirSync(AUDIO_HISTORY_DIR);
+        for (const f of files) {
+          try { fs.unlinkSync(path.join(AUDIO_HISTORY_DIR, f)); } catch {}
+        }
+      }
+    } catch {}
     history = [];
     saveHistory();
     return { history: [], stats: getStats() };
   });
+
+  // audio history IPC
+  ipcMain.handle('get-history-audio', (_e, id) => {
+    const item = history.find(h => h.id === id);
+    if (!item || !item.audioFile) return null;
+    const audioPath = path.join(AUDIO_HISTORY_DIR, item.audioFile);
+    if (!fs.existsSync(audioPath)) return null;
+    try {
+      const fileBuffer = fs.readFileSync(audioPath);
+      return {
+        id: item.id,
+        fileName: item.audioFile,
+        dataUrl: `data:audio/webm;base64,${fileBuffer.toString('base64')}`,
+        sizeBytes: fileBuffer.length,
+      };
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle('delete-history-audio', (_e, id) => {
+    const item = history.find(h => h.id === id);
+    if (!item || !item.audioFile) return false;
+    const audioPath = path.join(AUDIO_HISTORY_DIR, item.audioFile);
+    if (fs.existsSync(audioPath)) {
+      try { fs.unlinkSync(audioPath); } catch {}
+    }
+    item.audioFile = null;
+    saveHistory();
+    return true;
+  });
+
+  ipcMain.handle('reset-offline-mode', () => {
+    isOfflineMode = false;
+    lastOfflineTime = 0;
+    return { isOfflineMode: false };
+  });
+
+  // personas and context polish IPC
+  ipcMain.handle('get-personas', () => {
+    return {
+      personas: config.personas || DEFAULT_PERSONAS,
+      activePersonaId: config.activePersonaId || 'natural',
+      contextPolishEnabled: config.contextPolishEnabled !== false,
+    };
+  });
+
+  ipcMain.handle('set-active-persona', (_e, id) => {
+    const list = config.personas || DEFAULT_PERSONAS;
+    if (!list.some(p => p.id === id)) {
+      throw new Error(`Persona '${id}' not found`);
+    }
+    config.activePersonaId = id;
+    saveConfig();
+    return config.activePersonaId;
+  });
+
+  ipcMain.handle('save-persona', (_e, persona) => {
+    if (!persona || typeof persona !== 'object') throw new Error('Invalid persona payload');
+    const name = String(persona.name || '').trim();
+    if (!name) throw new Error('Persona name cannot be empty');
+    const systemPrompt = String(persona.systemPrompt || '').trim();
+    if (!systemPrompt) throw new Error('Persona system prompt cannot be empty');
+
+    const sanitizedPrompt = systemPrompt.length > 4000 ? systemPrompt.substring(0, 4000) : systemPrompt;
+    let temp = Number(persona.temperature ?? 0.3);
+    if (isNaN(temp)) temp = 0.3;
+    temp = Math.max(0.0, Math.min(1.0, temp));
+
+    const id = String(persona.id || name.toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+    config.personas = config.personas || [...DEFAULT_PERSONAS];
+
+    const existingIdx = config.personas.findIndex(p => p.id === id);
+    if (existingIdx >= 0) {
+      config.personas[existingIdx] = {
+        ...config.personas[existingIdx],
+        name,
+        systemPrompt: sanitizedPrompt,
+        temperature: temp,
+      };
+    } else {
+      config.personas.push({
+        id,
+        name,
+        systemPrompt: sanitizedPrompt,
+        temperature: temp,
+        isDefault: false,
+      });
+    }
+
+    saveConfig();
+    return config.personas;
+  });
+
+  ipcMain.handle('delete-persona', (_e, id) => {
+    config.personas = config.personas || [...DEFAULT_PERSONAS];
+    const target = config.personas.find(p => p.id === id);
+    if (!target) throw new Error(`Persona '${id}' not found`);
+    if (target.isDefault) throw new Error('Cannot delete default persona');
+
+    config.personas = config.personas.filter(p => p.id !== id);
+    if (config.activePersonaId === id) {
+      config.activePersonaId = 'natural';
+    }
+    saveConfig();
+    return config.personas;
+  });
+
+  ipcMain.handle('set-context-polish', (_e, enabled) => {
+    config.contextPolishEnabled = !!enabled;
+    saveConfig();
+    return config.contextPolishEnabled;
+  });
+
+  ipcMain.handle('preview-polish', async (_e, { text, personaId, targetContext }) => {
+    const start = Date.now();
+    if (!config.groqKey) {
+      return {
+        polishedText: 'Please configure your Groq API key in Settings to test live prompts.',
+        appliedPersona: personaId || config.activePersonaId || 'natural',
+        category: targetContext || 'general',
+        durationMs: Date.now() - start,
+      };
+    }
+
+    let mockTarget = null;
+    if (targetContext === 'code') mockTarget = { exeName: 'Code.exe', windowTitle: 'app.js' };
+    else if (targetContext === 'chat') mockTarget = { exeName: 'slack.exe', windowTitle: '#general' };
+    else if (targetContext === 'formal') mockTarget = { exeName: 'OUTLOOK.EXE', windowTitle: 'Inbox' };
+
+    const promptSpec = buildPolishingPrompt({
+      text: text || 'This is a sample voice dictation sentence to test smart polish.',
+      targetInfo: mockTarget,
+      personas: config.personas || DEFAULT_PERSONAS,
+      activePersonaId: personaId || config.activePersonaId || 'natural',
+      contextPolishEnabled: !!targetContext,
+      dictionary: config.dictionary || [],
+    });
+
+    const body = JSON.stringify({
+      model: GROQ_POLISH_MODEL,
+      messages: [
+        { role: 'system', content: promptSpec.systemPrompt },
+        { role: 'user', content: promptSpec.userText },
+      ],
+      temperature: promptSpec.temperature,
+      max_tokens: 512,
+    });
+
+    const res = await groqPost('/openai/v1/chat/completions', { body, contentType: 'application/json', timeoutMs: 20000 });
+    if (res.status !== 200) throw new Error(groqError('Preview', res.status));
+
+    let out = (JSON.parse(res.body).choices?.[0]?.message?.content || '').trim();
+    if (/^["'][\s\S]*["']$/.test(out) && out.length >= 2) out = out.slice(1, -1).trim();
+
+    return {
+      polishedText: out || text,
+      appliedPersona: promptSpec.personaName,
+      category: promptSpec.category,
+      durationMs: Date.now() - start,
+    };
+  });
+
   ipcMain.handle('copy-text', (_e, text) => {
     clipboard.writeText(String(text || ''));
     return true;
@@ -1071,7 +2779,17 @@ if (!gotSingleLock) {
           else { log('key test FAILED:', r.error); setPill('error', r.error); }
         },
       },
-      { label: 'Open debug log', click: () => { if (LOG_PATH) shell.openPath(LOG_PATH); } },
+      { label: 'Open debug log', click: () => {
+        initLogPaths();
+        const currentLogFile = path.join(LOGS_DIR, getLogFileName());
+        if (fs.existsSync(currentLogFile)) {
+          shell.openPath(currentLogFile);
+        } else if (fs.existsSync(LOGS_DIR)) {
+          shell.openPath(LOGS_DIR);
+        } else if (LOG_PATH) {
+          shell.openPath(LOG_PATH);
+        }
+      } },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() },
     ]));
@@ -1082,86 +2800,64 @@ if (!gotSingleLock) {
 
   let pttPendingTimer = null;
 
-  // Global keyboard shortcuts hook
+  // Global keyboard shortcuts hook with OS autorepeat suppression
   uIOhook.on('keydown', e => {
+    // OS autorepeat suppression: if key is already held down, ignore repeated WM_KEYDOWN
+    if (heldKeys.has(e.keycode)) return;
     heldKeys.add(e.keycode);
-    const now = Date.now();
 
     const handsFreeCombo = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
     const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const polishCombo = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
 
-    // 1. Full three-key combo: Ctrl + Win + Space
-    //    - If not recording: start hands-free
-    //    - If recording (hands-free or PTT): end it
+    // 1. Hands-free combo: Ctrl + Win + Space
     if (isComboHeld(handsFreeCombo)) {
       if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
-      if (now - handsFreeCooldown < 400) return;
-      handsFreeCooldown = now;
-
-      if (recording) {
-        // End any active recording when full combo is pressed
-        log('hands-free: ending recording via Ctrl+Win+Space');
-        onHotkeyUp();
-      } else if (!busy) {
-        log('hands-free: starting recording');
-        onHotkeyDown(true);
-      }
+      enqueueHotkeyEvent('HANDSFREE_TOGGLE');
       return;
     }
 
-    // 2. Selection polish check (Windows + Alt + Q)
+    // 2. Selection polish combo: Windows + Alt + Q
     if (isComboHeld(polishCombo)) {
       if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
-      if (now - polishCooldown < 600) return;
-      polishCooldown = now;
-      if (!recording && !busy) {
-        log('polish-selection triggered via uIOhook');
-        onPolishSelection();
-      }
+      enqueueHotkeyEvent('POLISH_SELECTION');
       return;
     }
 
-    // 3. Two-key combo: Ctrl + Win (without Space)
-    //    - If hands-free recording is active: end it (this is the quick-stop shortcut)
-    //    - If not recording: start push-to-talk after a 130ms debounce (to let
-    //      the user add Space for hands-free without accidentally starting PTT)
+    // 3. Two-key combo: Ctrl + Win (PTT)
     if (isComboHeld(pttCombo)) {
-      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
-
-      if (recording && isHandsFree) {
-        // Ctrl+Win alone ends hands-free recording immediately
-        if (now - handsFreeCooldown < 400) return;
-        handsFreeCooldown = now;
-        log('hands-free: ending recording via Ctrl+Win');
-        onHotkeyUp();
+      if (currentState === FsmState.LISTENING_HANDSFREE) {
+        // Pressing Ctrl+Win while in hands-free stops it
+        enqueueHotkeyEvent('HANDSFREE_TOGGLE');
         return;
       }
 
-      if (!recording && !busy) {
-        // Debounce: wait 130ms for Space to land before committing to PTT
+      if (!pttPendingTimer && currentState !== FsmState.LISTENING_PTT) {
+        // Micro-debounce (50ms) to check if Space is landing for hands-free combo
         pttPendingTimer = setTimeout(() => {
           pttPendingTimer = null;
-          if (!isHandsFree && !recording && !busy && isComboHeld(pttCombo)) {
-            onHotkeyDown(false);
+          if (isComboHeld(pttCombo) && !isComboHeld(handsFreeCombo)) {
+            enqueueHotkeyEvent('PTT_DOWN');
           }
-        }, 130);
+        }, 50);
       }
     }
   });
 
   uIOhook.on('keyup', e => {
     heldKeys.delete(e.keycode);
-    // Cancel pending PTT if the user released modifier keys before the debounce
-    if (pttPendingTimer && !isComboHeld(config.shortcuts?.pushToTalk || ['Ctrl', 'Win'])) {
+    const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
+
+    // Cancel pending PTT if released before debounce
+    if (pttPendingTimer && !isComboHeld(pttCombo)) {
       clearTimeout(pttPendingTimer);
       pttPendingTimer = null;
     }
-    // End push-to-talk (hold-to-record) when modifiers are released
-    if (recording && !isHandsFree) {
-      const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
-      if (!isComboHeld(pttCombo)) {
-        onHotkeyUp();
+
+    // End push-to-talk when modifiers are released
+    if (!isComboHeld(pttCombo)) {
+      if (currentState === FsmState.LISTENING_PTT || currentState === FsmState.QUEUED) {
+        enqueueHotkeyEvent('PTT_UP');
       }
     }
   });
@@ -1172,7 +2868,9 @@ if (!gotSingleLock) {
     app.setLoginItemSettings({ openAtLogin: !!config.launchAtLogin });
   }
 
-  if (!process.argv.includes('--hidden')) {
+  if (config.firstRun) {
+    showWelcome();
+  } else if (!process.argv.includes('--hidden')) {
     openSettings();
   }
 });
@@ -1183,3 +2881,27 @@ app.on('before-quit', () => {
   try { globalShortcut.unregisterAll(); } catch {}
   try { uIOhook.stop(); } catch {}
 });
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    FsmState,
+    HotkeyStateMachine,
+    hotkeyFsm,
+    normalizeToken,
+    wordSimilarity,
+    stitchTranscripts,
+    enqueueHotkeyEvent,
+    eventQueue: hotkeyFsm.queue,
+    getCurrentState: () => hotkeyFsm.state,
+    resetState: () => { hotkeyFsm.state = 'IDLE'; hotkeyFsm.queue.length = 0; syncLegacyState(); },
+    onHotkeyDown,
+    onHotkeyUp,
+    WindowMaterialConfigurator,
+    MaterialBoundaryManager,
+    THEMES,
+    resolveEffectiveTheme,
+    broadcastTheme,
+    MultiMonitorPhysicsBounds,
+  };
+}
+
