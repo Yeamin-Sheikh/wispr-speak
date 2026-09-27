@@ -27,7 +27,7 @@ $AppDir = "$TargetDir\resources\app"
 $PkgJsonPath = "$SourceDir\resources\app\package.json"
 
 # Read version and author from package.json if present
-$Version = "1.0.0"
+$Version = "1.0.1"
 $Publisher = "Sheikh Technologies Inc."
 if (Test-Path $PkgJsonPath) {
   try {

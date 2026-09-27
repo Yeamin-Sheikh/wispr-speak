@@ -180,6 +180,14 @@ function log(...args) {
 // Offline whisper engine & state
 const { WhisperLocalEngine } = require('./offline-whisper');
 const localWhisper = new WhisperLocalEngine();
+function isLocalWhisperAllowed() {
+  if (typeof config !== 'undefined') {
+    if (config.enableOfflineFallback === false || config.useLocalModels === false) {
+      return false;
+    }
+  }
+  return localWhisper && localWhisper.isAvailable();
+}
 let isOfflineMode = false;
 let targetInfo = null;
 
@@ -267,6 +275,7 @@ const DEFAULTS = {
   theme: 'cyber-teal',
   typingAnimation: false,
   maxAnimatedLength: 200,
+  enableOfflineFallback: true,
   pillPosition: null,
   voiceCommands: DEFAULT_COMMANDS,
 };
@@ -777,7 +786,7 @@ async function transcribe(wavBuffer) {
   const inOfflineCooldown = isOfflineMode && (now - lastOfflineTime < OFFLINE_RETRY_COOLDOWN_MS);
 
   if (!config.groqKey || inOfflineCooldown) {
-    if (localWhisper.isAvailable()) {
+    if (isLocalWhisperAllowed()) {
       isOfflineMode = true;
       return transcribeLocal(wavBuffer);
     }
@@ -789,7 +798,7 @@ async function transcribe(wavBuffer) {
     lastOfflineTime = 0;
     return text;
   } catch (groqErr) {
-    if (localWhisper.isAvailable()) {
+    if (isLocalWhisperAllowed()) {
       log('transcribe: Groq failed (' + groqErr.message + '), falling back to local whisper');
       isOfflineMode = true;
       lastOfflineTime = Date.now();
@@ -1340,6 +1349,11 @@ function repositionPill() {
 
 function createPill() {
   const options = WindowMaterialConfigurator.getPillWindowOptions();
+  // Ensure the floating pill window is 100% transparent.
+  // Native DWM backgroundMaterial ('acrylic' or 'mica') causes Windows to draw an opaque/acrylic
+  // rectangular sheet across the entire window bounding box, showing an annoying grey box underneath.
+  delete options.backgroundMaterial;
+  options.backgroundColor = '#00000000';
   pill = new BrowserWindow(options);
   pill.webContents.on('did-finish-load', () => {
     pillReady = true;
@@ -1772,7 +1786,10 @@ async function transcribeChunk(wavBuffer, promptText = '') {
 // IPC listener for incoming progressive chunks
 ipcMain.on('capture-chunk', async (_event, payload) => {
   const { chunkIndex, isFinal, wavBuffer, durationMs } = payload;
-  if (!activeStreamSession || chunkIndex === 0) {
+  // Only create a session if none exists. Do NOT recreate on chunkIndex===0
+  // because executeAudioPipeline already holds a reference to the current session's
+  // fullTranscriptPromise. Recreating would orphan that promise and cause a 25s timeout.
+  if (!activeStreamSession) {
     createStreamSession();
   }
   const session = activeStreamSession;
@@ -1831,7 +1848,7 @@ async function executeAudioPipeline() {
     let capturedCompressedAudio = null;
     // Start listening for full WAV buffer concurrently from capture window
     const wavBufferPromise = new Promise((resolve) => {
-      const to = setTimeout(() => resolve(null), 20000);
+      const to = setTimeout(() => resolve(null), 30000);
       ipcMain.once('capture-data', (_e, buf, compressedBuf) => {
         clearTimeout(to);
         if (compressedBuf && (compressedBuf.byteLength > 0 || (compressedBuf.length && compressedBuf.length > 0))) {
@@ -1858,17 +1875,37 @@ async function executeAudioPipeline() {
         ]);
         isOfflineMode = false;
         lastOfflineTime = 0;
+
+        if (!raw) {
+          const fullWav = await wavBufferPromise;
+          if (fullWav && fullWav.length >= 5000) {
+            log('streaming returned empty string, trying batch fallback');
+            raw = await transcribe(fullWav);
+            usedOffline = false;
+          }
+        }
       } catch (streamErr) {
         log('streaming transcription failed:', streamErr.message);
         const fullWav = await wavBufferPromise;
-        if (fullWav && fullWav.length >= 5000 && localWhisper.isAvailable()) {
-          log('falling back to local whisper.cpp after streaming failure');
-          isOfflineMode = true;
-          lastOfflineTime = Date.now();
-          usedOffline = true;
-          setPill('working', 'Offline mode', null, { offline: true });
-          const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
-          raw = await localWhisper.transcribeLocal(fullWav, { prompt: dictPrompt });
+        if (fullWav && fullWav.length >= 5000) {
+          try {
+            log('falling back to batch transcription after streaming failure');
+            raw = await transcribe(fullWav);
+            usedOffline = false;
+          } catch (batchErr) {
+            log('batch fallback failed:', batchErr.message);
+            if (isLocalWhisperAllowed()) {
+              log('falling back to local whisper.cpp after batch failure');
+              isOfflineMode = true;
+              lastOfflineTime = Date.now();
+              usedOffline = true;
+              setPill('working', 'Offline mode', null, { offline: true });
+              const dictPrompt = buildWhisperPromptBounded(config.dictionary, 800);
+              raw = await localWhisper.transcribeLocal(fullWav, { prompt: dictPrompt });
+            } else {
+              throw batchErr;
+            }
+          }
         } else {
           throw streamErr;
         }
@@ -1882,7 +1919,7 @@ async function executeAudioPipeline() {
       }
       try {
         if (!config.groqKey || inOfflineCooldown) {
-          if (localWhisper.isAvailable()) {
+          if (isLocalWhisperAllowed()) {
             isOfflineMode = true;
             usedOffline = true;
             setPill('working', 'Offline mode', null, { offline: true });
@@ -1896,7 +1933,7 @@ async function executeAudioPipeline() {
           usedOffline = isOfflineMode;
         }
       } catch (sttErr) {
-        if (localWhisper.isAvailable()) {
+        if (isLocalWhisperAllowed()) {
           log('falling back to local whisper.cpp after batch failure:', sttErr.message);
           isOfflineMode = true;
           lastOfflineTime = Date.now();

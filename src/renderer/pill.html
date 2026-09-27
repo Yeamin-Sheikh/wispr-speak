@@ -33,7 +33,7 @@
     border: 1px solid var(--pill-border, rgba(255, 255, 255, 0.08));
     border-top: 1px solid var(--pill-border-top, rgba(255, 255, 255, 0.20));
     color: var(--pill-text, #ffffff);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     
     cursor: grab;
     overflow: hidden;
@@ -41,20 +41,18 @@
     user-select: none;
     -webkit-user-select: none;
     
-    /* Entrance / Exit styling */
+    /* Entrance / Exit base state (hidden) */
     opacity: 0;
-    transform: translateY(20px) scale(0.85);
-    filter: blur(6px);
+    transform: translateY(8px) scale(0.92);
     
-    /* Spring morphing transition */
+    /* Snappy morphing transition */
     transition: 
-      padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-      background 0.4s ease,
-      border-color 0.4s ease,
+      padding 0.28s cubic-bezier(0.22, 0.68, 0.35, 1.0),
+      background 0.2s ease,
+      border-color 0.2s ease,
       box-shadow 0.2s ease,
-      opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-      transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-      filter 0.4s ease;
+      opacity 0.22s ease-out,
+      transform 0.28s cubic-bezier(0.22, 0.68, 0.35, 1.0);
   }
 
   #pill:active {
@@ -75,30 +73,32 @@
   #pill.show {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 
   /* Exit */
   #pill.hiding {
     opacity: 0;
-    transform: translateY(16px) scale(0.9);
-    filter: blur(4px);
+    transform: translateY(6px) scale(0.95);
     transition: 
-      opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-      filter 0.3s ease;
+      opacity 0.18s ease-in,
+      transform 0.18s ease-in;
   }
 
   /* State Paddings */
   #pill.state-hidden { padding: 0; }
   #pill.state-listening { 
-    padding: 0 12px;
+    padding: 0 10px;
     box-shadow: 
-      0 0 calc(var(--mic-level) * 16px) rgba(94, 234, 212, calc(var(--mic-level) * 0.4)),
-      0 8px 24px rgba(0, 0, 0, 0.5);
+      0 0 calc(var(--mic-level) * 12px) rgba(94, 234, 212, calc(var(--mic-level) * 0.35)),
+      0 4px 16px rgba(0, 0, 0, 0.4);
+    animation: listeningGlow 2.5s ease-in-out infinite;
+  }
+  @keyframes listeningGlow {
+    0%, 100% { border-color: rgba(94, 234, 212, 0.12); }
+    50% { border-color: rgba(94, 234, 212, 0.28); }
   }
   #pill.state-working { padding: 0 10px; }
-  #pill.state-done { padding: 0 16px 0 12px; }
+  #pill.state-done { padding: 0 10px; }
   
   #pill.state-error { 
     padding: 0 16px 0 12px;
@@ -106,8 +106,8 @@
     border: 1px solid rgba(245, 158, 11, 0.15);
     border-top: 1px solid rgba(245, 158, 11, 0.3);
     box-shadow: 
-      0 0 12px rgba(245, 158, 11, 0.2),
-      0 8px 24px rgba(0, 0, 0, 0.6);
+      0 0 10px rgba(245, 158, 11, 0.15),
+      0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
   /* Internal Layout */
@@ -122,7 +122,7 @@
   .anim-wrapper {
     display: grid;
     grid-template-columns: 0fr;
-    transition: grid-template-columns 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: grid-template-columns 0.28s cubic-bezier(0.22, 0.68, 0.35, 1.0);
   }
   .anim-inner {
     min-width: 0;
@@ -133,7 +133,7 @@
   }
 
   /* Width Triggers for different states */
-  #pill.state-listening #wave-wrapper { grid-template-columns: 40px; }
+  #pill.state-listening #eq-wrapper { grid-template-columns: 36px; }
   
   #pill.state-working #icon-wrapper,
   #pill.state-done #icon-wrapper,
@@ -141,17 +141,53 @@
     grid-template-columns: 18px; 
   }
 
-  #pill.state-done #text-wrapper,
+  /* Only error shows text, done state just shows checkmark */
   #pill.state-error #text-wrapper {
     grid-template-columns: 1fr;
   }
+
+  /* Equalizer Music Bars */
+  .eq-bars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 20px;
+    width: 36px;
+  }
+  .eq-bar {
+    width: 3.5px;
+    border-radius: 999px;
+    background: linear-gradient(to top, #0d9488, #5eead4);
+    height: 4px;
+    min-height: 3px;
+    max-height: 18px;
+    transition: height 0.08s ease-out;
+    will-change: height;
+  }
+  .eq-bar:nth-child(1) { opacity: 0.75; }
+  .eq-bar:nth-child(2) { opacity: 0.9; }
+  .eq-bar:nth-child(3) { opacity: 1.0; }
+  .eq-bar:nth-child(4) { opacity: 0.9; }
+  .eq-bar:nth-child(5) { opacity: 0.75; }
+
+  /* Idle breathing rhythm when listening */
+  #pill.state-listening .eq-bars.idle .eq-bar:nth-child(1) { animation: eqBounce1 0.9s ease-in-out infinite alternate; }
+  #pill.state-listening .eq-bars.idle .eq-bar:nth-child(2) { animation: eqBounce2 0.75s ease-in-out infinite alternate; }
+  #pill.state-listening .eq-bars.idle .eq-bar:nth-child(3) { animation: eqBounce3 1.0s ease-in-out infinite alternate; }
+  #pill.state-listening .eq-bars.idle .eq-bar:nth-child(4) { animation: eqBounce2 0.8s ease-in-out infinite alternate 0.15s; }
+  #pill.state-listening .eq-bars.idle .eq-bar:nth-child(5) { animation: eqBounce1 0.85s ease-in-out infinite alternate 0.1s; }
+
+  @keyframes eqBounce1 { 0% { height: 4px; } 100% { height: 10px; } }
+  @keyframes eqBounce2 { 0% { height: 5px; } 100% { height: 15px; } }
+  @keyframes eqBounce3 { 0% { height: 6px; } 100% { height: 18px; } }
 
   /* Offline Mode Styling */
   #pill.offline-mode {
     border-color: rgba(245, 158, 11, 0.45);
     box-shadow: 
       0 0 14px rgba(245, 158, 11, 0.25),
-      0 8px 24px rgba(0, 0, 0, 0.6);
+      0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
   .offline-badge {
@@ -186,7 +222,7 @@
     height: 20px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.2s;
   }
   #pill.state-listening #wave { opacity: 1; }
 
@@ -208,12 +244,12 @@
     text-overflow: ellipsis;
     overflow: hidden;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
   }
   #pill.state-done #text,
   #pill.state-error #text {
     opacity: 1;
-    transition-delay: 0.15s; /* Fade in nicely after width starts expanding */
+    transition-delay: 0.1s;
   }
   #pill.state-error #text {
     color: #fcd34d;
@@ -224,10 +260,10 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.08);
     border-top-color: #5eead4;
-    border-right-color: rgba(94, 234, 212, 0.4);
-    animation: spin 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+    border-right-color: rgba(94, 234, 212, 0.3);
+    animation: spin 0.65s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -239,8 +275,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 10px rgba(45, 212, 191, 0.4);
-    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    box-shadow: 0 0 8px rgba(45, 212, 191, 0.3);
+    animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .check svg {
     width: 10px;
@@ -259,8 +295,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+    animation: scaleIn 0.25s cubic-bezier(0.22, 0.68, 0.35, 1.0) forwards;
   }
   .warn svg {
     width: 10px;
@@ -271,9 +307,9 @@
     stroke-linejoin: round;
   }
 
-  @keyframes popIn {
-    0% { transform: scale(0.4) rotate(-15deg); opacity: 0; }
-    100% { transform: scale(1) rotate(0); opacity: 1; }
+  @keyframes scaleIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
 </style>
@@ -283,11 +319,18 @@
 <div id="pill" class="state-hidden hiding">
   <div class="content">
     
-    <div id="wave-wrapper" class="anim-wrapper">
+    <div id="eq-wrapper" class="anim-wrapper">
       <div class="anim-inner">
-        <canvas id="wave" width="80" height="40"></canvas>
+        <div class="eq-bars idle" id="eq-bars">
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+        </div>
       </div>
     </div>
+    <canvas id="wave" width="80" height="40" style="display:none;"></canvas>
 
     <div id="offline-wrapper" class="anim-wrapper">
       <div class="anim-inner">
@@ -824,10 +867,43 @@
   const iconWarn = `<div class="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg></div>`;
   const iconSpinner = `<div class="spinner"></div>`;
 
+  const eqBars = document.getElementById('eq-bars');
+  const barElements = eqBars ? eqBars.querySelectorAll('.eq-bar') : [];
+
+  function updateEqualizerUI(data, energy) {
+    if (!barElements || barElements.length < 5) return;
+    if (energy > 0.02) {
+      if (eqBars.classList.contains('idle')) eqBars.classList.remove('idle');
+      const b0 = data ? Math.max(data[0] || 0, data[1] || 0, data[2] || 0) : energy * 0.7;
+      const b1 = data ? Math.max(data[3] || 0, data[4] || 0) : energy * 0.9;
+      const b2 = data ? Math.max(data[5] || 0, data[6] || 0, data[7] || 0) : energy;
+      const b3 = data ? Math.max(data[8] || 0, data[9] || 0) : energy * 0.85;
+      const b4 = data ? Math.max(data[10] || 0, data[11] || 0, data[12] || 0) : energy * 0.6;
+
+      const e0 = Math.max(b0, energy * 0.5);
+      const e1 = Math.max(b1, energy * 0.75);
+      const e2 = Math.max(b2, energy * 1.0);
+      const e3 = Math.max(b3, energy * 0.8);
+      const e4 = Math.max(b4, energy * 0.55);
+
+      barElements[0].style.height = `${Math.min(18, Math.max(3, 4 + e0 * 13))}px`;
+      barElements[1].style.height = `${Math.min(18, Math.max(3, 4 + e1 * 16))}px`;
+      barElements[2].style.height = `${Math.min(18, Math.max(3, 4 + e2 * 18))}px`;
+      barElements[3].style.height = `${Math.min(18, Math.max(3, 4 + e3 * 16))}px`;
+      barElements[4].style.height = `${Math.min(18, Math.max(3, 4 + e4 * 13))}px`;
+    } else {
+      if (!eqBars.classList.contains('idle')) eqBars.classList.add('idle');
+      for (let i = 0; i < barElements.length; i++) {
+        barElements[i].style.height = '';
+      }
+    }
+  }
+
   window.wisprtell.onPillState(({ state, label, transcript, offline }) => {
     if (state === 'hidden') {
       hidePill(0);
       visualizer.stop();
+      updateEqualizerUI(null, 0);
       return;
     }
 
@@ -836,22 +912,26 @@
 
     if (state === 'listening') {
       visualizer.start();
+      if (eqBars && !eqBars.classList.contains('idle')) eqBars.classList.add('idle');
       iconBox.innerHTML = '';
       textBox.textContent = '';
     } else if (state === 'working') {
       visualizer.stop();
+      updateEqualizerUI(null, 0);
       iconBox.innerHTML = iconSpinner;
       textBox.textContent = '';
     } else if (state === 'done') {
       visualizer.stop();
+      updateEqualizerUI(null, 0);
       iconBox.innerHTML = iconCheck;
-      textBox.textContent = (transcript || '').slice(0, 50) || 'Done';
-      hidePill(1400);
+      textBox.textContent = ''; // Clean completion without text popup
+      hidePill(600);
     } else if (state === 'error') {
       visualizer.stop();
+      updateEqualizerUI(null, 0);
       iconBox.innerHTML = iconWarn;
       textBox.textContent = label || 'Error';
-      hidePill(2400);
+      hidePill(3500);
     }
   });
 
@@ -873,6 +953,7 @@
           const rms = Math.min(1, Math.sqrt(sumSq / 16) * 2.2);
           micLevel = rms;
           document.documentElement.style.setProperty('--mic-level', micLevel.toFixed(3));
+          updateEqualizerUI(data, rms);
         }
       };
       vizPort.start();
@@ -881,6 +962,8 @@
 
   window.wisprtell.onMicLevel(l => {
     micLevel = Math.min(1, Math.max(0, l));
+    document.documentElement.style.setProperty('--mic-level', micLevel.toFixed(3));
+    updateEqualizerUI(null, micLevel);
   });
 
   // ---------- Theme Synchronization ----------

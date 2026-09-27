@@ -1,7 +1,7 @@
 {
   "name": "wispr-tell",
   "productName": "Wispr Tell",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Voice typing application for Windows with Push-to-Talk, Hands-free toggle mode, history timeline, and Groq cloud STT.",
   "main": "src/main.js",
   "scripts": {

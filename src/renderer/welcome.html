@@ -6,7 +6,7 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+      font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
       background: #0c0e14;
       color: #eef1f6;
       display: flex;
@@ -334,6 +334,7 @@
 
     <input type="password" class="input-field" id="apiKeyInput" placeholder="gsk_..." autocomplete="off">
     <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <button class="btn-outline" id="btnGetKey" style="flex:1;">Get Free Key</button>
       <button class="btn-outline" id="btnPasteKey" style="flex:1;">Paste Key</button>
       <button class="btn-primary" id="btnValidateKey" style="flex:1.5;">Verify Key</button>
     </div>
@@ -531,9 +532,14 @@
   };
 
   const apiKeyInput = document.getElementById('apiKeyInput');
+  const btnGetKey = document.getElementById('btnGetKey');
   const btnPasteKey = document.getElementById('btnPasteKey');
   const btnValidateKey = document.getElementById('btnValidateKey');
   const keyStatusMsg = document.getElementById('keyStatusMsg');
+
+  btnGetKey.onclick = () => {
+    window.wisprtell.openExternal('https://console.groq.com/keys');
+  };
 
   btnPasteKey.onclick = async () => {
     try {

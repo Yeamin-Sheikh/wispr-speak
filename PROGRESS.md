@@ -13,6 +13,26 @@
 
 ## Progress log
 
+### 2026-09-27: Wispr Tell v1.0.1 — Performance fixes, equalizer visualizer, and offline model toggle
+
+**Status:** Done
+
+#### What changed
+- **Bug Fixes & Latency:**
+  - Resolved streaming session recreation race condition where chunkIndex 0 orphaned fullTranscriptPromise causing 25s timeouts; restored sub-second end-to-end dictation latency (400-700ms).
+  - Fixed Silero VAD async frame processing race condition during short PTT recordings to prevent speech gating.
+  - Extended wavBufferPromise timeout to 30s so batch fallback retains full audio buffer.
+- **UI & Motion Polish:**
+  - Removed Windows 11 DWM acrylic rectangular sheet on pill window that produced a grey bounding box; enforced true transparent window background.
+  - Replaced canvas wave with animated 5-bar music equalizer that reacts to live audio frequencies and pulses gently when idle.
+  - Removed transcribed text expansion from the done state for instant, clean 600ms completion.
+  - Added "Get Free Key" direct link to onboarding wizard step 3.
+  - Set modern system font hierarchy across welcome and settings interfaces.
+- **Settings & Control:**
+  - Added user toggle switch in Settings to enable/disable offline Whisper model fallback.
+- **Repository Maintenance:**
+  - Removed ~770MB of obsolete version zip archives and temporary agent folders; updated .gitignore.
+
 ### 2026-09-27: Wispr Tell v1.0.0 — 20 landmark improvements
 
 **Status:** Done

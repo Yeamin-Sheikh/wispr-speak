@@ -140,11 +140,17 @@ async function initWarmPipeline() {
   try {
     // 1. Initialize Silero VAD engine
     if (typeof SileroVadEngine !== 'undefined') {
-      vadEngine = new SileroVadEngine({
-        modelPath: '../../assets/vad/silero_vad.onnx',
-        wasmPath: '../../assets/vad/',
-      });
-      await vadEngine.init();
+      try {
+        vadEngine = new SileroVadEngine({
+          modelPath: '../../assets/vad/silero_vad.onnx',
+          wasmPath: '../../assets/vad/',
+        });
+        await vadEngine.init();
+      } catch (vadErr) {
+        console.error('[capture] VAD init failed:', vadErr);
+        vadEngine = null;
+        hasSpeechInSession = true;
+      }
     }
 
     // 2. Query mic config
@@ -356,7 +362,7 @@ async function start() {
   totalSamplesRecorded = 0;
   chunkIndex = 0;
   lastChunkEndSample = 0;
-  hasSpeechInSession = false;
+  hasSpeechInSession = !vadEngine;
 
   if (vadEngine) {
     vadEngine.resetStates();
@@ -438,20 +444,35 @@ async function stop() {
     drainRingBuffer();
   }
 
-  // Check VAD determination: if NO speech was detected (silence, cough, noise, click), reject
+  // Check VAD determination: if NO speech was detected (silence, cough, noise, click), reject.
+  // BUT: VAD processFrame is async, so for short recordings the detection may not have
+  // completed yet. If we have >1 second of actual audio, give VAD 150ms to settle,
+  // then skip rejection if we have substantial audio (the async frames likely just haven't resolved).
   if (vadEngine && !hasSpeechInSession) {
-    console.log('[VAD] Non-speech audio rejected before network dispatch (no speech detected)');
-    window.wisprtell.sendCaptureChunk({
-      chunkIndex: 0,
-      isFinal: true,
-      wavBuffer: new ArrayBuffer(0),
-      durationMs: 0,
-      overlapSamples: 0,
-    });
-    window.wisprtell.sendCaptureData(new ArrayBuffer(0), null);
-    pcmSamples = [];
-    mediaRecorderChunks = [];
-    return;
+    if (totalSamplesRecorded >= SAMPLE_RATE) {
+      // We have at least 1 second of audio. Wait briefly for async VAD to catch up.
+      await new Promise(r => setTimeout(r, 150));
+    }
+    if (!hasSpeechInSession && totalSamplesRecorded < SAMPLE_RATE) {
+      // Truly short recording with no speech detected by VAD, safe to reject
+      console.log('[VAD] Non-speech audio rejected before network dispatch (no speech detected)');
+      window.wisprtell.sendCaptureChunk({
+        chunkIndex: 0,
+        isFinal: true,
+        wavBuffer: new ArrayBuffer(0),
+        durationMs: 0,
+        overlapSamples: 0,
+      });
+      window.wisprtell.sendCaptureData(new ArrayBuffer(0), null);
+      pcmSamples = [];
+      mediaRecorderChunks = [];
+      return;
+    }
+    // If we have >= 1 second of audio, proceed even if VAD hasn't confirmed speech.
+    // The async VAD race condition means detection may arrive after stop() is called.
+    if (!hasSpeechInSession) {
+      console.log('[VAD] Skipping rejection for ' + Math.round(totalSamplesRecorded / SAMPLE_RATE * 1000) + 'ms recording (async VAD race)');
+    }
   }
 
   // Speech confirmed: emit final tail chunk

@@ -19,15 +19,17 @@ const MAIN_JS_PATH = path.join(__dirname, '../../src/main.js');
 const pillHtml = fs.readFileSync(PILL_HTML_PATH, 'utf8');
 const mainJs = fs.readFileSync(MAIN_JS_PATH, 'utf8');
 
-// Extract visualizer implementation from pill.html
-// Lines 324 to 663 in pill.html contain shaders and PillAudioVisualizer class
+// Extract visualizer implementation from pill.html dynamically
 const pillLines = pillHtml.split('\n');
-const visualizerCode = pillLines.slice(324, 663).join('\n') + '\nthis.PillAudioVisualizer = PillAudioVisualizer;';
+const startViz = pillLines.findIndex(l => l.includes('VERTEX_SHADER_SRC'));
+const endViz = pillLines.findIndex((l, i) => i > startViz && l.trim() === 'const visualizer = new PillAudioVisualizer(canvas);');
+const visualizerCode = pillLines.slice(startViz, endViz !== -1 ? endViz : undefined).join('\n') + '\nthis.PillAudioVisualizer = PillAudioVisualizer;';
 
-// Extract materials and theme management from main.js
-// Lines 940 to 1262 in main.js contain WindowMaterialConfigurator, MaterialBoundaryManager, THEMES, resolveEffectiveTheme, and broadcastTheme
+// Extract materials and theme management from main.js dynamically
 const mainLines = mainJs.split('\n');
-const mainThemingCode = mainLines.slice(940, 1262).join('\n') + `
+const startMain = mainLines.findIndex(l => l.includes('class WindowMaterialConfigurator'));
+const endMain = mainLines.findIndex((l, i) => i > startMain && l.includes('class MultiMonitorPhysicsBounds'));
+const mainThemingCode = mainLines.slice(startMain, endMain !== -1 ? endMain : undefined).join('\n') + `
 this.WindowMaterialConfigurator = WindowMaterialConfigurator;
 this.MaterialBoundaryManager = MaterialBoundaryManager;
 this.THEMES = THEMES;

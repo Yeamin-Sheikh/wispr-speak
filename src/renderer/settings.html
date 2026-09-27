@@ -131,7 +131,7 @@
       width: 100%; height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, system-ui, sans-serif;
+      font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
       overflow: hidden;
       user-select: none;
       -webkit-font-smoothing: antialiased;
@@ -1452,6 +1452,17 @@
                   <span class="switch-track"></span>
                 </label>
               </div>
+
+              <div class="setting-row" id="rowOfflineFallback">
+                <div class="setting-text">
+                  <div class="title">Use local offline Whisper model</div>
+                  <div class="subtitle">Fallback to bundled local Whisper model when offline or if Groq API fails</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="offlineFallbackToggle">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -2650,6 +2661,16 @@
       typingAnimToggle.onchange = async e => {
         config.typingAnimation = e.target.checked;
         await api.setConfig({ typingAnimation: e.target.checked });
+      };
+    }
+
+    const offlineFallbackToggle = document.getElementById('offlineFallbackToggle');
+    if (offlineFallbackToggle) {
+      offlineFallbackToggle.checked = config.enableOfflineFallback !== false && config.useLocalModels !== false;
+      offlineFallbackToggle.onchange = async e => {
+        config.enableOfflineFallback = e.target.checked;
+        config.useLocalModels = e.target.checked;
+        await api.setConfig({ enableOfflineFallback: e.target.checked, useLocalModels: e.target.checked });
       };
     }
 
