@@ -267,6 +267,106 @@ function buildWhisperPromptBounded(dictionary, maxChars = 800) {
   return terms.join(', ');
 }
 
+/**
+ * Extracts word and phrase corrections between original transcription and user-edited text.
+ * Uses LCS alignment to detect substitutions and map them to dictionary entries.
+ */
+function extractDictionaryCorrections(original, corrected) {
+  if (!original || !corrected) return [];
+  const origClean = String(original).trim();
+  const corrClean = String(corrected).trim();
+  if (origClean === corrClean) return [];
+
+  const tokenize = str => str.trim().split(/\s+/).filter(Boolean);
+  const origWords = tokenize(origClean);
+  const corrWords = tokenize(corrClean);
+
+  const m = origWords.length;
+  const n = corrWords.length;
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
+
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      if (origWords[i] === corrWords[j]) {
+        dp[i + 1][j + 1] = dp[i][j] + 1;
+      } else {
+        dp[i + 1][j + 1] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+
+  let i = m, j = n;
+  const diffs = [];
+  let curOrig = [];
+  let curCorr = [];
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && origWords[i - 1] === corrWords[j - 1]) {
+      if (curOrig.length > 0 || curCorr.length > 0) {
+        diffs.unshift({
+          from: curOrig.join(' '),
+          to: curCorr.join(' ')
+        });
+        curOrig = [];
+        curCorr = [];
+      }
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      curCorr.unshift(corrWords[j - 1]);
+      j--;
+    } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+      curOrig.unshift(origWords[i - 1]);
+      i--;
+    }
+  }
+
+  if (curOrig.length > 0 || curCorr.length > 0) {
+    diffs.unshift({
+      from: curOrig.join(' '),
+      to: curCorr.join(' ')
+    });
+  }
+
+  const seen = new Set();
+  return diffs.filter(d => {
+    const f = d.from.trim();
+    const t = d.to.trim();
+    if (!f || !t || f === t) return false;
+    const key = f.toLowerCase() + '->' + t;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Checks if candidate text is a likely user edit/correction of the original dictation.
+ */
+function areTextsRelated(original, candidate) {
+  if (!original || !candidate) return false;
+  const o = String(original).trim();
+  const c = String(candidate).trim();
+  if (o.length < 3 || c.length < 3) return false;
+  if (o.toLowerCase() === c.toLowerCase()) return false;
+
+  const toWords = s => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const w1 = toWords(o);
+  const w2 = toWords(c);
+  if (!w1.length || !w2.length) return false;
+
+  const set1 = new Set(w1);
+  const set2 = new Set(w2);
+  let intersection = 0;
+  for (const w of set1) {
+    if (set2.has(w)) intersection++;
+  }
+  const union = new Set([...w1, ...w2]).size;
+  const jaccard = union > 0 ? (intersection / union) : 0;
+
+  return jaccard >= 0.35 || (intersection >= Math.min(w1.length, w2.length) - 2 && intersection >= 2);
+}
+
 module.exports = {
   formatText,
   applyVoiceCommands,
@@ -280,4 +380,6 @@ module.exports = {
   buildWhisperPromptBounded,
   VoiceCommandEngine,
   DEFAULT_COMMANDS,
+  extractDictionaryCorrections,
+  areTextsRelated,
 };

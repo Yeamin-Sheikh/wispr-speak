@@ -19,6 +19,8 @@ const {
   buildWhisperPromptBounded,
   VoiceCommandEngine,
   DEFAULT_COMMANDS,
+  extractDictionaryCorrections,
+  areTextsRelated,
 } = require('./text-utils');
 
 let voiceEngine = new VoiceCommandEngine(DEFAULT_COMMANDS);
@@ -254,7 +256,6 @@ try {
 } catch {}
 
 const DEFAULTS = {
-  userName: 'Yeamin',
   micDeviceId: 'default',
   launchAtLogin: false,
   firstRun: true,
@@ -267,6 +268,7 @@ const DEFAULTS = {
     pushToTalk: ['Ctrl', 'Win'],
     handsFree: ['Ctrl', 'Win', 'Space'],
     polishSelection: ['Win', 'Alt', 'Q'],
+    learnCorrection: ['Win', 'Alt', 'L'],
   },
   dictionary: [
     { from: 'whisper flow', to: 'Wispr Flow' },
@@ -1982,7 +1984,7 @@ async function executeAudioPipeline() {
 
     if (clean) {
       await injectText(clean);
-      lastInject = { text: clean, time: Date.now() };
+      let curClip = ''; try { curClip = clipboard.readText().trim(); } catch {} lastInject = { text: clean, time: Date.now(), initialClipboard: curClip };
       addHistoryItem(clean, latencyMs, {
         offline: isOfflineMode || usedOffline,
         compressedAudioBuffer: capturedCompressedAudio,
@@ -2178,6 +2180,11 @@ function enqueueHotkeyEvent(type) {
       executePolishSelectionPipeline();
     }
     return;
+  } else if (type === 'LEARN_SELECTION') {
+    if (hotkeyFsm.state === 'IDLE') {
+      executeLearnSelectionPipeline();
+    }
+    return;
   }
 
   const res = hotkeyFsm.handleEvent(fsmType, fsmKey);
@@ -2212,6 +2219,154 @@ async function onHotkeyUp() {
     enqueueHotkeyEvent('HANDSFREE_TOGGLE');
   } else {
     enqueueHotkeyEvent('PTT_UP');
+  }
+}
+
+
+/**
+ * Automatically learns vocabulary or symbol corrections between original dictation and user-corrected text.
+ * Adds new rules to config.dictionary and saves config.
+ */
+function learnFromCorrection(original, corrected, source = 'auto') {
+  if (!original || !corrected) return [];
+  const corrections = extractDictionaryCorrections(original, corrected);
+  if (!corrections || corrections.length === 0) return [];
+
+  let addedCount = 0;
+  if (!config.dictionary) config.dictionary = [];
+
+  for (const item of corrections) {
+    const from = String(item.from).trim();
+    const to = String(item.to).trim();
+    if (!from || !to || from.toLowerCase() === to.toLowerCase()) continue;
+
+    // Check if an existing entry matches `from` (case-insensitive)
+    const existingIndex = config.dictionary.findIndex(d => d && d.from && d.from.toLowerCase() === from.toLowerCase());
+    if (existingIndex >= 0) {
+      if (config.dictionary[existingIndex].to !== to) {
+        config.dictionary[existingIndex].to = to;
+        addedCount++;
+      }
+    } else {
+      config.dictionary.push({ from, to });
+      addedCount++;
+    }
+  }
+
+  if (addedCount > 0) {
+    saveConfig();
+    log(`learned ${addedCount} correction(s) [${source}]:`, corrections);
+
+    // Flash visual feedback on pill
+    const learnedSummary = corrections.map(c => `${c.from} → ${c.to}`).slice(0, 2).join(', ');
+    setPill('done', null, `Learned: ${learnedSummary}`);
+
+    // Update settings window if open
+    if (settingsWin && !settingsWin.isDestroyed()) {
+      settingsWin.webContents.send('dictionary-updated', config.dictionary);
+    }
+  }
+
+  return corrections;
+}
+
+let clipboardWatcherTimer = null;
+let lastKnownClipboard = '';
+try {
+  lastKnownClipboard = clipboard.readText();
+} catch {}
+
+function setupClipboardWatcher() {
+  if (clipboardWatcherTimer) return;
+  clipboardWatcherTimer = setInterval(() => {
+    try {
+      if (!lastInject || !lastInject.text || (Date.now() - lastInject.time > 90000)) {
+        return;
+      }
+      const current = clipboard.readText().trim();
+      if (!current || current === lastKnownClipboard || current === lastInject.text || current === lastInject.initialClipboard) {
+        return;
+      }
+      lastKnownClipboard = current;
+
+      if (areTextsRelated(lastInject.text, current)) {
+        log('clipboardWatcher: related correction detected, extracting...');
+        const learned = learnFromCorrection(lastInject.text, current, 'clipboard-watcher');
+        if (learned && learned.length > 0) {
+          lastInject.text = current;
+        }
+      }
+    } catch (e) {
+      // Non-fatal clipboard read error
+    }
+  }, 750);
+}
+
+async function executeLearnSelectionPipeline() {
+  if (busy || recording) return;
+  busy = true;
+  try {
+    const prevText = clipboard.readText();
+    clipboard.clear();
+    let copyOk = false;
+    try {
+      await copyViaHelper();
+      copyOk = true;
+    } catch (e) {
+      log('learn-selection: copyViaHelper fallback:', e.message);
+    }
+    if (!copyOk) {
+      try {
+        const { keyboard, Key } = require('@nut-tree-fork/nut-js');
+        keyboard.config.autoDelayMs = 2;
+        await keyboard.pressKey(Key.LeftControl, Key.C);
+        await keyboard.releaseKey(Key.LeftControl, Key.C);
+      } catch (nutErr) {}
+    }
+
+    let selectedText = '';
+    for (let i = 0; i < 12; i++) {
+      await new Promise(r => setTimeout(r, 40));
+      selectedText = clipboard.readText().trim();
+      if (selectedText) break;
+    }
+
+    if (!selectedText) {
+      if (prevText) clipboard.writeText(prevText);
+      setPill('error', 'Select text first to learn');
+      busy = false;
+      return;
+    }
+
+    let baseText = (lastInject && (Date.now() - lastInject.time < 180000)) ? lastInject.text : null;
+    if (!baseText && history && history.length > 0) {
+      for (const item of history) {
+        if (item.text && areTextsRelated(item.text, selectedText)) {
+          baseText = item.text;
+          break;
+        }
+      }
+    }
+    if (!baseText && lastInject && lastInject.text) {
+      baseText = lastInject.text;
+    }
+
+    if (baseText) {
+      const learned = learnFromCorrection(baseText, selectedText, 'hotkey-selection');
+      if (learned && learned.length > 0) {
+        const label = learned.map(l => `${l.from} → ${l.to}`).slice(0, 2).join(', ');
+        setPill('done', null, `Learned: ${label}`);
+      } else {
+        setPill('done', null, 'No new rules found');
+      }
+    } else {
+      setPill('error', 'No recent dictation to compare');
+    }
+  } catch (err) {
+    log('learn-selection error:', err.message);
+    setPill('error', 'Could not learn selection');
+  } finally {
+    busy = false;
   }
 }
 
@@ -2276,7 +2431,7 @@ async function onPolishSelection() {
 
     if (polished && polished !== selectedText) {
       await injectText(polished);
-      lastInject = { text: polished, time: Date.now() };
+      let curClipPol = ''; try { curClipPol = clipboard.readText().trim(); } catch {} lastInject = { text: polished, time: Date.now(), initialClipboard: curClipPol };
       addHistoryItem(polished, durationMs);
       setPill('done', null, 'Sentence polished ✓');
     } else {
@@ -2394,6 +2549,7 @@ if (!gotSingleLock) {
   createPill();
   createCaptureWin();
   registerGlobalShortcuts();
+  setupClipboardWatcher();
 
   // config IPC
   ipcMain.handle('get-config', () => ({ ...config }));
@@ -2690,19 +2846,15 @@ if (!gotSingleLock) {
     return true;
   });
 
-  // profile import / export
-  ipcMain.handle('export-profile', () => {
+  // data import / export (zero user profiles or personal names)
+  const handleExportData = () => {
     return {
       appName: 'Wispr Tell',
       version: app.getVersion(),
       exportedAt: new Date().toISOString(),
-      user: {
-        name: config.userName || 'Yeamin',
-        profileTitle: 'Inquiry Catalyst / Natural Voice',
-      },
       stats: getStats(),
       preferences: {
-        theme: config.theme || 'warm-light',
+        theme: config.theme || 'cyber-teal',
         shortcuts: config.shortcuts,
         smartFix: config.smartFix,
         micDeviceId: config.micDeviceId,
@@ -2711,33 +2863,33 @@ if (!gotSingleLock) {
       historyCount: history.length,
       recentHistory: history.slice(0, 50),
     };
-  });
+  };
 
-  ipcMain.handle('import-profile', (_e, profileData) => {
-    if (!profileData || typeof profileData !== 'object') {
-      return { ok: false, error: 'Invalid profile data' };
+  const handleImportData = (_e, data) => {
+    if (!data || typeof data !== 'object') {
+      return { ok: false, error: 'Invalid data format' };
     }
-    if (profileData.dictionary && Array.isArray(profileData.dictionary)) {
-      config.dictionary = profileData.dictionary;
+    if (data.dictionary && Array.isArray(data.dictionary)) {
+      config.dictionary = data.dictionary;
     }
-    if (profileData.preferences) {
-      if (profileData.preferences.shortcuts) {
-        config.shortcuts = { ...config.shortcuts, ...profileData.preferences.shortcuts };
+    if (data.preferences) {
+      if (data.preferences.shortcuts) {
+        config.shortcuts = { ...config.shortcuts, ...data.preferences.shortcuts };
       }
-      if (profileData.preferences.theme) {
-        config.theme = profileData.preferences.theme;
+      if (data.preferences.theme) {
+        config.theme = data.preferences.theme;
         updateTitleBarTheme(config.theme);
       }
-      if (profileData.preferences.smartFix !== undefined) {
-        config.smartFix = profileData.preferences.smartFix;
+      if (data.preferences.smartFix !== undefined) {
+        config.smartFix = data.preferences.smartFix;
       }
-      if (profileData.preferences.micDeviceId) {
-        config.micDeviceId = profileData.preferences.micDeviceId;
+      if (data.preferences.micDeviceId) {
+        config.micDeviceId = data.preferences.micDeviceId;
       }
     }
-    if (profileData.recentHistory && Array.isArray(profileData.recentHistory) && profileData.recentHistory.length > 0) {
+    if (data.recentHistory && Array.isArray(data.recentHistory) && data.recentHistory.length > 0) {
       const existingIds = new Set(history.map(h => h.id));
-      for (const h of profileData.recentHistory) {
+      for (const h of data.recentHistory) {
         if (!existingIds.has(h.id)) {
           history.push(h);
         }
@@ -2746,7 +2898,21 @@ if (!gotSingleLock) {
       saveHistory();
     }
     saveConfig();
-    return { ok: true, config, stats: getStats(), history };
+    return { ok: true, config, history, stats: getStats() };
+  };
+
+  ipcMain.handle('export-data', handleExportData);
+  ipcMain.handle('import-data', handleImportData);
+  ipcMain.handle('export-profile', handleExportData);
+  ipcMain.handle('import-profile', handleImportData);
+
+  ipcMain.handle('learn-correction', async (_e, { original, corrected }) => {
+    try {
+      const learned = learnFromCorrection(original, corrected, 'manual-history');
+      return { ok: true, learned, dictionary: config.dictionary };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   });
 
   ipcMain.handle('validate-key', async (_e, key) => validateGroqKey(key));
@@ -2811,6 +2977,7 @@ if (!gotSingleLock) {
       { label: 'Push to talk: ' + (config.shortcuts?.pushToTalk || ['Ctrl', 'Win']).join('+'), enabled: false },
       { label: 'Hands-free: ' + (config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space']).join('+'), enabled: false },
       { label: 'Polish selection: ' + (config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q']).join('+'), enabled: false },
+      { label: 'Learn correction: ' + (config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L']).join('+'), enabled: false },
       { type: 'separator' },
       { label: 'Settings', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'settings'); } },
       { label: 'Dictionary ("My words")', click: () => { openSettings(); if (settingsWin) settingsWin.webContents.send('nav-to', 'dictionary'); } },
@@ -2852,6 +3019,7 @@ if (!gotSingleLock) {
     const handsFreeCombo = config.shortcuts?.handsFree || ['Ctrl', 'Win', 'Space'];
     const pttCombo = config.shortcuts?.pushToTalk || ['Ctrl', 'Win'];
     const polishCombo = config.shortcuts?.polishSelection || ['Win', 'Alt', 'Q'];
+    const learnCombo = config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L'];
 
     // 1. Hands-free combo: Ctrl + Win + Space
     if (isComboHeld(handsFreeCombo)) {
@@ -2864,6 +3032,13 @@ if (!gotSingleLock) {
     if (isComboHeld(polishCombo)) {
       if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
       enqueueHotkeyEvent('POLISH_SELECTION');
+      return;
+    }
+
+    // 2b. Selection learn combo: Windows + Alt + L
+    if (isComboHeld(learnCombo)) {
+      if (pttPendingTimer) { clearTimeout(pttPendingTimer); pttPendingTimer = null; }
+      enqueueHotkeyEvent('LEARN_SELECTION');
       return;
     }
 

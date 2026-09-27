@@ -13,6 +13,26 @@
 
 ## Progress log
 
+### 2026-09-27: Wispr Tell v1.0.2 — Context-based auto-learning and profile removal
+
+**Status:** Done
+
+#### What changed
+- Context-based auto-learning:
+  - Added Longest Common Subsequence (LCS) sequence alignment in `src/text-utils.js` to automatically extract word, phrase, and symbol substitutions (such as "plus" to "+") between dictated text and user corrections.
+  - Implemented passive clipboard watcher that detects when edited text related to a recent dictation is copied, automatically extracting and saving dictionary rules.
+  - Added global shortcut `Win + Alt + L` (`learnCorrection`) to instantly learn substitutions from highlighted text.
+  - Updated history card edit workflow to extract diffs and save them directly to the personal dictionary with real-time feedback.
+  - Connected live IPC updates (`dictionary-updated`) so dictionary rules reflect immediately in settings.
+- Profile and personal name removal:
+  - Removed user profile badges, personal names, and proprietary branding across all UI views and settings.
+  - Replaced the Voice Profile section with a clean Data and Backup section for exporting and importing configuration and dictionary data.
+  - Replaced the sidebar profile card with an engine activity indicator.
+  - Replaced the profile status card with a Personal Dictionary quick link.
+- Quality assurance:
+  - Added comprehensive test suite in `tests/tier1-feature-coverage/feat21-context-auto-learning.test.js`.
+  - Verified all 238 unit tests and 52 adversarial tests pass with zero regressions.
+
 ### 2026-09-27: Wispr Tell v1.0.1 — Performance fixes, equalizer visualizer, and offline model toggle
 
 **Status:** Done

@@ -22,9 +22,9 @@ Wispr Tell is completely free and open source. It requires no subscription, paid
 - Minimal color-neutral brand design: Clean acoustic wave monogram in vector SVG format, accompanied by high-resolution Windows icon assets (16, 24, 32, 48, 64, 128, and 256 sizes).
 - Push-to-talk and hands-free modes: Hold to talk or press once to start and press again to inject. All shortcuts are customizable in settings.
 - Four interface themes: Warm Light, Dark Obsidian, Slate Clean, and Cyber Teal, with Windows 11 caption button color synchronization.
-- Animated status pill: Features a spring entrance curve, frosted glass background, dynamic 16-bar glowing audio waveform, and smooth exit fade.
-- Inline correction learning: Edit any past dictation directly in your history timeline. Wispr Tell isolates the corrected phrase differences and lets you add the mapping to your personal dictionary with one click.
-- Profile backup and migration: Export your complete voice profile, stats, dictionary rules, and shortcut preferences as a JSON file, and import it on any Windows PC.
+- Animated status pill: Features a spring entrance curve, frosted glass background, dynamic 5-bar glowing audio equalizer, and smooth exit fade.
+- Context-based auto-learning: Edit any sentence or copy corrected text after dictating, and Wispr Tell extracts substitutions (like words or symbols) and adds them to your personal dictionary automatically. You can also highlight text and press `Win + Alt + L` to learn immediately.
+- Data backup and migration: Export your settings, dictionary rules, and shortcut preferences as a clean JSON backup file, and import it on any Windows PC.
 - History and productivity stats: Browse past dictations, search by keyword, view total words transcribed, words per minute, and daily streaks.
 
 ### Requirements

@@ -1238,7 +1238,7 @@
           </svg>
           <div class="brand-info">
             <span class="brand-title">Wispr Tell</span>
-            <span class="brand-subtitle">Sheikh Technologies Inc.</span>
+            <span class="brand-subtitle">Desktop Voice Typing</span>
           </div>
         </div>
 
@@ -1263,10 +1263,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
             <span>Voice Commands</span>
           </div>
-          <div class="nav-item" data-tab="profile">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Voice Profile</span>
-          </div>
           <div class="nav-item" data-tab="help">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span>Commands & Help</span>
@@ -1274,13 +1270,10 @@
         </div>
       </div>
 
-      <!-- User Profile Badge at bottom of sidebar -->
-      <div class="sidebar-user" id="btnSidebarUser" title="View voice profile and statistics">
-        <div class="user-avatar-circle" id="sidebarAvatar">Y</div>
-        <div class="user-meta">
-          <span class="user-meta-name" id="sidebarUserName">Yeamin Sheikh</span>
-          <span class="user-meta-role">Pro Voice · Cloud STT</span>
-        </div>
+      <!-- Engine Status at bottom of sidebar -->
+      <div class="sidebar-status" style="padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-dim); display: flex; align-items: center; gap: 8px;">
+        <span class="pulsing-dot" style="width: 7px; height: 7px; background: var(--accent);"></span>
+        <span>Voice Engine Active</span>
       </div>
     </div>
 
@@ -1385,6 +1378,16 @@
                   <button class="btn-outline" id="btnEditPolish">Change</button>
                 </div>
               </div>
+
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Learn corrected selection</div>
+                  <div class="subtitle">Highlight edited text and press to extract and save dictionary corrections</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="kbd-badge" id="learnBadge"><kbd>Win</kbd><kbd>Alt</kbd><kbd>L</kbd></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1465,6 +1468,25 @@
               </div>
             </div>
           </div>
+
+          <!-- Backup and Data Management -->
+          <div class="settings-section">
+            <div class="section-title">Data and Backup</div>
+            <div class="spotlight-card setting-card">
+              <div class="setting-row">
+                <div class="setting-text">
+                  <div class="title">Export & Import Settings</div>
+                  <div class="subtitle">Backup or restore your personal dictionary, shortcuts, personas, and configurations</div>
+                </div>
+                <div style="display:flex;gap:10px;">
+                  <button class="btn-outline" id="btnExportData">Export</button>
+                  <button class="btn-primary" id="btnImportData">Import</button>
+                  <input type="file" id="fileImportData" accept=".json" style="display:none;">
+                </div>
+              </div>
+              <div id="importExportStatus" style="font-size:12px;color:var(--accent);display:none;padding-top:8px;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- 3. Dictionary View -->
@@ -1481,46 +1503,6 @@
             <div id="dictListContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
           </div>
         </div>
-
-        <!-- 4. Profile & Habits View -->
-        <div class="view-panel" id="view-profile">
-          <div class="greeting-title">Voice Profile and Habits</div>
-          <p style="font-size:13px;color:var(--text-muted);margin-top:-8px;">Export, backup, or import your personal speech habits, dictionary, and preferences.</p>
-
-          <div class="spotlight-card setting-card" style="padding:20px;display:flex;flex-direction:column;gap:18px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:14px;">
-                <div style="width:50px;height:50px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">Y</div>
-                <div>
-                  <div style="font-size:16px;font-weight:700;color:var(--text);" id="profName">Yeamin Sheikh</div>
-                  <div style="font-size:12.5px;color:var(--text-muted);">Sheikh Technologies Inc. · Pro Voice Profile</div>
-                </div>
-              </div>
-              <div style="display:flex;gap:10px;">
-                <button class="btn-outline" id="btnExportProfile">Export Profile</button>
-                <button class="btn-primary" id="btnImportProfile">Import Profile</button>
-                <input type="file" id="fileImportProfile" accept=".json" style="display:none;">
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;border-top:1px solid var(--border-subtle);padding-top:16px;">
-              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
-                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">LIFETIME WORDS</div>
-                <div style="font-size:19px;font-weight:700;color:var(--text);margin-top:2px;" id="profTotalWords">12.9K</div>
-              </div>
-              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
-                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">VOICE MODE</div>
-                <div style="font-size:13.5px;font-weight:600;color:var(--accent);margin-top:2px;">Punctuation-Aware</div>
-              </div>
-              <div style="background:var(--input-bg);padding:12px;border-radius:8px;">
-                <div style="font-size:11px;color:var(--text-muted);font-weight:600;">LEARNED WORDS</div>
-                <div style="font-size:19px;font-weight:700;color:var(--text);margin-top:2px;" id="profLearnedWords">2</div>
-              </div>
-            </div>
-            <div id="importExportStatus" style="font-size:12px;color:var(--accent);display:none;"></div>
-          </div>
-        </div>
-
         <!-- Personas View -->
         <div class="view-panel" id="view-personas">
           <div class="greeting-title">Prompt Personas & Context Polish</div>
@@ -1712,12 +1694,12 @@
           <button class="btn-outline" id="btnOpenEngineSettings" style="margin-top:4px;width:100%;">Configure API Key</button>
         </div>
 
-        <div class="spotlight-card engine-card" id="btnGoProfile" style="cursor:pointer;">
+        <div class="spotlight-card engine-card" id="btnGoDictionary" style="cursor:pointer;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-            <span class="engine-title">Voice Profile</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span class="engine-title">Personal Dictionary</span>
           </div>
-          <div class="engine-desc">Natural · Punctuation-Aware</div>
+          <div class="engine-desc" id="statDictCount">Auto-learning active</div>
         </div>
       </div>
     </div>
@@ -1777,8 +1759,8 @@
 
   document.getElementById('btnBannerShortcuts').onclick = () => showTab('settings');
   document.getElementById('btnOpenEngineSettings').onclick = () => showTab('settings');
-  document.getElementById('btnGoProfile').onclick = () => showTab('profile');
-  document.getElementById('btnSidebarUser').onclick = () => showTab('profile');
+  const btnGoDict = document.getElementById('btnGoDictionary');
+  if (btnGoDict) btnGoDict.onclick = () => showTab('dictionary');
   document.getElementById('btnDismissBanner').onclick = () => {
     document.getElementById('heroBanner').style.display = 'none';
   };
@@ -1843,8 +1825,8 @@
     totalWordsVal.textContent = stats.totalWordsFormatted || '12.9K';
     wpmVal.textContent = stats.wpm || '100';
     streakVal.textContent = stats.streak || '8';
-    document.getElementById('profTotalWords').textContent = stats.totalWordsFormatted || '12.9K';
-    document.getElementById('profLearnedWords').textContent = (config.dictionary || []).length;
+    const dictCountEl = document.getElementById('statDictCount');
+    if (dictCountEl) dictCountEl.textContent = `${(config.dictionary || []).length} rules learned`;
   }
 
   function formatTime(ts) {
@@ -2120,7 +2102,6 @@
         const newText = textarea.value.trim();
 
         if (newText && newText !== originalText) {
-          const diff = detectDiffWords(originalText, newText);
           const res = await api.updateHistoryItem({ id, text: newText });
           historyData = res.history;
 
@@ -2130,26 +2111,22 @@
           document.getElementById('actions_' + id).style.display = 'flex';
           renderStats(res.stats);
 
-          if (diff && diff.from && diff.to) {
-            const banner = document.getElementById('learnBanner_' + id);
-            const msg = document.getElementById('learnMsg_' + id);
-            const addBtn = document.getElementById('btnAddLearned_' + id);
-            const dismissBtn = document.getElementById('btnDismissLearned_' + id);
-
-            msg.innerHTML = `Correction detected: <b>"${escapeHtml(diff.from)}"</b> → <b>"${escapeHtml(diff.to)}"</b>`;
-            banner.style.display = 'flex';
-
-            addBtn.onclick = async () => {
-              config.dictionary = config.dictionary || [];
-              config.dictionary.push({ from: diff.from, to: diff.to });
-              await api.setConfig({ dictionary: config.dictionary });
+          // Auto-learn corrections into dictionary
+          try {
+            const learnRes = await api.learnCorrection({ original: originalText, corrected: newText });
+            if (learnRes && learnRes.ok && learnRes.learned && learnRes.learned.length > 0) {
+              config.dictionary = learnRes.dictionary || config.dictionary;
               renderDictionary();
-              banner.innerHTML = `<span style="color:var(--accent);font-weight:600;">Learned. Wispr Tell will now write "${escapeHtml(diff.to)}" automatically.</span>`;
-              setTimeout(() => { banner.style.display = 'none'; }, 3000);
-            };
-
-            dismissBtn.onclick = () => { banner.style.display = 'none'; };
-          }
+              const banner = document.getElementById('learnBanner_' + id);
+              const msg = document.getElementById('learnMsg_' + id);
+              const addBtn = document.getElementById('btnAddLearned_' + id);
+              if (addBtn) addBtn.style.display = 'none';
+              const ruleText = learnRes.learned.map(l => `"${escapeHtml(l.from)}" → "${escapeHtml(l.to)}"`).join(', ');
+              msg.innerHTML = `<span style="color:var(--accent);font-weight:600;">Learned & saved: ${ruleText}</span>`;
+              banner.style.display = 'flex';
+              setTimeout(() => { banner.style.display = 'none'; }, 4000);
+            }
+          } catch (e) {}
         } else {
           document.getElementById('editBox_' + id).style.display = 'none';
           document.getElementById('text_' + id).style.display = 'block';
@@ -2169,6 +2146,9 @@
     document.getElementById('pttBadge').innerHTML = ptt.map(k => `<kbd>${k}</kbd>`).join('');
     document.getElementById('hfBadge').innerHTML = hf.map(k => `<kbd>${k}</kbd>`).join('');
     document.getElementById('polishBadge').innerHTML = pol.map(k => `<kbd>${k}</kbd>`).join('');
+    const lrn = config.shortcuts?.learnCorrection || ['Win', 'Alt', 'L'];
+    const lrnBadge = document.getElementById('learnBadge');
+    if (lrnBadge) lrnBadge.innerHTML = lrn.map(k => `<kbd>${k}</kbd>`).join('');
   }
 
   function setupShortcutEditor(btnId, type) {
@@ -2222,7 +2202,8 @@
   function renderDictionary() {
     const dict = config.dictionary || [];
     const container = document.getElementById('dictListContainer');
-    document.getElementById('profLearnedWords').textContent = dict.length;
+    const dictCountEl = document.getElementById('statDictCount');
+    if (dictCountEl) dictCountEl.textContent = `${dict.length} rules learned`;
     if (!dict.length) {
       container.innerHTML = '<div style="color:var(--text-muted);font-size:12.5px;padding:8px 0;">No words mapped yet. Add commonly misheard names or jargon above.</div>';
       return;
@@ -2260,53 +2241,66 @@
     renderDictionary();
   };
 
-  // Profile Export & Import
-  document.getElementById('btnExportProfile').onclick = async () => {
-    const profile = await api.exportProfile();
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(profile, null, 2));
-    const dlAnchor = document.createElement('a');
-    dlAnchor.setAttribute('href', dataStr);
-    dlAnchor.setAttribute('download', `wispr-tell-profile-${(config.userName || 'user').toLowerCase()}.json`);
-    dlAnchor.click();
-    showProfileStatus('Profile exported successfully.');
-  };
-
-  document.getElementById('btnImportProfile').onclick = () => {
-    document.getElementById('fileImportProfile').click();
-  };
-
-  document.getElementById('fileImportProfile').onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async event => {
-      try {
-        const parsed = JSON.parse(event.target.result);
-        const res = await api.importProfile(parsed);
-        if (res.ok) {
-          config = res.config;
-          historyData = res.history;
-          renderStats(res.stats);
-          renderShortcuts();
-          renderDictionary();
-          renderHistory(historyData);
-          if (config.theme) applyTheme(config.theme);
-          showProfileStatus('Profile imported and activated.');
-        } else {
-          showProfileStatus('Import failed: ' + res.error);
-        }
-      } catch (err) {
-        showProfileStatus('Invalid profile JSON file.');
-      }
+  // Data Export & Import (zero user profiles or personal names)
+  const exportBtn = document.getElementById('btnExportData');
+  if (exportBtn) {
+    exportBtn.onclick = async () => {
+      const data = await api.exportData();
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute('href', dataStr);
+      dlAnchor.setAttribute('download', 'wispr-tell-backup.json');
+      dlAnchor.click();
+      showDataStatus('Backup data exported successfully.');
     };
-    reader.readAsText(file);
-  };
+  }
 
-  function showProfileStatus(msg) {
+  const importBtn = document.getElementById('btnImportData');
+  const importFileInput = document.getElementById('fileImportData');
+  if (importBtn && importFileInput) {
+    importBtn.onclick = () => importFileInput.click();
+    importFileInput.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async event => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          const res = await api.importData(parsed);
+          if (res.ok) {
+            config = res.config;
+            historyData = res.history;
+            renderStats(res.stats);
+            renderShortcuts();
+            renderDictionary();
+            renderHistory(historyData);
+            if (config.theme) applyTheme(config.theme);
+            showDataStatus('Settings and dictionary imported successfully.');
+          } else {
+            showDataStatus('Import failed: ' + res.error);
+          }
+        } catch (err) {
+          showDataStatus('Invalid JSON backup file.');
+        }
+      };
+      reader.readAsText(file);
+    };
+  }
+
+  function showDataStatus(msg) {
     const el = document.getElementById('importExportStatus');
+    if (!el) return;
     el.textContent = msg;
     el.style.display = 'block';
     setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  // Live dictionary updates from auto-learner
+  if (api.onDictionaryUpdated) {
+    api.onDictionaryUpdated(newDict => {
+      config.dictionary = newDict;
+      renderDictionary();
+    });
   }
 
   // Personas and Context Polish

@@ -39,8 +39,12 @@ contextBridge.exposeInMainWorld('wisprtell', {
   deleteHistory: id => ipcRenderer.invoke('delete-history', id),
   clearHistory: () => ipcRenderer.invoke('clear-history'),
   getStats: () => ipcRenderer.invoke('get-stats'),
-  exportProfile: () => ipcRenderer.invoke('export-profile'),
-  importProfile: data => ipcRenderer.invoke('import-profile', data),
+  exportData: () => ipcRenderer.invoke('export-data'),
+  importData: data => ipcRenderer.invoke('import-data'),
+  exportProfile: () => ipcRenderer.invoke('export-data'),
+  importProfile: data => ipcRenderer.invoke('import-data'),
+  learnCorrection: payload => ipcRenderer.invoke('learn-correction', payload),
+  onDictionaryUpdated: cb => ipcRenderer.on('dictionary-updated', (_e, data) => cb(data)),
   onHistoryUpdated: cb => ipcRenderer.on('history-updated', (_e, data) => cb(data)),
   onNavTo: cb => ipcRenderer.on('nav-to', (_e, target) => cb(target)),
   listMics: () => ipcRenderer.invoke('list-mics'),
@@ -62,4 +66,3 @@ contextBridge.exposeInMainWorld('wisprtell', {
   deleteHistoryAudio: id => ipcRenderer.invoke('delete-history-audio', id),
   resetOfflineMode: () => ipcRenderer.invoke('reset-offline-mode'),
 });
-
