@@ -4,14 +4,24 @@
 
 ## Project info
 
-- **Project:** Wispr Tell
+- **Project:** Wispr Speak
 - **Started:** 2026-09-26
-- **Last updated:** 2026-09-27
+- **Last updated:** 2026-09-28
 - **Status:** Active
 
 ---
 
 ## Progress log
+
+### 2026-09-28: Version bump to v1.0.4 and release publication
+
+**Status:** Done
+
+#### What changed
+- Bumped version to `v1.0.4` in `package.json`.
+- Updated startup logging to reflect Wispr Speak branding.
+- Packaged release archive `Wispr-Speak-v1.0.4-win-x64.zip`.
+- Published GitHub release `v1.0.4` with updated Windows binaries.
 
 ### 2026-09-27: GitHub repository rename and v1.0.3 release publication
 

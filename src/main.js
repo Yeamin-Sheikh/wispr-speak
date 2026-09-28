@@ -2681,7 +2681,7 @@ if (!gotSingleLock) {
       log('system: pruned old log files count: ' + pruned.length);
     }
 
-    log('=== Wispr Tell v' + app.getVersion() + ' starting ===');
+    log('=== Wispr Speak v' + app.getVersion() + ' starting ===');
     initAutoUpdater();
   for (const [name, p] of [['paste-helper', PASTE_HELPER]])
     log('self-check', name, fs.existsSync(p) ? 'OK' : 'MISSING: ' + p);
